@@ -1,15 +1,23 @@
 /**
- * MedFocus — Service Worker v7
+ * MedFocus — Service Worker v8
  * Enhanced offline support: caches flashcards, quizzes, study materials
  * + Push Notifications + Background Sync
- * v7: Force cache bust to clear stale Vite chunks
+ * v8: Fix stale Vite chunks — never cache dev assets, aggressive cache bust on activate
  */
-const CACHE_NAME = 'medfocus-v7';
-const STUDY_CACHE = 'medfocus-study-v1';
-const API_CACHE = 'medfocus-api-v1';
+const CACHE_NAME = 'medfocus-v8';
+const STUDY_CACHE = 'medfocus-study-v2';
+const API_CACHE = 'medfocus-api-v2';
+
+// Detect if running in dev mode (not production build)
+const IS_DEV = self.location.hostname.includes('localhost') ||
+  self.location.hostname.includes('manus.computer') ||
+  self.location.hostname.includes('manuspre.computer') ||
+  self.location.hostname.includes('manus-asia.computer') ||
+  self.location.hostname.includes('manuscomputer.ai') ||
+  self.location.hostname.includes('manusvm.computer') ||
+  self.location.hostname.includes('sandbox.novita.ai');
 
 const STATIC_ASSETS = [
-  '/',
   '/manifest.json',
   'https://files.manuscdn.com/user_upload_by_module/session_file/310519663109238085/luEmcExPIjQEtqNO.png',
   'https://files.manuscdn.com/user_upload_by_module/session_file/310519663109238085/YRvaGtdlMcygSIGU.png',
@@ -27,11 +35,18 @@ self.addEventListener('install', (event) => {
 
 // ─── ACTIVATE ────────────────────────────────────
 self.addEventListener('activate', (event) => {
-  const validCaches = [CACHE_NAME, STUDY_CACHE, API_CACHE];
   event.waitUntil(
     caches.keys().then((keys) => {
+      // Delete ALL old caches — only keep current version caches
+      const validCaches = [CACHE_NAME, STUDY_CACHE, API_CACHE];
       return Promise.all(
-        keys.filter((key) => !validCaches.includes(key)).map((key) => caches.delete(key))
+        keys.map((key) => {
+          if (!validCaches.includes(key)) {
+            console.log('[SW] Deleting old cache:', key);
+            return caches.delete(key);
+          }
+          return Promise.resolve();
+        })
       );
     })
   );
@@ -44,6 +59,18 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
 
   if (request.method !== 'GET') return;
+
+  // In dev mode: ONLY handle tRPC API caching for offline study data
+  // Never cache HTML, JS, CSS, or any other dev assets
+  if (IS_DEV) {
+    if (url.pathname.startsWith('/api/trpc/')) {
+      event.respondWith(handleApiRequest(request));
+    }
+    // For everything else in dev: let the browser handle it normally (no SW interception)
+    return;
+  }
+
+  // ── PRODUCTION MODE ONLY below this point ──
 
   // Handle tRPC API calls (for offline study data)
   if (url.pathname.startsWith('/api/trpc/')) {
@@ -59,20 +86,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Skip caching for Vite HMR and dev-mode assets
-  if (
-    url.pathname.includes('/@') ||
-    url.pathname.includes('/__vite') ||
-    url.pathname.includes('/node_modules/') ||
-    url.pathname.includes('.vite/') ||
-    url.searchParams.has('v') ||
-    url.searchParams.has('t')
-  ) {
-    return;
-  }
-
-  // Cache-first for static assets (CSS, JS, fonts, images)
-  // Only cache production-like assets (with content hashes)
+  // Cache-first for static assets (CSS, JS, fonts, images) — production only
   if (
     request.destination === 'font' ||
     request.destination === 'image' ||
@@ -96,7 +110,27 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first for HTML pages
+  // Network-first for HTML pages — production only
+  if (request.mode === 'navigate' || request.destination === 'document') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => {
+          return caches.match(request).then((cached) => {
+            return cached || caches.match('/');
+          });
+        })
+    );
+    return;
+  }
+
+  // All other requests in production: network-first with cache fallback
   event.respondWith(
     fetch(request)
       .then((response) => {
@@ -107,9 +141,7 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch(() => {
-        return caches.match(request).then((cached) => {
-          return cached || caches.match('/');
-        });
+        return caches.match(request);
       })
   );
 });
@@ -117,8 +149,6 @@ self.addEventListener('fetch', (event) => {
 // ─── API REQUEST HANDLER (Offline-capable) ────────────────
 async function handleApiRequest(request) {
   const url = new URL(request.url);
-  const batchParam = url.searchParams.get('batch');
-  const inputParam = url.searchParams.get('input');
   
   // Determine if this is a cacheable study-related request
   const isCacheable = isStudyRelatedRequest(url);
@@ -178,7 +208,6 @@ self.addEventListener('message', (event) => {
   const { type, data } = event.data || {};
 
   if (type === 'CACHE_STUDY_DATA') {
-    // Client sends study data to be cached for offline use
     event.waitUntil(cacheStudyData(data));
   }
 
@@ -191,6 +220,13 @@ self.addEventListener('message', (event) => {
       getCacheStatus().then((status) => {
         event.source.postMessage({ type: 'CACHE_STATUS', data: status });
       })
+    );
+  }
+
+  // Force clear all caches (for debugging)
+  if (type === 'CLEAR_ALL_CACHES') {
+    event.waitUntil(
+      caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
     );
   }
 });
@@ -236,7 +272,6 @@ async function syncStudyProgress() {
       if (!cached) continue;
       const data = await cached.json();
       
-      // Try to sync with server
       const response = await fetch('/api/trpc/progress.addXp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -248,7 +283,6 @@ async function syncStudyProgress() {
         await cache.delete(request);
       }
     } catch (e) {
-      // Will retry on next sync
       console.log('[SW] Sync failed, will retry:', e.message);
     }
   }
