@@ -4,6 +4,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-heading: 'Space Grotesk', system-ui, sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -43,15 +45,15 @@
 }
 
 :root {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-600);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
+  --primary: oklch(0.47 0.12 195);
+  --primary-foreground: oklch(0.98 0.005 195);
+  --sidebar-primary: oklch(0.52 0.13 195);
+  --sidebar-primary-foreground: oklch(0.98 0.005 195);
+  --chart-1: oklch(0.72 0.12 195);
+  --chart-2: oklch(0.57 0.13 195);
+  --chart-3: oklch(0.47 0.12 195);
+  --chart-4: oklch(0.37 0.10 195);
+  --chart-5: oklch(0.30 0.08 195);
   --radius: 0.65rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.235 0.015 65);
@@ -79,10 +81,10 @@
 }
 
 .dark {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-500);
-  --sidebar-primary-foreground: var(--color-blue-50);
+  --primary: oklch(0.62 0.14 195);
+  --primary-foreground: oklch(0.15 0.005 195);
+  --sidebar-primary: oklch(0.62 0.14 195);
+  --sidebar-primary-foreground: oklch(0.15 0.005 195);
   --background: oklch(0.141 0.005 285.823);
   --foreground: oklch(0.85 0.005 65);
   --card: oklch(0.21 0.006 285.885);
@@ -100,11 +102,11 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.488 0.243 264.376);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
+  --chart-1: oklch(0.72 0.12 195);
+  --chart-2: oklch(0.57 0.13 195);
+  --chart-3: oklch(0.47 0.12 195);
+  --chart-4: oklch(0.37 0.10 195);
+  --chart-5: oklch(0.30 0.08 195);
   --sidebar: oklch(0.21 0.006 285.885);
   --sidebar-foreground: oklch(0.85 0.005 65);
   --sidebar-accent: oklch(0.274 0.006 286.033);
@@ -174,4 +176,32 @@
       max-width: 1280px; /* Standard content width */
     }
   }
+}
+
+/* MedFocus Custom Animations */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes count-up {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.animate-slide-in {
+  animation: slide-in-left 0.25s ease-out forwards;
+}
+
+.animate-count {
+  animation: count-up 0.4s ease-out forwards;
 }
