@@ -27,6 +27,8 @@ import GamificationPanel from '../components/medfocus/GamificationPanel';
 import NotificationSettingsPanel from '../components/medfocus/NotificationSettings';
 import PricingPlans from '../components/medfocus/PricingPlans';
 import AcademicResourcesPanel from '../components/medfocus/AcademicResourcesPanel';
+import SpacedRepetitionPanel from '../components/medfocus/SpacedRepetitionPanel';
+import ClassroomPanel from '../components/medfocus/ClassroomPanel';
 import XPToast from '../components/medfocus/XPToast';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
@@ -139,6 +141,8 @@ export default function Home() {
       case 'notifications': return <NotificationSettingsPanel />;
       case 'pricing': return <PricingPlans />;
       case 'resources': return <AcademicResourcesPanel />;
+      case 'spacedRepetition': return <SpacedRepetitionPanel />;
+      case 'classroom': return <ClassroomPanel user={localUser} />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{
@@ -197,7 +201,9 @@ export default function Home() {
                currentView === 'resources' ? 'Recursos Acadêmicos' :
                currentView === 'validated-library' ? 'Conteúdo Validado' :
                currentView === 'quiz' ? 'Quiz Avançado' :
-               currentView === 'professor' ? 'Painel do Professor' : currentView}
+               currentView === 'professor' ? 'Painel do Professor' :
+               currentView === 'spacedRepetition' ? 'Revisão Espaçada SM-2' :
+               currentView === 'classroom' ? 'Sala de Aula' : currentView}
             </h2>
           </div>
           <div className="flex items-center gap-2">

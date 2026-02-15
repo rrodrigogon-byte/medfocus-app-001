@@ -79,7 +79,9 @@ export type View =
   | 'gamification'
   | 'pricing'
   | 'notifications'
-  | 'resources';
+  | 'resources'
+  | 'spacedRepetition'
+  | 'classroom';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {

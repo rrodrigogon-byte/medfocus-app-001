@@ -39,3 +39,11 @@
 - [x] Painel de Recursos Acadêmicos (grades USP, livros, artigos, teses)
 - [x] Instalar pacotes do commit GitHub (socket.io, bcryptjs, etc.)
 - [x] Corrigir erro de deploy: remover better-sqlite3 que causa falha no deploy
+- [x] Corrigir erro de React duplicado (invalid hook call / multiple copies of React)
+- [x] Hub de Materiais com estudos validados reais e botões funcionais (Ler, Quiz, Cards, Mapa, Resumo)
+- [x] Grades curriculares reais de UNICAMP, UFMG, UFBA
+- [x] Sistema de revisão espaçada SM-2 (Anki-like) para flashcards
+- [x] Controle de salas e atividades por professores
+- [x] MaterialViewer migrado para tRPC (removido Google GenAI do frontend)
+- [x] 30 materiais acadêmicos validados de 7 universidades
+- [x] ClassroomPanel com gestão de salas, atividades e progresso de alunos

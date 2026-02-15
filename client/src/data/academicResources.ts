@@ -440,6 +440,259 @@ export const UNIVERSITIES: University[] = [
       },
     ]
   },
+  {
+    id: 'ufmg',
+    name: 'Universidade Federal de Minas Gerais - Faculdade de Medicina',
+    shortName: 'UFMG (FM)',
+    state: 'MG',
+    city: 'Belo Horizonte',
+    type: 'federal',
+    ranking: 3,
+    semesters: [
+      {
+        number: 1, year: 1, half: 1, label: '1º Semestre',
+        disciplines: [
+          { code: 'IMA175', name: 'Anatomia Sistêmica', hours: 120, category: 'basica' },
+          { code: 'BIQ119', name: 'Bioquímica I', hours: 90, category: 'basica' },
+          { code: 'GEE006', name: 'Genética', hours: 60, category: 'basica' },
+          { code: 'MOF057', name: 'Biologia Celular Aplicada à Medicina', hours: 60, category: 'basica' },
+          { code: 'MOF611', name: 'Embriologia Médica', hours: 45, category: 'basica' },
+          { code: 'MED143', name: 'Introdução à Pesquisa Científica I', hours: 30, category: 'etica_humanidades' },
+          { code: 'MPS118', name: 'Ciências Sociais Aplicadas à Saúde', hours: 60, category: 'saude_publica' },
+        ]
+      },
+      {
+        number: 2, year: 1, half: 2, label: '2º Semestre',
+        disciplines: [
+          { code: 'FIB124', name: 'Biofísica e Fisiologia', hours: 120, category: 'basica' },
+          { code: 'BIQ608', name: 'Imunologia Médica', hours: 60, category: 'basica' },
+          { code: 'MOF060', name: 'Neuroanatomia Médica', hours: 90, category: 'basica' },
+          { code: 'MOF058', name: 'Histofisiologia dos Sistemas', hours: 90, category: 'basica' },
+          { code: 'MED146', name: 'Tutoria', hours: 30, category: 'etica_humanidades' },
+          { code: 'PSQ001', name: 'Bases Humanísticas e Psicologia Médica', hours: 45, category: 'etica_humanidades' },
+          { code: 'MED145', name: 'Iniciação à Atenção Primária à Saúde I', hours: 60, category: 'saude_publica' },
+        ]
+      },
+      {
+        number: 3, year: 2, half: 1, label: '3º Semestre',
+        disciplines: [
+          { name: 'Farmacologia I', hours: 90, category: 'basica' },
+          { name: 'Patologia Geral', hours: 120, category: 'basica' },
+          { name: 'Microbiologia', hours: 90, category: 'basica' },
+          { name: 'Parasitologia', hours: 60, category: 'basica' },
+          { name: 'Semiologia Médica I', hours: 120, category: 'clinica' },
+        ]
+      },
+      {
+        number: 4, year: 2, half: 2, label: '4º Semestre',
+        disciplines: [
+          { name: 'Farmacologia II', hours: 90, category: 'basica' },
+          { name: 'Patologia Especial', hours: 120, category: 'basica' },
+          { name: 'Semiologia Médica II', hours: 120, category: 'clinica' },
+          { name: 'Saúde Coletiva I', hours: 60, category: 'saude_publica' },
+          { name: 'Psicologia Médica', hours: 30, category: 'etica_humanidades' },
+        ]
+      },
+      {
+        number: 5, year: 3, half: 1, label: '5º Semestre',
+        disciplines: [
+          { name: 'Clínica Médica I', hours: 180, category: 'clinica' },
+          { name: 'Cirurgia I', hours: 120, category: 'cirurgica' },
+          { name: 'Psiquiatria I', hours: 60, category: 'clinica' },
+          { name: 'Diagnóstico por Imagem', hours: 60, category: 'clinica' },
+          { name: 'Anatomia Patológica I', hours: 90, category: 'basica' },
+        ]
+      },
+      {
+        number: 6, year: 3, half: 2, label: '6º Semestre',
+        disciplines: [
+          { name: 'Clínica Médica II', hours: 180, category: 'clinica' },
+          { name: 'Cirurgia II', hours: 120, category: 'cirurgica' },
+          { name: 'Anatomia Patológica II', hours: 60, category: 'basica' },
+          { name: 'Pediatria I', hours: 90, category: 'clinica' },
+          { name: 'Medicina Legal', hours: 60, category: 'etica_humanidades' },
+        ]
+      },
+      {
+        number: 7, year: 4, half: 1, label: '7º Semestre',
+        disciplines: [
+          { name: 'Clínica Médica III', hours: 180, category: 'clinica' },
+          { name: 'Ginecologia Básica', hours: 120, category: 'clinica' },
+          { name: 'Pediatria II', hours: 90, category: 'clinica' },
+          { name: 'Ortopedia e Traumatologia', hours: 60, category: 'cirurgica' },
+        ]
+      },
+      {
+        number: 8, year: 4, half: 2, label: '8º Semestre',
+        disciplines: [
+          { name: 'Clínica Médica IV', hours: 120, category: 'clinica' },
+          { name: 'Obstetrícia', hours: 120, category: 'clinica' },
+          { name: 'Oftalmologia', hours: 60, category: 'clinica' },
+          { name: 'Otorrinolaringologia', hours: 60, category: 'clinica' },
+          { name: 'Dermatologia', hours: 60, category: 'clinica' },
+        ]
+      },
+      {
+        number: 9, year: 5, half: 1, label: '9º Semestre (Internato)',
+        disciplines: [
+          { name: 'Internato em Clínica Médica', hours: 480, category: 'internato' },
+          { name: 'Internato em Cirurgia', hours: 240, category: 'internato' },
+        ]
+      },
+      {
+        number: 10, year: 5, half: 2, label: '10º Semestre (Internato)',
+        disciplines: [
+          { name: 'Internato em Pediatria', hours: 360, category: 'internato' },
+          { name: 'Internato em Ginecologia e Obstetrícia', hours: 360, category: 'internato' },
+        ]
+      },
+      {
+        number: 11, year: 6, half: 1, label: '11º Semestre (Internato)',
+        disciplines: [
+          { name: 'Internato em Urgência e Emergência', hours: 360, category: 'internato' },
+          { name: 'Internato em Saúde Mental', hours: 240, category: 'internato' },
+          { name: 'Internato em Saúde Coletiva', hours: 120, category: 'internato' },
+        ]
+      },
+      {
+        number: 12, year: 6, half: 2, label: '12º Semestre (Internato)',
+        disciplines: [
+          { name: 'Internato Eletivo', hours: 480, category: 'internato' },
+          { name: 'Internato em Medicina de Família', hours: 240, category: 'internato' },
+        ]
+      },
+    ]
+  },
+  {
+    id: 'ufba',
+    name: 'Universidade Federal da Bahia - Faculdade de Medicina da Bahia',
+    shortName: 'UFBA (FMB)',
+    state: 'BA',
+    city: 'Salvador',
+    type: 'federal',
+    ranking: 5,
+    semesters: [
+      {
+        number: 1, year: 1, half: 1, label: '1º Semestre',
+        disciplines: [
+          { code: 'BIOE09', name: 'Biologia Celular e Molecular Aplicada à Medicina', hours: 60, category: 'basica' },
+          { code: 'ICSG51', name: 'Histologia Médica I', hours: 60, category: 'basica' },
+          { code: 'ICSG01', name: 'Anatomia de Sistemas I', hours: 90, category: 'basica' },
+          { code: 'ICSG02', name: 'Bioquímica Médica I', hours: 60, category: 'basica' },
+          { code: 'MEDD78', name: 'Urgência e Emergência I', hours: 30, category: 'clinica' },
+          { code: 'MEDD80', name: 'Bioética e Ética Médica I', hours: 90, category: 'etica_humanidades' },
+        ]
+      },
+      {
+        number: 2, year: 1, half: 2, label: '2º Semestre',
+        disciplines: [
+          { code: 'ICSG03', name: 'Biofísica III', hours: 45, category: 'basica' },
+          { code: 'ICSG52', name: 'Histologia Médica II', hours: 60, category: 'basica' },
+          { code: 'ICSG05', name: 'Neuroanatomia Humana', hours: 60, category: 'basica' },
+          { code: 'ICSG06', name: 'Fisiologia Médica Geral I', hours: 90, category: 'basica' },
+          { code: 'ICSG07', name: 'Anatomia de Sistemas II', hours: 60, category: 'basica' },
+          { code: 'MEDD83', name: 'Epidemiologia', hours: 30, category: 'saude_publica' },
+          { code: 'MEDD81', name: 'Pediatria I', hours: 60, category: 'clinica' },
+        ]
+      },
+      {
+        number: 3, year: 2, half: 1, label: '3º Semestre',
+        disciplines: [
+          { code: 'ICSG09', name: 'Bioquímica Médica II', hours: 30, category: 'basica' },
+          { code: 'ICSG10', name: 'Fisiologia dos Órgãos e Sistemas', hours: 90, category: 'basica' },
+          { code: 'ICSG11', name: 'Anatomia de Sistemas III', hours: 60, category: 'basica' },
+          { code: 'MEDD65', name: 'Semiologia Médica', hours: 165, category: 'clinica' },
+          { code: 'MEDD86', name: 'Medicina Social I', hours: 75, category: 'saude_publica' },
+        ]
+      },
+      {
+        number: 4, year: 2, half: 2, label: '4º Semestre',
+        disciplines: [
+          { code: 'ICSG12', name: 'Parasitologia Humana II', hours: 45, category: 'basica' },
+          { code: 'ICSG13', name: 'Farmacologia I', hours: 60, category: 'basica' },
+          { code: 'ICSG14', name: 'Microbiologia V', hours: 60, category: 'basica' },
+          { code: 'ISCA83', name: 'Política de Saúde I', hours: 45, category: 'saude_publica' },
+          { code: 'MEDD88', name: 'Medicina de Família e Comunidade I', hours: 165, category: 'saude_publica' },
+          { code: 'MEDD89', name: 'Imunopatologia', hours: 75, category: 'basica' },
+        ]
+      },
+      {
+        number: 5, year: 3, half: 1, label: '5º Semestre',
+        disciplines: [
+          { code: 'ICSG15', name: 'Farmacologia II', hours: 60, category: 'basica' },
+          { code: 'MEDD01', name: 'Clínica Médica I', hours: 150, category: 'clinica' },
+          { code: 'MEDD02', name: 'Técnica Operatória e Cirurgia Experimental', hours: 60, category: 'cirurgica' },
+          { code: 'MEDD03', name: 'Diagnóstico por Imagem I', hours: 30, category: 'clinica' },
+          { code: 'MEDD04', name: 'Anatomia Patológica I', hours: 75, category: 'basica' },
+          { code: 'MEDD05', name: 'Saúde Mental I', hours: 45, category: 'clinica' },
+        ]
+      },
+      {
+        number: 6, year: 3, half: 2, label: '6º Semestre',
+        disciplines: [
+          { code: 'MEDD98', name: 'Clínica Médica II', hours: 165, category: 'clinica' },
+          { code: 'MEDD99', name: 'Cirurgia I', hours: 45, category: 'cirurgica' },
+          { code: 'MEDE01', name: 'Anatomia Patológica II', hours: 60, category: 'basica' },
+          { code: 'MEDE04', name: 'Pediatria II', hours: 75, category: 'clinica' },
+          { code: 'MEDE05', name: 'Ginecologia e Obstetrícia I', hours: 45, category: 'clinica' },
+          { code: 'MEDE06', name: 'Medicina Legal', hours: 30, category: 'etica_humanidades' },
+        ]
+      },
+      {
+        number: 7, year: 4, half: 1, label: '7º Semestre',
+        disciplines: [
+          { code: 'MEDE07', name: 'Clínica Médica III', hours: 90, category: 'clinica' },
+          { code: 'MEDE08', name: 'Cirurgia II', hours: 30, category: 'cirurgica' },
+          { code: 'MEDE09', name: 'Ortopedia e Traumatologia', hours: 60, category: 'cirurgica' },
+          { code: 'MEDE10', name: 'Oftalmologia', hours: 105, category: 'clinica' },
+          { code: 'MEDE11', name: 'Otorrinolaringologia', hours: 60, category: 'clinica' },
+          { code: 'MEDE12', name: 'Dermatologia', hours: 45, category: 'clinica' },
+          { code: 'MEDE13', name: 'Urologia', hours: 60, category: 'clinica' },
+        ]
+      },
+      {
+        number: 8, year: 4, half: 2, label: '8º Semestre',
+        disciplines: [
+          { code: 'MEDE16', name: 'Clínica Médica IV', hours: 120, category: 'clinica' },
+          { code: 'MEDE17', name: 'Cirurgia III', hours: 75, category: 'cirurgica' },
+          { code: 'MEDE18', name: 'Ginecologia e Obstetrícia II', hours: 45, category: 'clinica' },
+          { code: 'MEDE19', name: 'Saúde Mental III', hours: 60, category: 'clinica' },
+          { code: 'MEDE21', name: 'Pediatria IV', hours: 45, category: 'clinica' },
+          { code: 'MEDE56', name: 'Emergência Médica', hours: 30, category: 'clinica' },
+        ]
+      },
+      {
+        number: 9, year: 5, half: 1, label: '9º Semestre (Internato)',
+        disciplines: [
+          { name: 'Internato em Clínica Médica', hours: 330, category: 'internato' },
+          { name: 'Internato em Cirurgia', hours: 330, category: 'internato' },
+          { name: 'Internato em Pediatria', hours: 330, category: 'internato' },
+        ]
+      },
+      {
+        number: 10, year: 5, half: 2, label: '10º Semestre (Internato)',
+        disciplines: [
+          { name: 'Internato em Ginecologia e Obstetrícia', hours: 330, category: 'internato' },
+          { name: 'Internato em Saúde Coletiva', hours: 330, category: 'internato' },
+          { name: 'Internato em Saúde Mental', hours: 330, category: 'internato' },
+        ]
+      },
+      {
+        number: 11, year: 6, half: 1, label: '11º Semestre (Internato)',
+        disciplines: [
+          { name: 'Internato em Urgência e Emergência', hours: 330, category: 'internato' },
+          { name: 'Internato Eletivo I', hours: 330, category: 'internato' },
+        ]
+      },
+      {
+        number: 12, year: 6, half: 2, label: '12º Semestre (Internato)',
+        disciplines: [
+          { name: 'Internato Eletivo II', hours: 330, category: 'internato' },
+          { name: 'Internato em Medicina de Família', hours: 330, category: 'internato' },
+        ]
+      },
+    ]
+  },
 ];
 
 // ============================================================

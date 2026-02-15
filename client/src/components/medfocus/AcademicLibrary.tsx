@@ -7,8 +7,9 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { AcademicMaterial, MaterialFilter, MaterialType, Semester } from '../../types';
 import MaterialUpload from './MaterialUpload';
 import MaterialViewer from './MaterialViewer';
+import { VALIDATED_MATERIALS, UNIVERSITIES_EXPANDED } from '../../data/academicMaterials';
 
-// Mock data - In production, this would come from API/database
+// Validated materials from expanded database + original mock data
 const MOCK_MATERIALS: AcademicMaterial[] = [
   {
     id: '1',
@@ -129,14 +130,7 @@ const MOCK_MATERIALS: AcademicMaterial[] = [
   },
 ];
 
-const UNIVERSITIES = [
-  { id: 'usp', name: 'USP', state: 'SP' },
-  { id: 'unicamp', name: 'UNICAMP', state: 'SP' },
-  { id: 'ufrj', name: 'UFRJ', state: 'RJ' },
-  { id: 'unifesp', name: 'UNIFESP', state: 'SP' },
-  { id: 'ufmg', name: 'UFMG', state: 'MG' },
-  { id: 'ufrgs', name: 'UFRGS', state: 'RS' },
-];
+const UNIVERSITIES = UNIVERSITIES_EXPANDED.map(u => ({ id: u.id, name: u.name, state: u.state }));
 
 const MATERIAL_TYPES: { value: MaterialType; label: string; icon: string }[] = [
   { value: 'apostila', label: 'Apostilas', icon: 'M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25' },
@@ -148,8 +142,13 @@ const MATERIAL_TYPES: { value: MaterialType; label: string; icon: string }[] = [
 ];
 
 const SUBJECTS = [
-  'Anatomia', 'Fisiologia', 'Farmacologia', 'Patologia', 'Cardiologia',
-  'Neurologia', 'Pediatria', 'Ginecologia', 'Cirurgia', 'Clínica Médica'
+  'Anatomia Humana', 'Histologia e Embriologia', 'Bioquímica', 'Biologia Celular',
+  'Fisiologia', 'Microbiologia e Imunologia', 'Parasitologia', 'Neuroanatomia',
+  'Patologia Geral', 'Farmacologia', 'Semiologia Médica',
+  'Clínica Médica', 'Cirurgia Geral', 'Psiquiatria',
+  'Pediatria', 'Ginecologia e Obstetrícia', 'Ortopedia', 'Dermatologia',
+  'Medicina de Emergência', 'Saúde Coletiva', 'Cardiologia', 'Infectologia',
+  'Endocrinologia', 'Radiologia', 'Preparação para Residência'
 ];
 
 
@@ -271,7 +270,7 @@ const MaterialCard = ({ material, viewMode, getTypeColor, onClick }: MaterialCar
 
 
 const AcademicLibrary: React.FC = () => {
-  const [materials, setMaterials] = useState<AcademicMaterial[]>(MOCK_MATERIALS);
+  const [materials, setMaterials] = useState<AcademicMaterial[]>([...VALIDATED_MATERIALS, ...MOCK_MATERIALS]);
   const [filter, setFilter] = useState<MaterialFilter>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');

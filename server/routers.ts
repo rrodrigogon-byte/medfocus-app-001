@@ -250,6 +250,61 @@ Retorne um JSON com esta estrutura exata:
         const content = response.choices[0]?.message?.content;
         return typeof content === "string" ? content : "Desculpe, não consegui processar sua pergunta.";
       }),
+
+    generateQuiz: publicProcedure
+      .input(z.object({ title: z.string(), subject: z.string(), description: z.string().optional() }))
+      .mutation(async ({ input }) => {
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: "Você é um professor de medicina brasileiro especialista em elaborar questões de prova. Gere questões no estilo ENARE/Residência Médica. Retorne JSON válido." },
+            { role: "user", content: `Gere 5 questões de múltipla escolha sobre: ${input.title} (${input.subject}). ${input.description || ''} Retorne JSON: {"questions": [{"question": "...", "options": ["A", "B", "C", "D"], "correctIndex": 0, "explanation": "...", "difficulty": "easy|medium|hard"}]}` },
+          ],
+          response_format: { type: "json_schema", json_schema: { name: "quiz", strict: true, schema: { type: "object", properties: { questions: { type: "array", items: { type: "object", properties: { question: { type: "string" }, options: { type: "array", items: { type: "string" } }, correctIndex: { type: "number" }, explanation: { type: "string" }, difficulty: { type: "string" } }, required: ["question", "options", "correctIndex", "explanation", "difficulty"], additionalProperties: false } } }, required: ["questions"], additionalProperties: false } } },
+        });
+        const content = response.choices[0]?.message?.content;
+        return typeof content === "string" ? JSON.parse(content) : { questions: [] };
+      }),
+
+    generateFlashcards: publicProcedure
+      .input(z.object({ title: z.string(), subject: z.string(), description: z.string().optional() }))
+      .mutation(async ({ input }) => {
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: "Você é um professor de medicina brasileiro. Gere flashcards de alta qualidade para revisão espaçada. Retorne JSON válido." },
+            { role: "user", content: `Gere 8 flashcards sobre: ${input.title} (${input.subject}). ${input.description || ''} Retorne JSON: {"cards": [{"front": "Pergunta", "back": "Resposta detalhada com explicação", "difficulty": "easy|medium|hard"}]}` },
+          ],
+          response_format: { type: "json_schema", json_schema: { name: "flashcards", strict: true, schema: { type: "object", properties: { cards: { type: "array", items: { type: "object", properties: { front: { type: "string" }, back: { type: "string" }, difficulty: { type: "string" } }, required: ["front", "back", "difficulty"], additionalProperties: false } } }, required: ["cards"], additionalProperties: false } } },
+        });
+        const content = response.choices[0]?.message?.content;
+        return typeof content === "string" ? JSON.parse(content) : { cards: [] };
+      }),
+
+    generateMindMap: publicProcedure
+      .input(z.object({ title: z.string(), subject: z.string(), description: z.string().optional() }))
+      .mutation(async ({ input }) => {
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: "Você é um professor de medicina brasileiro. Gere um mapa mental estruturado em formato de árvore. Retorne JSON válido." },
+            { role: "user", content: `Gere um mapa mental sobre: ${input.title} (${input.subject}). ${input.description || ''} Retorne JSON: {"title": "Tema central", "nodes": [{"label": "Subtema", "children": [{"label": "Detalhe", "children": []}]}]}` },
+          ],
+          response_format: { type: "json_schema", json_schema: { name: "mindmap", strict: true, schema: { type: "object", properties: { title: { type: "string" }, nodes: { type: "array", items: { type: "object", properties: { label: { type: "string" }, children: { type: "array", items: { type: "object", properties: { label: { type: "string" }, children: { type: "array", items: { type: "object", properties: { label: { type: "string" } }, required: ["label"], additionalProperties: false } } }, required: ["label", "children"], additionalProperties: false } } }, required: ["label", "children"], additionalProperties: false } } }, required: ["title", "nodes"], additionalProperties: false } } },
+        });
+        const content = response.choices[0]?.message?.content;
+        return typeof content === "string" ? JSON.parse(content) : { title: input.title, nodes: [] };
+      }),
+
+    generateSummary: publicProcedure
+      .input(z.object({ title: z.string(), subject: z.string(), description: z.string().optional() }))
+      .mutation(async ({ input }) => {
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: "Você é um professor de medicina brasileiro. Gere um resumo acadêmico completo com referências. Use markdown para formatação." },
+            { role: "user", content: `Gere um resumo acadêmico completo sobre: ${input.title} (${input.subject}). ${input.description || ''} Inclua: conceitos-chave, fisiopatologia, diagnóstico diferencial, tratamento e referências bibliográficas reais.` },
+          ],
+        });
+        const content = response.choices[0]?.message?.content;
+        return typeof content === "string" ? content : "Resumo indisponível.";
+      }),
   }),
 });
 
