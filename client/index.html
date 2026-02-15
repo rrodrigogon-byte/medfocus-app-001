@@ -23,13 +23,82 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').then(reg => {
-            console.log('MedFocus SW registered:', reg.scope);
-          }).catch(err => console.log('SW registration failed:', err));
-        });
-      }
+      // SW Cache Buster v8 — Force clear stale caches before registering new SW
+      (async function() {
+        if (!('serviceWorker' in navigator)) return;
+
+        const SW_VERSION = 'medfocus-v8';
+
+        try {
+          // Step 1: Check if we need to bust caches
+          // Look for stale Vite deps in CacheStorage
+          const cacheNames = await caches.keys();
+          const staleFound = cacheNames.some(name => !name.includes(SW_VERSION.split('-').pop()));
+
+          // Step 2: Clear ALL caches that aren't from current SW version
+          const validCaches = ['medfocus-v8', 'medfocus-study-v2', 'medfocus-api-v2'];
+          for (const name of cacheNames) {
+            if (!validCaches.includes(name)) {
+              console.log('[CacheBuster] Deleting stale cache:', name);
+              await caches.delete(name);
+            }
+          }
+
+          // Step 3: Also check each valid cache for stale Vite deps entries
+          for (const name of validCaches) {
+            try {
+              const cache = await caches.open(name);
+              const keys = await cache.keys();
+              for (const req of keys) {
+                const url = req.url;
+                // Delete any cached Vite deps (node_modules/.vite/deps/)
+                if (url.includes('.vite/deps/') || url.includes('/@fs/') || url.includes('/@vite/')) {
+                  console.log('[CacheBuster] Removing stale Vite dep:', url.split('/').pop());
+                  await cache.delete(req);
+                }
+              }
+            } catch (e) {
+              // Cache might not exist yet
+            }
+          }
+
+          // Step 4: Unregister old SWs and register fresh
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (const reg of registrations) {
+            // Force update check
+            try { await reg.update(); } catch(e) {}
+          }
+
+          // Step 5: Register the SW
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(reg => {
+              console.log('MedFocus SW registered:', reg.scope);
+              // Force immediate activation of new SW
+              if (reg.waiting) {
+                reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+              }
+              reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing;
+                if (newWorker) {
+                  newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'activated') {
+                      console.log('[SW] New service worker activated');
+                    }
+                  });
+                }
+              });
+            }).catch(err => console.log('SW registration failed:', err));
+          });
+        } catch (e) {
+          console.log('[CacheBuster] Error:', e);
+          // Fallback: just register SW normally
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').then(reg => {
+              console.log('MedFocus SW registered (fallback):', reg.scope);
+            }).catch(err => console.log('SW registration failed:', err));
+          });
+        }
+      })();
     </script>
     <script
       defer

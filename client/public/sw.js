@@ -36,10 +36,10 @@ self.addEventListener('install', (event) => {
 // ─── ACTIVATE ────────────────────────────────────
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
+    caches.keys().then(async (keys) => {
       // Delete ALL old caches — only keep current version caches
       const validCaches = [CACHE_NAME, STUDY_CACHE, API_CACHE];
-      return Promise.all(
+      await Promise.all(
         keys.map((key) => {
           if (!validCaches.includes(key)) {
             console.log('[SW] Deleting old cache:', key);
@@ -48,6 +48,20 @@ self.addEventListener('activate', (event) => {
           return Promise.resolve();
         })
       );
+      // Also purge any stale Vite deps entries from valid caches
+      for (const name of validCaches) {
+        try {
+          const cache = await caches.open(name);
+          const entries = await cache.keys();
+          for (const req of entries) {
+            const u = req.url;
+            if (u.includes('.vite/deps/') || u.includes('/@fs/') || u.includes('/@vite/') || u.includes('node_modules/')) {
+              console.log('[SW] Purging stale Vite entry:', u.split('/').pop());
+              await cache.delete(req);
+            }
+          }
+        } catch (e) { /* cache may not exist */ }
+      }
     })
   );
   self.clients.claim();
@@ -221,6 +235,11 @@ self.addEventListener('message', (event) => {
         event.source.postMessage({ type: 'CACHE_STATUS', data: status });
       })
     );
+  }
+
+  // Allow page to force SW activation
+  if (type === 'SKIP_WAITING') {
+    self.skipWaiting();
   }
 
   // Force clear all caches (for debugging)
