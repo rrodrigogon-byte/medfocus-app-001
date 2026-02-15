@@ -451,16 +451,19 @@ const AcademicLibrary: React.FC = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 
 // Material Card Component
-const MaterialCard: React.FC<{ 
-  material: AcademicMaterial; 
+interface MaterialCardProps {
+  material: AcademicMaterial;
   viewMode: 'grid' | 'list';
   getTypeColor: (type: MaterialType) => string;
   onClick: (material: AcademicMaterial) => void;
-}> = ({ material, viewMode, getTypeColor, onClick }) => {
+}
+
+const MaterialCard: React.FC<MaterialCardProps> = ({ material, viewMode, getTypeColor, onClick }) => {
   if (viewMode === 'list') {
     return (
       <div 
@@ -565,7 +568,6 @@ const MaterialCard: React.FC<{
         </div>
       </div>
     </div>
-    </>
   );
 };
 

@@ -3,7 +3,7 @@
  * Design: Medical Precision — Teal accent, Outfit display, Plus Jakarta Sans body
  */
 import React, { useState, useEffect } from 'react';
-import { User, View } from '../types';
+import { User, View, UserRole, MedicalYear } from '../types';
 import Login from '../components/medfocus/Login';
 import Dashboard from '../components/medfocus/Dashboard';
 import Planner from '../components/medfocus/Planner';
@@ -18,6 +18,9 @@ import WeeklyStudyChecklist from '../components/medfocus/WeeklyStudyChecklist';
 import PreloadedStudy from '../components/medfocus/PreloadedStudy';
 import GamificationPanel from '../components/medfocus/GamificationPanel';
 import AcademicLibrary from '../components/medfocus/AcademicLibrary';
+import ValidatedLibrary from '../components/medfocus/ValidatedLibrary';
+import ProgressiveQuizSystem from '../components/medfocus/ProgressiveQuizSystem';
+import ProfessorDashboard from '../components/medfocus/ProfessorDashboard';
 import { useTheme } from '../contexts/ThemeContext';
 
 const MedFocusApp: React.FC = () => {
@@ -32,10 +35,35 @@ const MedFocusApp: React.FC = () => {
     }
   }, []);
 
-  const handleLogin = (name: string, email: string) => {
-    const newUser = { name, email, isLoggedIn: true };
+  const handleLogin = (name: string, email: string, role: UserRole = 'student') => {
+    const newUser: User = { 
+      id: `user_${Date.now()}`,
+      name, 
+      email, 
+      isLoggedIn: true, 
+      role,
+      // Mock professor profile if role is professor
+      ...(role === 'professor' && {
+        professorProfile: {
+          id: `prof_${Date.now()}`,
+          name,
+          email,
+          universityId: 'usp',
+          universityName: 'USP',
+          role: 'professor',
+          specialties: ['Cardiologia', 'Clínica Médica'],
+          verifiedCredentials: true,
+          canValidateMaterials: true,
+          canCreateStudyRooms: true,
+          canModerateContent: true,
+          materialsContributed: 12,
+          studentsImpacted: 156,
+          validationsPerformed: 34,
+        }
+      })
+    };
     setUser(newUser);
-    setCurrentView('dashboard');
+    setCurrentView(role === 'professor' ? 'dashboard' : 'dashboard');
     localStorage.setItem('medfocus_user', JSON.stringify(newUser));
   };
 
