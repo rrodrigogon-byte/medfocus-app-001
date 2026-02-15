@@ -59,3 +59,4 @@
 - [x] Histórico de materiais gerados — persistir no banco para evitar re-geração
 - [x] Exportação de PDF funcional via rota tRPC no servidor
 - [x] Personalização por perfil do aluno — adaptar conteúdo por ano/semestre e desempenho
+- [x] Corrigir erro de React duplicado (useState null) no TRPCProvider causando tela branca

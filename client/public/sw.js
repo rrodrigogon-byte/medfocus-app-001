@@ -1,9 +1,10 @@
 /**
- * MedFocus — Service Worker v5
+ * MedFocus — Service Worker v7
  * Enhanced offline support: caches flashcards, quizzes, study materials
  * + Push Notifications + Background Sync
+ * v7: Force cache bust to clear stale Vite chunks
  */
-const CACHE_NAME = 'medfocus-v6';
+const CACHE_NAME = 'medfocus-v7';
 const STUDY_CACHE = 'medfocus-study-v1';
 const API_CACHE = 'medfocus-api-v1';
 
