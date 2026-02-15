@@ -17,6 +17,7 @@ import StudyMaterialGenerator from '../components/medfocus/StudyMaterialGenerato
 import WeeklyStudyChecklist from '../components/medfocus/WeeklyStudyChecklist';
 import PreloadedStudy from '../components/medfocus/PreloadedStudy';
 import GamificationPanel from '../components/medfocus/GamificationPanel';
+import AcademicLibrary from '../components/medfocus/AcademicLibrary';
 import { useTheme } from '../contexts/ThemeContext';
 
 const MedFocusApp: React.FC = () => {
@@ -65,7 +66,7 @@ const MedFocusApp: React.FC = () => {
       case 'research': return <GlobalResearch />;
       case 'materials': return <StudyMaterialGenerator university={user.universityId || 'USP'} year={user.currentYear || 1} subjects={['Anatomia', 'Fisiologia', 'Farmacologia', 'Clínica']} />;
       case 'weekly': return <WeeklyStudyChecklist user={user} />;
-      case 'library': return <PreloadedStudy />;
+      case 'library': return <AcademicLibrary />;
       case 'gamification': return <GamificationPanel />;
       default: return <Dashboard user={user} />;
     }
@@ -89,12 +90,12 @@ const MedFocusApp: React.FC = () => {
                currentView === 'guide' ? 'Universidades' :
                currentView === 'planner' ? 'Cronograma' :
                currentView === 'materials' ? 'Materiais de Estudo' :
+               currentView === 'library' ? 'Biblioteca Acadêmica' :
                currentView === 'timer' ? 'Pomodoro' :
                currentView === 'weekly' ? 'Checklist Semanal' :
                currentView === 'academic' ? 'Gestão Acadêmica' :
                currentView === 'assistant' ? 'MedGenie AI' :
                currentView === 'research' ? 'Pesquisa Global' :
-               currentView === 'library' ? 'Biblioteca de Estudos' :
                currentView === 'gamification' ? 'Conquistas & XP' : currentView}
             </h2>
           </div>
