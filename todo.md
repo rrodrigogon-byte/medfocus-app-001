@@ -1,0 +1,28 @@
+# MedFocus TODO
+
+- [x] Login premium com split-screen
+- [x] Dashboard com hero card e métricas
+- [x] Sidebar dark com navegação por categorias
+- [x] Hub de Universidades (8 instituições)
+- [x] Guia Acadêmico interativo
+- [x] Cronograma/Planner
+- [x] Pomodoro Timer
+- [x] MedGenie AI Assistant
+- [x] Pesquisa Global
+- [x] Gestão Acadêmica (Notas, Frequência, Relatório)
+- [x] Materiais de Estudo IA
+- [x] Checklist Semanal
+- [x] Biblioteca de Estudos pré-carregada
+- [x] Sistema de Gamificação (XP, badges, streaks)
+- [x] PWA com Service Worker
+- [x] Autenticação Gmail/OAuth integrada com Manus Auth
+- [x] Cadastro de usuários com banco de dados
+- [x] Sistema de pagamentos in-app (Stripe)
+- [x] Expandir conteúdo 4°-6° ano (Clínica Médica, Cirurgia, Pediatria, Ginecologia)
+- [x] Integrar XP com ações reais (Pomodoro, Checklist, Quiz)
+- [x] Notificações push via PWA
+- [x] Integrar IA real (LLM built-in do Manus)
+- [x] Painel de configuração de notificações
+- [x] Conteúdo expandido: Psiquiatria, Ortopedia, Dermatologia, Oftalmologia, Otorrino, Urologia
+- [x] Biblioteca Acadêmica com upload de materiais
+- [x] Correção de integração XP: callbacks reais no PreloadedStudy

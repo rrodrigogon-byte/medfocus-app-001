@@ -1,21 +1,24 @@
-
+/**
+ * MedGenie AI — Chat Interface
+ * Integrado com LLM via tRPC backend
+ */
 import React, { useState, useRef, useEffect } from 'react';
-import { askMedGenie } from '../../services/gemini';
+import { trpc } from '../../lib/trpc';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
-  isThinking?: boolean;
 }
 
 const Assistant: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'Olá! Sou o MedGenie. Notei que você está navegando pelo guia acadêmico. Posso explicar qualquer conceito do Guyton ou Harrison para você. Por onde começamos?' }
+    { role: 'assistant', content: 'Olá! Sou o **MedGenie**, seu tutor médico com IA. Posso explicar qualquer conceito de medicina, gerar resumos, criar flashcards e responder dúvidas sobre qualquer disciplina. Por onde começamos?' }
   ]);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [cloudStatus, setCloudStatus] = useState<'idle' | 'processing' | 'streaming'>('idle');
+  const [cloudStatus, setCloudStatus] = useState<'idle' | 'processing'>('idle');
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const chatMutation = trpc.ai.chat.useMutation();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -24,92 +27,114 @@ const Assistant: React.FC = () => {
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || chatMutation.isPending) return;
 
     const userMsg = input.trim();
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
-    setIsLoading(true);
     setCloudStatus('processing');
 
-    const response = await askMedGenie(userMsg);
-    setMessages(prev => [...prev, { role: 'assistant', content: response || "Sem resposta do servidor Vertex AI." }]);
-    setIsLoading(false);
+    try {
+      const response = await chatMutation.mutateAsync({ message: userMsg });
+      setMessages(prev => [...prev, { role: 'assistant', content: response || "Sem resposta no momento." }]);
+    } catch {
+      setMessages(prev => [...prev, { role: 'assistant', content: "Desculpe, ocorreu um erro ao processar sua pergunta. Tente novamente." }]);
+    }
     setCloudStatus('idle');
   };
 
+  // Simple markdown-like rendering
+  const renderContent = (text: string) => {
+    return text.split('\n').map((line, idx) => {
+      // Bold
+      const formatted = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      return <p key={idx} className={idx > 0 ? 'mt-2' : ''} dangerouslySetInnerHTML={{ __html: formatted }} />;
+    });
+  };
+
   return (
-    <div className="flex flex-col h-[calc(100vh-160px)] space-y-4">
+    <div className="flex flex-col h-[calc(100vh-160px)] space-y-4 animate-fade-in">
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-100 dark:shadow-none animate-pulse">
+          <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/70 rounded-2xl flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20">
             <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
           </div>
           <div>
-            <h2 className="text-2xl font-black text-black dark:text-white uppercase tracking-tighter">MedGenie AI</h2>
-            <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-black uppercase tracking-widest">Global Medical Intelligence Node</p>
+            <h2 className="text-2xl font-display font-bold text-foreground">MedGenie AI</h2>
+            <p className="text-[10px] text-primary font-bold uppercase tracking-widest">Tutor Médico Inteligente</p>
           </div>
         </div>
         
-        <div className="flex gap-2">
-          <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-             <div className={`w-1.5 h-1.5 rounded-full ${cloudStatus === 'idle' ? 'bg-emerald-500' : 'bg-amber-500 animate-ping'}`}></div>
-             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{cloudStatus === 'idle' ? 'Neural Link Ready' : 'Analyzing Context'}</span>
-          </div>
+        <div className="flex items-center gap-2 bg-card px-4 py-2 rounded-xl border border-border">
+          <div className={`w-1.5 h-1.5 rounded-full ${cloudStatus === 'idle' ? 'bg-emerald-500' : 'bg-amber-500 animate-ping'}`} />
+          <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
+            {cloudStatus === 'idle' ? 'Pronto' : 'Analisando...'}
+          </span>
         </div>
       </header>
 
       <div 
         ref={scrollRef}
-        className="flex-1 bg-white dark:bg-slate-900 rounded-[48px] border border-slate-200 dark:border-slate-800 shadow-sm overflow-y-auto p-10 space-y-8 scroll-smooth"
+        className="flex-1 bg-card rounded-2xl border border-border overflow-y-auto p-6 space-y-6 custom-scrollbar"
       >
         {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2`}>
-            <div className={`max-w-[85%] p-6 rounded-[32px] text-sm leading-relaxed transition-all ${
+          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-[85%] p-5 rounded-2xl text-sm leading-relaxed ${
               msg.role === 'user' 
-                ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-100 dark:shadow-none font-bold' 
-                : 'bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-medium'
+                ? 'bg-primary text-primary-foreground font-medium' 
+                : 'bg-muted text-foreground border border-border'
             }`}>
-              {msg.content.split('\n').map((line, idx) => (
-                <p key={idx} className={idx > 0 ? 'mt-3' : ''}>{line}</p>
-              ))}
-              {msg.role === 'assistant' && (
-                <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between opacity-50 group">
-                  <span className="text-[8px] font-black uppercase tracking-widest">BigQuery ID: {Math.random().toString(36).substr(2, 9)}</span>
-                </div>
-              )}
+              {renderContent(msg.content)}
             </div>
           </div>
         ))}
-        {isLoading && (
+        {chatMutation.isPending && (
           <div className="flex justify-start">
-            <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-[32px] border border-slate-200 dark:border-slate-700 w-full max-w-xs flex flex-col gap-2">
+            <div className="bg-muted p-5 rounded-2xl border border-border max-w-xs flex flex-col gap-2">
               <div className="flex gap-1.5">
-                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]" />
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]" />
               </div>
-              <p className="text-[9px] font-black text-slate-400 uppercase">Consultando Vertex AI...</p>
+              <p className="text-[9px] font-bold text-muted-foreground uppercase">Consultando IA...</p>
             </div>
           </div>
         )}
       </div>
 
-      <div className="flex gap-4 p-4 bg-white/50 dark:bg-slate-900/50 rounded-[48px] border border-slate-200 dark:border-slate-800 backdrop-blur-md">
+      {/* Quick Actions */}
+      <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
+        {[
+          'Explique o ciclo de Krebs',
+          'Diagnóstico diferencial de dor torácica',
+          'Resumo de Farmacologia Cardiovascular',
+          'Flashcards de Anatomia do Coração',
+        ].map((suggestion) => (
+          <button
+            key={suggestion}
+            onClick={() => { setInput(suggestion); }}
+            className="shrink-0 px-3 py-1.5 bg-muted text-muted-foreground text-[10px] font-semibold rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors border border-border"
+          >
+            {suggestion}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex gap-3 p-3 bg-card rounded-2xl border border-border">
         <input 
           type="text" 
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="Me fale sobre as patologias do 3º ano na UNIVAG..."
-          className="flex-1 px-8 py-5 bg-white dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500 rounded-[32px] outline-none transition-all font-bold text-black dark:text-white"
+          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+          placeholder="Pergunte qualquer coisa sobre medicina..."
+          className="flex-1 px-5 py-3 bg-background border border-border rounded-xl outline-none text-sm text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
         />
         <button 
           onClick={handleSend}
-          disabled={isLoading}
-          className="bg-indigo-600 text-white px-10 rounded-[32px] hover:bg-indigo-700 transition-all shadow-xl active:scale-95 disabled:opacity-50"
+          disabled={chatMutation.isPending}
+          className="bg-primary text-primary-foreground px-6 rounded-xl hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>
     </div>

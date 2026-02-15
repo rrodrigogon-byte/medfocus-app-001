@@ -9,7 +9,7 @@ interface WeeklyTask {
   id: string; subject: string; topic: string; day: string; completed: boolean; priority: 'high' | 'medium' | 'low'; estimatedHours: number;
 }
 
-interface Props { user: User; }
+interface Props { user: User; onChecklistComplete?: () => void; }
 
 const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
 
@@ -19,7 +19,7 @@ const priorityConfig: Record<string, { label: string; color: string; bg: string 
   low: { label: 'Baixa', color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
 };
 
-const WeeklyStudyChecklist: React.FC<Props> = ({ user }) => {
+const WeeklyStudyChecklist: React.FC<Props> = ({ user, onChecklistComplete }) => {
   const storageKey = `medfocus_weekly_checklist_${user.email.replace(/[@.]/g, '_')}`;
   const [weeklyTasks, setWeeklyTasks] = useState<WeeklyTask[]>(() => {
     const saved = localStorage.getItem(storageKey);
@@ -39,7 +39,17 @@ const WeeklyStudyChecklist: React.FC<Props> = ({ user }) => {
     setIsModalOpen(false);
   };
 
-  const toggleTask = (id: string) => setWeeklyTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+  const toggleTask = (id: string) => {
+    setWeeklyTasks(prev => {
+      const updated = prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
+      const task = prev.find(t => t.id === id);
+      // Award XP only when marking as completed (not unchecking)
+      if (task && !task.completed && onChecklistComplete) {
+        onChecklistComplete();
+      }
+      return updated;
+    });
+  };
   const deleteTask = (id: string) => setWeeklyTasks(prev => prev.filter(t => t.id !== id));
 
   const getTasksByDay = (day: string) => weeklyTasks.filter(t => t.day === day);

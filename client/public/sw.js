@@ -1,13 +1,13 @@
 /**
- * MedFocus — Service Worker
- * Cache-first strategy for offline support
+ * MedFocus — Service Worker v4
+ * Cache-first strategy for offline support + Push Notifications
  */
-const CACHE_NAME = 'medfocus-v3';
+const CACHE_NAME = 'medfocus-v4';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
+  'https://files.manuscdn.com/user_upload_by_module/session_file/310519663109238085/luEmcExPIjQEtqNO.png',
+  'https://files.manuscdn.com/user_upload_by_module/session_file/310519663109238085/YRvaGtdlMcygSIGU.png',
 ];
 
 // Install: cache static assets
@@ -37,15 +37,12 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests
   if (request.method !== 'GET') return;
 
-  // Skip external requests (APIs, CDNs for fonts are ok to cache)
   if (!url.origin.includes(self.location.origin) && !url.hostname.includes('fonts.googleapis.com') && !url.hostname.includes('fonts.gstatic.com')) {
     return;
   }
 
-  // Cache-first for static assets and fonts
   if (
     request.destination === 'style' ||
     request.destination === 'script' ||
@@ -73,7 +70,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first for HTML pages (SPA)
   event.respondWith(
     fetch(request)
       .then((response) => {
@@ -89,4 +85,81 @@ self.addEventListener('fetch', (event) => {
         });
       })
   );
+});
+
+// ─── PUSH NOTIFICATIONS ────────────────────────────────────
+self.addEventListener('push', (event) => {
+  let data = { title: 'MedFocus', body: 'Hora de estudar!', icon: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663109238085/luEmcExPIjQEtqNO.png' };
+  
+  if (event.data) {
+    try {
+      data = { ...data, ...event.data.json() };
+    } catch {
+      data.body = event.data.text();
+    }
+  }
+
+  const options = {
+    body: data.body,
+    icon: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663109238085/luEmcExPIjQEtqNO.png',
+    badge: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663109238085/luEmcExPIjQEtqNO.png',
+    vibrate: [100, 50, 100],
+    data: { url: '/' },
+    actions: [
+      { action: 'study', title: 'Estudar Agora' },
+      { action: 'later', title: 'Lembrar Depois' },
+    ],
+    tag: 'medfocus-reminder',
+    renotify: true,
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
+// Handle notification click
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  
+  if (event.action === 'later') {
+    // Schedule another reminder in 30 minutes via message to client
+    event.waitUntil(
+      self.clients.matchAll({ type: 'window' }).then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: 'SNOOZE_REMINDER', delay: 30 });
+        });
+      })
+    );
+    return;
+  }
+
+  // Open or focus the app
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      if (clients.length > 0) {
+        clients[0].focus();
+      } else {
+        self.clients.openWindow('/');
+      }
+    })
+  );
+});
+
+// Handle periodic background sync (for study reminders)
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag === 'medfocus-study-reminder') {
+    event.waitUntil(
+      self.registration.showNotification('MedFocus — Lembrete de Estudo', {
+        body: 'Mantenha seu streak ativo! Estude pelo menos 15 minutos hoje.',
+        icon: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663109238085/luEmcExPIjQEtqNO.png',
+        badge: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663109238085/luEmcExPIjQEtqNO.png',
+        vibrate: [100, 50, 100],
+        tag: 'medfocus-daily-reminder',
+        actions: [
+          { action: 'study', title: 'Estudar Agora' },
+        ],
+      })
+    );
+  }
 });

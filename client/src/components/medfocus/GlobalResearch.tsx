@@ -3,7 +3,7 @@
  * Real-time scientific research discovery
  */
 import React, { useState } from 'react';
-import { fetchGlobalResearch } from '../../services/gemini';
+import { trpc } from '../../lib/trpc';
 
 const MEDICAL_PATTERN = "https://private-us-east-1.manuscdn.com/sessionFile/IjuoZIpKtB1FShC9GQ88GW/sandbox/gZMRigkW6C4ldwaPiTYiad-img-4_1771179144000_na1fn_bWVkZm9jdXMtcGF0dGVybi1tZWRpY2Fs.png?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvSWp1b1pJcEt0QjFGU2hDOUdRODhHVy9zYW5kYm94L2daTVJpZ2tXNkM0bGR3YVBpVFlpYWQtaW1nLTRfMTc3MTE3OTE0NDAwMF9uYTFmbl9iV1ZrWm05amRYTXRjR0YwZEdWeWJpMXRaV1JwWTJGcy5wbmc~eC1vc3MtcHJvY2Vzcz1pbWFnZS9yZXNpemUsd18xOTIwLGhfMTkyMC9mb3JtYXQsd2VicC9xdWFsaXR5LHFfODAiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE3OTg3NjE2MDB9fX1dfQ__&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=PMHEGPMmfd1Swv0AgXhhFevyzzN~VHK19lnO0wpJMpMa1xkBFs25MKwhYGKPu1lRacfYiyb6mQY6aDn-7ZPjfEgLf4OLXbcaUjXntbyhH7dIJRY4o4q-Z6fS4S1OF5unM7GmbePZt37qULV4yu1SoWF2P2cm5O6XM5bvf78RYfQg5c2IKirTTrGPDacDl6JDIkXxnEjYLgnuajI8OE1BUaAKcanzKdKDgcQ072j9u3051I8TrlQPPmhykyWUFvd1HPBQj-x7emE30BcltbqkKJhwldAjac6ZQEjJn9bXbggOd7WKAFxiRV-0UJgGY6gmHbaprvV7bX6oVebJRMwlHw__";
 
@@ -22,11 +22,13 @@ const GlobalResearch: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTopic, setActiveTopic] = useState('');
 
+  const researchMutation = trpc.ai.research.useMutation();
+
   const handleSearch = async (topic: string) => {
     if (!topic.trim()) return;
     setIsLoading(true); setSearchTerm(topic); setActiveTopic(topic);
     try {
-      const result = await fetchGlobalResearch(topic);
+      const result = await researchMutation.mutateAsync({ topic });
       setResearch(result);
     } catch { setResearch("Erro ao buscar pesquisas. Verifique sua conexão e tente novamente."); }
     finally { setIsLoading(false); }

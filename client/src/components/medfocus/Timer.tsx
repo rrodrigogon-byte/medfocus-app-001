@@ -6,7 +6,11 @@ import React, { useState, useEffect, useRef } from 'react';
 
 interface TimerSettings { pomodoro: number; short: number; long: number; }
 
-const Timer: React.FC = () => {
+interface TimerProps {
+  onPomodoroComplete?: (minutes: number) => void;
+}
+
+const Timer: React.FC<TimerProps> = ({ onPomodoroComplete }) => {
   const [settings, setSettings] = useState<TimerSettings>({ pomodoro: 25, short: 5, long: 15 });
   const [mode, setMode] = useState<'pomodoro' | 'short' | 'long'>('pomodoro');
   const [timeLeft, setTimeLeft] = useState(settings.pomodoro * 60);
@@ -22,6 +26,7 @@ const Timer: React.FC = () => {
     } else if (timeLeft === 0) {
       setIsActive(false);
       if (timerRef.current) clearInterval(timerRef.current);
+      if (mode === 'pomodoro' && onPomodoroComplete) onPomodoroComplete(settings.pomodoro);
       if (Notification.permission === "granted") new Notification("MedFocus: Ciclo Concluído!", { body: "Hora de descansar ou voltar ao foco." });
     } else { if (timerRef.current) clearInterval(timerRef.current); }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };

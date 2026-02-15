@@ -5,11 +5,17 @@
  */
 import React, { useState, useEffect } from 'react';
 import { ALL_SUBJECTS, SubjectBundle, findSubjectContent } from '../../data/preloadedContent';
-import { addXP, loadGamification, saveGamification, XP_ACTIONS } from '../../data/gamification';
+import { XP_ACTIONS } from '../../data/gamification';
 
 type StudyMode = 'browse' | 'summary' | 'flashcards' | 'quiz' | 'results';
 
-const PreloadedStudy: React.FC = () => {
+interface PreloadedStudyProps {
+  onQuizComplete?: (correct: number, total: number) => void;
+  onFlashcardReview?: () => void;
+  onSubjectStudy?: (subjectName: string) => void;
+}
+
+const PreloadedStudy: React.FC<PreloadedStudyProps> = ({ onQuizComplete, onFlashcardReview, onSubjectStudy }) => {
   const [selectedSubject, setSelectedSubject] = useState<SubjectBundle | null>(null);
   const [mode, setMode] = useState<StudyMode>('browse');
   const [currentFlashcard, setCurrentFlashcard] = useState(0);
@@ -38,17 +44,14 @@ const PreloadedStudy: React.FC = () => {
     setShowExplanation(false);
     setQuizScore(0);
     setQuizAnswers([]);
-    // XP for starting study
-    const gs = loadGamification();
-    const updated = addXP({ ...gs, totalSubjectsCompleted: gs.totalSubjectsCompleted + 1 }, XP_ACTIONS.STUDY_SUBJECT, 'study_subject');
-    saveGamification(updated);
+    // XP for starting study via hook callback
+    if (onSubjectStudy) onSubjectStudy(subject.name);
   };
 
   const handleFlashcardNext = () => {
     if (!selectedSubject) return;
-    const gs = loadGamification();
-    const updated = addXP({ ...gs, totalFlashcardsReviewed: gs.totalFlashcardsReviewed + 1 }, XP_ACTIONS.REVIEW_FLASHCARD);
-    saveGamification(updated);
+    // XP via hook callback
+    if (onFlashcardReview) onFlashcardReview();
     if (currentFlashcard < selectedSubject.flashcards.length - 1) {
       setCurrentFlashcard(prev => prev + 1);
       setFlipped(false);
@@ -64,14 +67,6 @@ const PreloadedStudy: React.FC = () => {
     const isCorrect = index === selectedSubject.quiz[currentQuiz].correctIndex;
     if (isCorrect) setQuizScore(prev => prev + 1);
     setQuizAnswers(prev => [...prev, isCorrect]);
-    // XP
-    const gs = loadGamification();
-    let updated = addXP(gs, XP_ACTIONS.COMPLETE_QUIZ);
-    if (isCorrect) {
-      updated = addXP({ ...updated, totalCorrectAnswers: updated.totalCorrectAnswers + 1 }, XP_ACTIONS.CORRECT_ANSWER);
-    }
-    updated = { ...updated, totalQuizzes: updated.totalQuizzes + 1 };
-    saveGamification(updated);
   };
 
   const handleQuizNext = () => {
@@ -81,6 +76,8 @@ const PreloadedStudy: React.FC = () => {
       setSelectedAnswer(null);
       setShowExplanation(false);
     } else {
+      // Quiz completed - award XP via hook callback
+      if (onQuizComplete) onQuizComplete(quizScore, selectedSubject.quiz.length);
       setMode('results');
     }
   };

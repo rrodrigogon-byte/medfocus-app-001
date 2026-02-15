@@ -1,21 +1,32 @@
 /**
  * MedFocus App - Clinical Precision Design
- * Swiss Medical Design: Space Grotesk headings, IBM Plex Sans body
- * Teal accent (#14b8a6), slate base, rigid grid
+ * Full-stack with OAuth, tRPC, and database
  */
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import NotFound from "@/pages/NotFound";
+import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import MedFocusApp from "./pages/Home";
+import Home from "./pages/Home";
+
+function Router() {
+  return (
+    <Switch>
+      <Route path={"/"} component={Home} />
+      <Route path={"/404"} component={NotFound} />
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
 
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="light" switchable>
+      <ThemeProvider defaultTheme="dark" switchable>
         <TooltipProvider>
           <Toaster />
-          <MedFocusApp />
+          <Router />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

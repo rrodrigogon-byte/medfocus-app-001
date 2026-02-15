@@ -72,10 +72,13 @@ export type View =
   | 'materials' 
   | 'weekly' 
   | 'library' 
+  | 'studyContent'
   | 'validated-library'
   | 'quiz'
   | 'professor'
-  | 'gamification';
+  | 'gamification'
+  | 'pricing'
+  | 'notifications';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {

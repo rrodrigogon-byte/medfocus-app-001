@@ -3,7 +3,7 @@
  * AI-powered study material generation based on curriculum
  */
 import React, { useState } from 'react';
-import { generateDeepContent } from '../../services/gemini';
+import { trpc } from '../../lib/trpc';
 
 interface StudyMaterial {
   type: string; subject: string; university: string; year: number; content: any; generatedAt: string;
@@ -28,11 +28,13 @@ const StudyMaterialGenerator: React.FC<Props> = ({ university, year, subjects })
     return saved ? JSON.parse(saved) : [];
   });
 
+  const generateMutation = trpc.ai.generateContent.useMutation();
+
   const handleGenerate = async () => {
     if (!selectedSubject) return;
     setIsGenerating(true);
     try {
-      const content = await generateDeepContent(selectedSubject, university, year);
+      const content = await generateMutation.mutateAsync({ subject: selectedSubject, universityName: university, year });
       const mat: StudyMaterial = { type: materialType, subject: selectedSubject, university, year, content, generatedAt: new Date().toISOString() };
       setGeneratedMaterial(mat);
     } catch { setGeneratedMaterial(null); }
