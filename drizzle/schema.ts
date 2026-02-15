@@ -156,3 +156,27 @@ export const submissions = mysqlTable("submissions", {
 
 export type Submission = typeof submissions.$inferSelect;
 export type InsertSubmission = typeof submissions.$inferInsert;
+
+/**
+ * Generated Materials — AI-generated study content cached per user/university/subject.
+ * Avoids re-generation and provides quick access to previously generated content.
+ */
+export const generatedMaterials = mysqlTable("generated_materials", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  universityId: varchar("universityId", { length: 64 }).notNull(),
+  universityName: varchar("universityName", { length: 255 }).notNull(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  year: int("year").notNull(),
+  contentType: mysqlEnum("contentType", ["full", "summary", "flashcards", "quiz"]).default("full").notNull(),
+  content: text("content").notNull(), // JSON string with SubjectContent
+  research: text("research"), // Research text from AI
+  qualityScore: int("qualityScore"), // 0-100 user rating
+  accessCount: int("accessCount").default(1).notNull(),
+  lastAccessedAt: timestamp("lastAccessedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type GeneratedMaterial = typeof generatedMaterials.$inferSelect;
+export type InsertGeneratedMaterial = typeof generatedMaterials.$inferInsert;

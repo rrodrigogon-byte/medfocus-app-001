@@ -43,6 +43,13 @@
       "when": 1771188887336,
       "tag": "0005_bored_raza",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1771194121457,
+      "tag": "0006_lush_demogoblin",
+      "breakpoints": true
     }
   ]
 }

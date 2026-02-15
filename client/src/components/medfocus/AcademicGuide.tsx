@@ -2,48 +2,52 @@
  * MedFocus Academic Guide — Premium University Hub
  * Design: Teal accent, card-based layout, clean typography
  * Uses tRPC backend for AI content generation (LLM built-in)
+ * Features: DB-cached materials, PDF export, personalized content
  */
-import React, { useState, useEffect } from 'react';
-import { User, University } from '../../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { User } from '../../types';
 import { trpc } from '@/lib/trpc';
+import { UNIVERSITIES, curriculumIcons } from '../../data/universities';
+import { useAuth } from '@/_core/hooks/useAuth';
 
 const STUDY_IMG = "https://private-us-east-1.manuscdn.com/sessionFile/IjuoZIpKtB1FShC9GQ88GW/sandbox/gZMRigkW6C4ldwaPiTYiad-img-3_1771179159000_na1fn_bWVkZm9jdXMtc3R1ZHktaWxsdXN0cmF0aW9u.png?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvSWp1b1pJcEt0QjFGU2hDOUdRODhHVy9zYW5kYm94L2daTVJpZ2tXNkM0bGR3YVBpVFlpYWQtaW1nLTNfMTc3MTE3OTE1OTAwMF9uYTFmbl9iV1ZrWm05amRYTXRjM1IxWkhrdGFXeHNkWE4wY21GMGFXOXUucG5nP3gtb3NzLXByb2Nlc3M9aW1hZ2UvcmVzaXplLHdfMTkyMCxoXzE5MjAvZm9ybWF0LHdlYnAvcXVhbGl0eSxxXzgwIiwiQ29uZGl0aW9uIjp7IkRhdGVMZXNzVGhhbiI6eyJBV1M6RXBvY2hUaW1lIjoxNzk4NzYxNjAwfX19XX0_&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=Fd8pgxfsoS6I-SoQUOOJcsFNHrltDUeqbobSeXnurwPJQmBrOz~vq40gkdrb4FCFtlBu8ssNeU56nvRrxeDUIZBxdKdLuMc1MJxt4lmVw87D~Irg24-O8fhcYv1K1QP641YvlTwmCjYBvkYfae0BzxZyrWspL~P3kEQQe5y-k1f5mRRWX1pvqlbqHxehOP5JanZ-l7CQMld3bbrNcBI2EZcOC0XtZKlLNZ-lBT7TQjnwqY-0XHmcN9ynjvWwvOCtqr0pEw8cOXjx-w-CAEk~CkgW6THHV8q3p7P0JFa~NCK3rI8ejqjEIPTNegEwEDqS-wTzPWnxN7iKX9GzZcxg5A__";
-
-const UNIVERSITIES: University[] = [
-  { id: 'usp', name: 'USP — Faculdade de Medicina', state: 'SP', curriculumType: 'Tradicional', curriculumByYear: { 1: { subjects: ['Anatomia Descritiva', 'Morfologia I', 'Bioquímica', 'Biofísica', 'Histologia'], references: [{ title: 'Anatomia Orientada para a Clínica', author: 'Moore & Dalley', type: 'book', verifiedBy: 'FMUSP Board' }] }, 2: { subjects: ['Fisiologia Médica', 'Patologia I', 'Imunologia', 'Microbiologia'], references: [{ title: 'Tratado de Fisiologia Médica', author: 'Guyton & Hall', type: 'book', verifiedBy: 'FMUSP Board' }] }, 3: { subjects: ['Semiologia', 'Farmacologia I', 'Técnica Cirúrgica', 'Psicologia Médica'], references: [] }, 4: { subjects: ['Clínica Médica', 'Cirurgia', 'Pediatria', 'Ginecologia e Obstetrícia'], references: [] }, 5: { subjects: ['Internato I — Clínica e Cirurgia'], references: [] }, 6: { subjects: ['Internato II — Saúde Coletiva e Emergência'], references: [] } } },
-  { id: 'univag', name: 'UNIVAG — Várzea Grande', state: 'MT', curriculumType: 'PBL', curriculumByYear: { 1: { subjects: ['Tutorial I — Célula', 'Habilidades I', 'IESC I'], references: [] }, 2: { subjects: ['Tutorial III — Sistemas', 'Habilidades III', 'IESC III'], references: [] }, 3: { subjects: ['Tutorial V — Patologia', 'Habilidades V', 'IESC V'], references: [] }, 4: { subjects: ['Clínica Médica Integrada', 'Saúde da Família', 'Especialidades'], references: [] }, 5: { subjects: ['Internato em Pediatria/GO', 'Internato em Saúde Mental'], references: [] }, 6: { subjects: ['Internato em Clínica/Cirurgia', 'Internato em Urgência'], references: [] } } },
-  { id: 'puc', name: 'PUC — Medicina', state: 'PR/SP/MG', curriculumType: 'Misto', curriculumByYear: { 1: { subjects: ['Ciências Morfofuncionais I', 'Saúde e Sociedade'], references: [] }, 2: { subjects: ['Ciências Morfofuncionais III', 'Mecanismos de Doença'], references: [] }, 3: { subjects: ['Propedêutica Médica', 'Farmacologia Clínica'], references: [] }, 4: { subjects: ['Clínica Médica', 'Pediatria', 'Cirurgia'], references: [] }, 5: { subjects: ['Internato'], references: [] }, 6: { subjects: ['Internato'], references: [] } } },
-  { id: 'ufrj', name: 'UFRJ — Faculdade de Medicina', state: 'RJ', curriculumType: 'Tradicional', curriculumByYear: { 1: { subjects: ['Anatomia', 'Histologia', 'Embriologia'], references: [] }, 2: { subjects: ['Fisiologia', 'Bioquímica', 'Microbiologia'], references: [] }, 3: { subjects: ['Patologia', 'Semiologia', 'Farmacologia'], references: [] }, 4: { subjects: ['Clínica Médica', 'Cirurgia', 'Pediatria'], references: [] }, 5: { subjects: ['Internato'], references: [] }, 6: { subjects: ['Internato'], references: [] } } },
-  { id: 'unifesp', name: 'UNIFESP — Escola Paulista', state: 'SP', curriculumType: 'Tradicional', curriculumByYear: { 1: { subjects: ['Anatomia', 'Biologia Celular', 'Bioestatística'], references: [] }, 2: { subjects: ['Fisiologia', 'Patologia', 'Farmacologia'], references: [] }, 3: { subjects: ['Semiologia', 'Medicina Preventiva'], references: [] }, 4: { subjects: ['Clínica Médica', 'Cirurgia', 'GO'], references: [] }, 5: { subjects: ['Internato'], references: [] }, 6: { subjects: ['Internato'], references: [] } } },
-  { id: 'ufmg', name: 'UFMG — Faculdade de Medicina', state: 'MG', curriculumType: 'Tradicional', curriculumByYear: { 1: { subjects: ['Anatomia Humana', 'Histologia e Embriologia', 'Bioquímica'], references: [] }, 2: { subjects: ['Fisiologia Humana', 'Patologia Geral', 'Microbiologia'], references: [] }, 3: { subjects: ['Farmacologia', 'Semiologia', 'Medicina Legal'], references: [] }, 4: { subjects: ['Clínica Médica', 'Cirurgia', 'Pediatria'], references: [] }, 5: { subjects: ['Internato'], references: [] }, 6: { subjects: ['Internato'], references: [] } } },
-  { id: 'unicamp', name: 'UNICAMP — Faculdade de Ciências Médicas', state: 'SP', curriculumType: 'Tradicional', curriculumByYear: { 1: { subjects: ['Anatomia', 'Biologia Celular', 'Bioquímica Médica'], references: [] }, 2: { subjects: ['Fisiologia', 'Farmacologia Básica', 'Genética Médica'], references: [] }, 3: { subjects: ['Patologia', 'Semiologia', 'Saúde Coletiva'], references: [] }, 4: { subjects: ['Clínica Médica', 'Cirurgia', 'Pediatria'], references: [] }, 5: { subjects: ['Internato'], references: [] }, 6: { subjects: ['Internato'], references: [] } } },
-  { id: 'ufba', name: 'UFBA — Faculdade de Medicina', state: 'BA', curriculumType: 'Tradicional', curriculumByYear: { 1: { subjects: ['Anatomia', 'Histologia', 'Bioquímica'], references: [] }, 2: { subjects: ['Fisiologia', 'Microbiologia', 'Imunologia'], references: [] }, 3: { subjects: ['Patologia', 'Farmacologia', 'Semiologia'], references: [] }, 4: { subjects: ['Clínica Médica', 'Cirurgia', 'Pediatria'], references: [] }, 5: { subjects: ['Internato'], references: [] }, 6: { subjects: ['Internato'], references: [] } } },
-];
-
-const curriculumIcons: Record<string, string> = {
-  'Tradicional': 'M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z',
-  'PBL': 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z',
-  'Misto': 'M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z',
-};
 
 interface GuideProps { user: User; onUpdateUser: (data: Partial<User>) => void; }
 
 const AcademicGuide: React.FC<GuideProps> = ({ user, onUpdateUser }) => {
+  const { isAuthenticated } = useAuth();
   const [selectedUnivId, setSelectedUnivId] = useState<string>(user.universityId || '');
   const [activeYear, setActiveYear] = useState<number>(user.currentYear || 1);
-  const [viewMode, setViewMode] = useState<'selection' | 'guide' | 'subject'>('selection');
+  const [viewMode, setViewMode] = useState<'selection' | 'guide' | 'subject' | 'history'>('selection');
   const [activeSubject, setActiveSubject] = useState<string | null>(null);
   const [subjectData, setSubjectData] = useState<any | null>(null);
   const [researchData, setResearchData] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorType, setErrorType] = useState<'none' | 'quota' | 'general'>('none');
   const [activeFlashcard, setActiveFlashcard] = useState<number | null>(null);
+  const [cachedMaterialId, setCachedMaterialId] = useState<number | null>(null);
+  const [isFromCache, setIsFromCache] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // tRPC mutations for AI content generation
   const generateContentMutation = trpc.ai.generateContent.useMutation();
   const researchMutation = trpc.ai.research.useMutation();
+  const saveMaterialMutation = trpc.materials.save.useMutation();
+  const exportPdfMutation = trpc.materials.exportPdf.useMutation();
+
+  // Material history query
+  const historyQuery = trpc.materials.history.useQuery(undefined, {
+    enabled: isAuthenticated && viewMode === 'history',
+  });
 
   const selectedUniv = UNIVERSITIES.find(u => u.id === selectedUnivId);
+
+  // Personalization: determine content depth based on year
+  const contentDepthLabel = useMemo(() => {
+    if (activeYear <= 2) return 'Básico — Foco em fundamentos e conceitos essenciais';
+    if (activeYear <= 4) return 'Intermediário — Correlação clínica e fisiopatologia';
+    return 'Avançado — Nível residência com diagnóstico diferencial';
+  }, [activeYear]);
 
   useEffect(() => {
     if (user.universityId && viewMode === 'selection') {
@@ -59,18 +63,20 @@ const AcademicGuide: React.FC<GuideProps> = ({ user, onUpdateUser }) => {
   };
 
   const loadSubjectDetails = async (subject: string) => {
-    const cacheKey = `medfocus_cache_${selectedUnivId}_${activeYear}_${subject.replace(/\s+/g, '_')}`;
-    const cachedData = localStorage.getItem(cacheKey);
     setIsLoading(true); setActiveSubject(subject); setViewMode('subject');
     setErrorType('none'); setSubjectData(null); setActiveFlashcard(null);
+    setIsFromCache(false); setCachedMaterialId(null);
 
-    if (cachedData) {
+    // 1) Try localStorage cache first (quick, offline-friendly)
+    const cacheKey = `medfocus_cache_${selectedUnivId}_${activeYear}_${subject.replace(/\s+/g, '_')}`;
+    const cachedLocal = localStorage.getItem(cacheKey);
+    if (cachedLocal) {
       try {
-        const p = JSON.parse(cachedData);
-        // Check cache age (24h max)
+        const p = JSON.parse(cachedLocal);
         if (p.timestamp && Date.now() - p.timestamp < 24 * 60 * 60 * 1000) {
           setSubjectData(p.content);
           setResearchData(p.research);
+          setIsFromCache(true);
           setIsLoading(false);
           return;
         }
@@ -78,35 +84,177 @@ const AcademicGuide: React.FC<GuideProps> = ({ user, onUpdateUser }) => {
       } catch { localStorage.removeItem(cacheKey); }
     }
 
+    // 2) Try DB cache (persisted across sessions, for authenticated users)
+    if (isAuthenticated) {
+      try {
+        const cachedDb = await fetch(`/api/trpc/materials.findCached?batch=1&input=${encodeURIComponent(JSON.stringify({ "0": { json: { universityId: selectedUnivId, subject, year: activeYear } } }))}`, {
+          credentials: 'include',
+        }).then(r => r.json());
+        
+        const result = cachedDb?.[0]?.result?.data?.json;
+        if (result && result.content) {
+          setSubjectData(result.content);
+          setResearchData(result.research || null);
+          setCachedMaterialId(result.id);
+          setIsFromCache(true);
+          setIsLoading(false);
+          // Also update localStorage
+          localStorage.setItem(cacheKey, JSON.stringify({ content: result.content, research: result.research, timestamp: Date.now() }));
+          return;
+        }
+      } catch (e) {
+        console.warn('[AcademicGuide] DB cache lookup failed, generating fresh:', e);
+      }
+    }
+
+    // 3) Generate fresh content with AI
     try {
       const uName = selectedUniv?.name || 'Universidade';
 
-      // Use tRPC mutations (server-side LLM) instead of direct Google API
+      // Personalization: adjust prompt depth based on year
+      const depthInstruction = activeYear <= 2
+        ? 'Foque em conceitos fundamentais, definições claras e analogias didáticas. Nível básico.'
+        : activeYear <= 4
+        ? 'Inclua correlação clínica, fisiopatologia detalhada e casos clínicos. Nível intermediário.'
+        : 'Nível residência: diagnóstico diferencial completo, condutas baseadas em evidências, questões estilo ENARE/USP. Nível avançado.';
+
       const [content, research] = await Promise.all([
         generateContentMutation.mutateAsync({
           subject,
           universityName: uName,
           year: activeYear,
         }),
-        researchMutation.mutateAsync({ topic: subject }).catch(() => 'Pesquisa indisponível no momento.'),
+        researchMutation.mutateAsync({ topic: `${subject} ${depthInstruction}` }).catch(() => 'Pesquisa indisponível no momento.'),
       ]);
 
       setSubjectData(content);
       setResearchData(research);
       localStorage.setItem(cacheKey, JSON.stringify({ content, research, timestamp: Date.now() }));
+
+      // 4) Save to DB for future sessions (authenticated users)
+      if (isAuthenticated) {
+        try {
+          await saveMaterialMutation.mutateAsync({
+            universityId: selectedUnivId,
+            universityName: uName,
+            subject,
+            year: activeYear,
+            content: JSON.stringify(content),
+            research: typeof research === 'string' ? research : undefined,
+          });
+        } catch (e) {
+          console.warn('[AcademicGuide] Failed to save material to DB:', e);
+        }
+      }
     } catch (e: any) {
       console.error('[AcademicGuide] Error generating content:', e);
       setErrorType(e.message?.includes('quota') || e.message?.includes('QUOTA') ? 'quota' : 'general');
     } finally { setIsLoading(false); }
   };
 
-  const downloadGuide = () => {
+  const handleExportPdf = async () => {
     if (!subjectData || !activeSubject) return;
-    const w = window.open('', '_blank');
-    if (!w) return;
-    w.document.write(`<html><head><title>${activeSubject}</title><style>body{font-family:'Plus Jakarta Sans',sans-serif;padding:40px;line-height:1.8;color:#1e293b}h1{color:#0d9488;font-size:28px}h2{border-bottom:2px solid #e2e8f0;padding-bottom:8px;margin-top:32px}ul{padding-left:20px}li{margin-bottom:8px}.ref{background:#f0fdfa;padding:16px;border-radius:8px;margin-bottom:8px;border-left:4px solid #0d9488}</style></head><body><h1>${activeSubject}</h1><p>${subjectData.summary}</p><h2>Pontos-Chave para Residência</h2><ul>${subjectData.keyPoints?.map((p:any)=>`<li>${p}</li>`).join('') || ''}</ul><h2>Referências</h2>${subjectData.references?.map((r:any)=>`<div class="ref"><strong>${r.title}</strong> — ${r.author}<br/><small>Verificado por: ${r.verifiedBy}</small></div>`).join('') || ''}</body></html>`);
-    w.document.close(); w.print();
+    setIsExporting(true);
+    try {
+      const result = await exportPdfMutation.mutateAsync({
+        subject: activeSubject,
+        universityName: selectedUniv?.name || 'Universidade',
+        year: activeYear,
+        content: {
+          summary: subjectData.summary || '',
+          keyPoints: subjectData.keyPoints || [],
+          flashcards: subjectData.flashcards,
+          innovations: subjectData.innovations,
+          references: subjectData.references,
+          quiz: subjectData.quiz,
+        },
+      });
+
+      // Open HTML in new tab for print/save as PDF
+      const w = window.open('', '_blank');
+      if (w) {
+        w.document.write(result.html);
+        w.document.close();
+        setTimeout(() => w.print(), 500);
+      }
+    } catch (e) {
+      console.error('[AcademicGuide] PDF export failed:', e);
+      // Fallback to simple print
+      const w = window.open('', '_blank');
+      if (w) {
+        w.document.write(`<html><head><title>${activeSubject}</title><style>body{font-family:sans-serif;padding:40px;line-height:1.8;color:#1e293b}h1{color:#0d9488}h2{border-bottom:2px solid #e2e8f0;padding-bottom:8px;margin-top:32px}ul{padding-left:20px}li{margin-bottom:8px}</style></head><body><h1>${activeSubject}</h1><p>${subjectData.summary}</p><h2>Pontos-Chave</h2><ul>${subjectData.keyPoints?.map((p:any)=>`<li>${p}</li>`).join('') || ''}</ul></body></html>`);
+        w.document.close();
+        w.print();
+      }
+    } finally { setIsExporting(false); }
   };
+
+  // ============ HISTORY VIEW ============
+  if (viewMode === 'history') {
+    return (
+      <div className="space-y-6 animate-fade-in pb-20">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setViewMode('selection')} className="flex items-center gap-2 bg-card border border-border px-4 py-2.5 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground hover:border-primary/50 transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="m15 18-6-6 6-6"/></svg>
+            Voltar
+          </button>
+          <h2 className="text-xl font-display font-extrabold text-foreground">Histórico de Materiais</h2>
+        </div>
+
+        {!isAuthenticated ? (
+          <div className="bg-card border border-border rounded-xl p-10 text-center space-y-4">
+            <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mx-auto">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-primary"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h3 className="font-display font-bold text-foreground text-lg">Faça login para acessar seu histórico</h3>
+            <p className="text-sm text-muted-foreground">O histórico de materiais gerados é salvo na sua conta para acesso rápido.</p>
+          </div>
+        ) : historyQuery.isLoading ? (
+          <div className="flex items-center justify-center h-48">
+            <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : !historyQuery.data || historyQuery.data.length === 0 ? (
+          <div className="bg-card border border-border rounded-xl p-10 text-center space-y-4">
+            <div className="w-14 h-14 bg-muted rounded-xl flex items-center justify-center mx-auto">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-muted-foreground"><path d="M4 19.5v-15A2.5 2.5 0 016.5 2H20v20H6.5a2.5 2.5 0 01-2.5-2.5Z"/></svg>
+            </div>
+            <h3 className="font-display font-bold text-foreground text-lg">Nenhum material gerado ainda</h3>
+            <p className="text-sm text-muted-foreground">Escolha uma universidade e disciplina para gerar seu primeiro material com IA.</p>
+            <button onClick={() => setViewMode('selection')} className="bg-primary text-primary-foreground px-6 py-2.5 rounded-lg text-sm font-semibold hover:opacity-90 transition-all">
+              Explorar Universidades
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {historyQuery.data.map((mat: any) => (
+              <button key={mat.id} onClick={() => {
+                // Navigate to the material's university and subject
+                setSelectedUnivId(mat.universityId);
+                setActiveYear(mat.year);
+                loadSubjectDetails(mat.subject);
+              }}
+                className="group bg-card border border-border rounded-xl p-5 text-left hover:border-primary/50 hover:shadow-lg transition-all">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M4 19.5v-15A2.5 2.5 0 016.5 2H20v20H6.5a2.5 2.5 0 01-2.5-2.5Z"/></svg>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-2 py-1 bg-muted rounded-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-muted-foreground"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <span className="text-[10px] font-semibold text-muted-foreground">{mat.accessCount}x</span>
+                  </div>
+                </div>
+                <h4 className="font-display font-bold text-foreground text-sm leading-tight mb-1 group-hover:text-primary transition-colors">{mat.subject}</h4>
+                <p className="text-[11px] text-muted-foreground font-medium">{mat.universityName} — {mat.year}º Ano</p>
+                <p className="text-[10px] text-muted-foreground mt-2">
+                  {new Date(mat.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   // ============ SELECTION VIEW ============
   if (viewMode === 'selection') {
@@ -123,26 +271,40 @@ const AcademicGuide: React.FC<GuideProps> = ({ user, onUpdateUser }) => {
           </div>
         </div>
 
+        {/* History button */}
+        {isAuthenticated && (
+          <button onClick={() => setViewMode('history')}
+            className="w-full bg-card border border-border rounded-xl p-4 flex items-center gap-4 hover:border-primary/50 hover:shadow-md transition-all group">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div className="flex-1 text-left">
+              <h3 className="text-sm font-display font-bold text-foreground group-hover:text-primary transition-colors">Histórico de Materiais</h3>
+              <p className="text-xs text-muted-foreground">Acesse materiais gerados anteriormente sem re-gerar</p>
+            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-muted-foreground group-hover:text-primary transition-colors"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+          </button>
+        )}
+
         {/* University Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
-          {UNIVERSITIES.map(u => (
-            <button key={u.id} onClick={() => handleStartGuide(u.id)}
+          {UNIVERSITIES.map(univ => (
+            <button key={univ.id} onClick={() => handleStartGuide(univ.id)}
               className="group bg-card border border-border rounded-xl p-6 text-left hover:border-primary/50 hover:shadow-lg transition-all">
               <div className="flex items-start justify-between mb-4">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
-                    <path d={curriculumIcons[u.curriculumType] || curriculumIcons['Tradicional']} />
-                  </svg>
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-display font-bold text-lg group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                  {univ.name.split(' ').pop()?.substring(0, 3).toUpperCase() || univ.id.toUpperCase().substring(0, 3)}
                 </div>
-                <span className="text-[10px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-md uppercase">{u.state}</span>
+                <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                  univ.curriculumType === 'PBL' ? 'bg-violet-500/10 text-violet-600' :
+                  univ.curriculumType === 'Misto' ? 'bg-amber-500/10 text-amber-600' :
+                  'bg-blue-500/10 text-blue-600'
+                }`}>{univ.curriculumType}</span>
               </div>
-              <h3 className="font-display font-bold text-foreground text-base leading-tight mb-2 group-hover:text-primary transition-colors">{u.name}</h3>
-              <div className="flex items-center gap-2 mt-3">
-                <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded">{u.curriculumType}</span>
-                <span className="text-[10px] font-semibold text-muted-foreground">6 anos</span>
-              </div>
-              <div className="mt-4 flex items-center gap-1.5 text-primary text-xs font-semibold opacity-0 group-hover:opacity-100 transition-all translate-y-1 group-hover:translate-y-0">
-                Ver Currículo
+              <h3 className="font-display font-bold text-foreground text-base leading-tight mb-1 group-hover:text-primary transition-colors">{univ.name}</h3>
+              <p className="text-xs text-muted-foreground font-medium">{univ.state}</p>
+              <div className="flex items-center gap-1.5 text-primary text-xs font-semibold mt-4 opacity-0 group-hover:opacity-100 transition-all">
+                Ver currículo completo
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
               </div>
             </button>
@@ -163,16 +325,37 @@ const AcademicGuide: React.FC<GuideProps> = ({ user, onUpdateUser }) => {
             Voltar
           </button>
           {subjectData && (
-            <button onClick={downloadGuide} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg text-sm font-semibold hover:opacity-90 transition-all">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            <button onClick={handleExportPdf} disabled={isExporting}
+              className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50">
+              {isExporting ? (
+                <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+              )}
               Exportar PDF
             </button>
           )}
-          <div className="ml-auto flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 rounded-lg">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-soft" />
-            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">IA Validada</span>
+          <div className="ml-auto flex items-center gap-2">
+            {isFromCache && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 rounded-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-blue-500"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Cache</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 rounded-lg">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-soft" />
+              <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">IA Validada</span>
+            </div>
           </div>
         </div>
+
+        {/* Personalization badge */}
+        {subjectData && (
+          <div className="bg-gradient-to-r from-primary/5 to-violet-500/5 border border-primary/20 rounded-lg px-4 py-2.5 flex items-center gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-primary shrink-0"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span className="text-xs text-foreground/70 font-medium">{contentDepthLabel}</span>
+          </div>
+        )}
 
         {isLoading ? (
           <div className="h-[50vh] flex flex-col items-center justify-center gap-6">
@@ -180,6 +363,7 @@ const AcademicGuide: React.FC<GuideProps> = ({ user, onUpdateUser }) => {
             <div className="text-center space-y-2">
               <p className="text-sm font-semibold text-primary animate-pulse-soft">Gerando material de excelência...</p>
               <p className="text-xs text-muted-foreground">A IA está analisando o currículo de {selectedUniv?.name}</p>
+              <p className="text-[10px] text-muted-foreground/60">{contentDepthLabel}</p>
             </div>
           </div>
         ) : errorType !== 'none' ? (
@@ -387,6 +571,12 @@ const AcademicGuide: React.FC<GuideProps> = ({ user, onUpdateUser }) => {
               {y}º Ano
             </button>
           ))}
+        </div>
+
+        {/* Personalization indicator */}
+        <div className="mt-3 flex items-center gap-2 text-[11px] text-muted-foreground">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          {contentDepthLabel}
         </div>
       </div>
 

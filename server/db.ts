@@ -414,3 +414,86 @@ export async function getClassroomAnalytics(classroomId: number) {
     atRiskStudents,
   };
 }
+
+// ─── Generated Materials (AI Content History) ─────────────────────────────
+
+import { generatedMaterials } from "../drizzle/schema";
+
+export async function findGeneratedMaterial(userId: number, universityId: string, subject: string, year: number, contentType: string = 'full') {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(generatedMaterials)
+    .where(and(
+      eq(generatedMaterials.userId, userId),
+      eq(generatedMaterials.universityId, universityId),
+      eq(generatedMaterials.subject, subject),
+      eq(generatedMaterials.year, year),
+      eq(generatedMaterials.contentType, contentType as any),
+    ))
+    .orderBy(desc(generatedMaterials.createdAt))
+    .limit(1);
+  if (result.length === 0) return null;
+  // Update access count and last accessed
+  await db.update(generatedMaterials).set({
+    accessCount: result[0].accessCount + 1,
+    lastAccessedAt: new Date(),
+  }).where(eq(generatedMaterials.id, result[0].id));
+  return result[0];
+}
+
+export async function saveGeneratedMaterial(data: {
+  userId: number;
+  universityId: string;
+  universityName: string;
+  subject: string;
+  year: number;
+  contentType?: string;
+  content: string;
+  research?: string;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  await db.insert(generatedMaterials).values({
+    userId: data.userId,
+    universityId: data.universityId,
+    universityName: data.universityName,
+    subject: data.subject,
+    year: data.year,
+    contentType: (data.contentType || 'full') as any,
+    content: data.content,
+    research: data.research || null,
+  });
+  return true;
+}
+
+export async function getUserMaterialHistory(userId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: generatedMaterials.id,
+    universityId: generatedMaterials.universityId,
+    universityName: generatedMaterials.universityName,
+    subject: generatedMaterials.subject,
+    year: generatedMaterials.year,
+    contentType: generatedMaterials.contentType,
+    accessCount: generatedMaterials.accessCount,
+    lastAccessedAt: generatedMaterials.lastAccessedAt,
+    createdAt: generatedMaterials.createdAt,
+  }).from(generatedMaterials)
+    .where(eq(generatedMaterials.userId, userId))
+    .orderBy(desc(generatedMaterials.lastAccessedAt))
+    .limit(limit);
+}
+
+export async function getGeneratedMaterialById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(generatedMaterials).where(eq(generatedMaterials.id, id)).limit(1);
+  return result[0] || null;
+}
+
+export async function rateMaterial(id: number, qualityScore: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(generatedMaterials).set({ qualityScore }).where(eq(generatedMaterials.id, id));
+}

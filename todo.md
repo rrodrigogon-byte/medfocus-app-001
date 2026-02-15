@@ -54,3 +54,8 @@
 - [x] Painel de analytics para professores com gráficos e alertas de alunos em risco
 - [x] Corrigir erro "Erro ao Gerar Conteúdo" na seção Universidades
 - [x] Garantir que materiais sejam gerados corretamente por universidade usando IA
+- [x] Integrar matérias completas da UNIVAG com grade curricular real dos 6 anos
+- [x] Expandir grades curriculares completas de outras universidades (PUC, UFRJ, UNIFESP, UFMG, UNICAMP, UFBA)
+- [x] Histórico de materiais gerados — persistir no banco para evitar re-geração
+- [x] Exportação de PDF funcional via rota tRPC no servidor
+- [x] Personalização por perfil do aluno — adaptar conteúdo por ano/semestre e desempenho
