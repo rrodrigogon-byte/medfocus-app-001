@@ -38,3 +38,4 @@
 - [x] Expandir flashcards e quizzes para anos 4-6 com conteúdo baseado em grades reais
 - [x] Painel de Recursos Acadêmicos (grades USP, livros, artigos, teses)
 - [x] Instalar pacotes do commit GitHub (socket.io, bcryptjs, etc.)
+- [x] Corrigir erro de deploy: remover better-sqlite3 que causa falha no deploy
