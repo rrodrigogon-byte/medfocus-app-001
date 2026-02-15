@@ -26,6 +26,7 @@ import ProfessorDashboard from '../components/medfocus/ProfessorDashboard';
 import GamificationPanel from '../components/medfocus/GamificationPanel';
 import NotificationSettingsPanel from '../components/medfocus/NotificationSettings';
 import PricingPlans from '../components/medfocus/PricingPlans';
+import AcademicResourcesPanel from '../components/medfocus/AcademicResourcesPanel';
 import XPToast from '../components/medfocus/XPToast';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
@@ -137,6 +138,28 @@ export default function Home() {
       case 'gamification': return <GamificationPanel />;
       case 'notifications': return <NotificationSettingsPanel />;
       case 'pricing': return <PricingPlans />;
+      case 'resources': return <AcademicResourcesPanel />;
+      case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
+      case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
+      case 'professor': return <ProfessorDashboard professor={{
+            id: localUser.id,
+            name: localUser.name,
+            email: localUser.email,
+            universityId: localUser.universityId || 'USP',
+            universityName: 'Universidade',
+            role: 'professor',
+            specialties: localUser.specialties || [],
+            verifiedCredentials: localUser.verifiedCredentials || false,
+            lattes: undefined,
+            orcid: undefined,
+            googleScholar: undefined,
+            canValidateMaterials: true,
+            canCreateStudyRooms: true,
+            canModerateContent: localUser.role === 'admin',
+            materialsContributed: 0,
+            studentsImpacted: 0,
+            validationsPerformed: 0,
+          }} />;
       default: return <Dashboard user={localUser} />;
     }
   };
@@ -170,7 +193,11 @@ export default function Home() {
                currentView === 'research' ? 'Pesquisa Global' :
                currentView === 'gamification' ? 'Conquistas & XP' :
                currentView === 'notifications' ? 'Notificações' :
-               currentView === 'pricing' ? 'Planos & Assinatura' : currentView}
+               currentView === 'pricing' ? 'Planos & Assinatura' :
+               currentView === 'resources' ? 'Recursos Acadêmicos' :
+               currentView === 'validated-library' ? 'Conteúdo Validado' :
+               currentView === 'quiz' ? 'Quiz Avançado' :
+               currentView === 'professor' ? 'Painel do Professor' : currentView}
             </h2>
           </div>
           <div className="flex items-center gap-2">

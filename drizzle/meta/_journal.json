@@ -15,6 +15,20 @@
       "when": 1771182133304,
       "tag": "0001_peaceful_wonder_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1771184898845,
+      "tag": "0002_demonic_microbe",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1771184913019,
+      "tag": "0003_watery_black_tom",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, sql, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, userProgress, xpLog, studySessions } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,97 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// ─── XP & Progress Queries ─────────────────────────────
+
+export async function getOrCreateProgress(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const existing = await db.select().from(userProgress).where(eq(userProgress.userId, userId)).limit(1);
+  if (existing.length > 0) return existing[0];
+  
+  // Create new progress record
+  await db.insert(userProgress).values({ userId });
+  const created = await db.select().from(userProgress).where(eq(userProgress.userId, userId)).limit(1);
+  return created[0] || null;
+}
+
+export async function addXp(userId: number, action: string, xpAmount: number, description?: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  // Log the XP event
+  await db.insert(xpLog).values({ userId, action, xpEarned: xpAmount, description });
+  
+  // Update progress
+  const progress = await getOrCreateProgress(userId);
+  if (!progress) return null;
+  
+  const today = new Date().toISOString().split('T')[0];
+  const isNewDay = progress.lastActiveDate !== today;
+  let newStreak = progress.currentStreak;
+  
+  if (isNewDay) {
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    newStreak = progress.lastActiveDate === yesterday ? progress.currentStreak + 1 : 1;
+  }
+  
+  const newTotalXp = progress.totalXp + xpAmount;
+  const newLevel = Math.floor(newTotalXp / 500) + 1;
+  
+  // Update counters based on action type
+  const updates: Record<string, unknown> = {
+    totalXp: newTotalXp,
+    level: newLevel,
+    currentStreak: newStreak,
+    longestStreak: Math.max(progress.longestStreak, newStreak),
+    lastActiveDate: today,
+  };
+  
+  if (action === 'pomodoro') updates.pomodorosCompleted = progress.pomodorosCompleted + 1;
+  if (action === 'quiz') updates.quizzesCompleted = progress.quizzesCompleted + 1;
+  if (action === 'flashcard') updates.flashcardsReviewed = progress.flashcardsReviewed + 1;
+  if (action === 'checklist') updates.checklistItemsDone = progress.checklistItemsDone + 1;
+  
+  await db.update(userProgress).set(updates).where(eq(userProgress.userId, userId));
+  
+  return { ...progress, ...updates };
+}
+
+export async function getXpHistory(userId: number, limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(xpLog)
+    .where(eq(xpLog.userId, userId))
+    .orderBy(desc(xpLog.createdAt))
+    .limit(limit);
+}
+
+export async function logStudySession(userId: number, type: 'pomodoro' | 'free_study', durationMinutes: number, subject?: string) {
+  const db = await getDb();
+  if (!db) return;
+  
+  await db.insert(studySessions).values({ userId, type, durationMinutes, subject });
+  
+  // Also update study minutes in progress
+  const progress = await getOrCreateProgress(userId);
+  if (progress) {
+    await db.update(userProgress).set({
+      studyMinutes: progress.studyMinutes + durationMinutes,
+    }).where(eq(userProgress.userId, userId));
+  }
+}
+
+export async function updateUserProfile(userId: number, universityId?: string, currentYear?: number) {
+  const db = await getDb();
+  if (!db) return;
+  
+  const updates: Record<string, unknown> = {};
+  if (universityId !== undefined) updates.universityId = universityId;
+  if (currentYear !== undefined) updates.currentYear = currentYear;
+  
+  if (Object.keys(updates).length > 0) {
+    await db.update(users).set(updates).where(eq(users.id, userId));
+  }
+}

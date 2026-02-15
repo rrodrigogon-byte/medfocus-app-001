@@ -210,9 +210,77 @@ const infectologia: SubjectBundle = {
   ],
 };
 
+// ─── NOVA DISCIPLINA: OFTALMOLOGIA (ANO 5-6) ─────────────────
+const oftalmologia: SubjectBundle = {
+  id: 'oftalmologia', name: 'Oftalmologia', year: 5,
+  summary: 'A Oftalmologia estuda as doenças do olho e seus anexos. Na graduação, o foco está em emergências oculares, glaucoma, catarata, retinopatia diabética, olho vermelho e exame oftalmológico básico.',
+  keyPoints: [
+    'Glaucoma agudo: dor ocular intensa + olho vermelho + midríase média fixa + náusea/vômito. Emergência!',
+    'Catarata: opacificação do cristalino, causa mais comum de cegueira reversível no mundo',
+    'Retinopatia diabética: microaneurismas → exsudatos → neovascularização. Rastreio anual com fundo de olho',
+    'Olho vermelho: conjuntivite (difuso), uveíte (injeção ciliar), glaucoma agudo (misto), hemorragia subconjuntival',
+    'Descolamento de retina: flashes luminosos + moscas volantes + cortina visual. Emergência cirúrgica',
+    'Reflexo vermelho: teste do olhinho obrigatório no RN. Ausente → retinoblastoma, catarata congênita',
+  ],
+  clinicalCorrelation: 'Paciente de 65 anos, diabético há 20 anos, com perda visual progressiva bilateral. Fundo de olho: microaneurismas, exsudatos duros e neovascularização. Diagnóstico: retinopatia diabética proliferativa. Conduta: fotocoagulação a laser + controle glicêmico rigoroso.',
+  flashcards: [
+    { front: 'Qual a diferença entre glaucoma de ângulo aberto e fechado?', back: 'Ângulo aberto: crônico, assintomático, perda de campo visual periférico progressiva, PIO elevada. Ângulo fechado: agudo, dor intensa, olho vermelho, midríase média fixa, náusea. Tratamento agudo: pilocarpina + timolol + acetazolamida', difficulty: 'hard' },
+    { front: 'Quais as causas de olho vermelho que são emergência?', back: 'Glaucoma agudo (dor + midríase), uveíte anterior (dor + miose + fotofobia), ceratite (dor + defeito epitelial), endoftalmite (pós-cirúrgica), corpo estranho perfurante', difficulty: 'medium' },
+    { front: 'Como classificar a retinopatia diabética?', back: 'Não proliferativa: leve (microaneurismas), moderada (exsudatos), grave (hemorragias em 4 quadrantes OU veias em rosário OU IRMA). Proliferativa: neovascularização → fotocoagulação', difficulty: 'hard' },
+    { front: 'Qual o exame para rastreio de glaucoma?', back: 'Tonometria (PIO > 21 mmHg), gonioscopia (ângulo), campimetria (campo visual), fundoscopia (escavação do disco óptico > 0,6). Rastreio: > 40 anos, história familiar, negros, míopes', difficulty: 'medium' },
+    { front: 'O que é a ambliopia e como tratar?', back: 'Olho preguiçoso: redução da acuidade visual sem causa orgânica, por privação visual na infância. Causas: estrabismo, anisometropia, catarata congênita. Tratamento: oclusão do olho bom (tampão) antes dos 7 anos', difficulty: 'medium' },
+  ],
+  quiz: [
+    { question: 'Paciente de 60 anos com dor ocular intensa, náusea, olho vermelho e pupila em midríase média fixa. Diagnóstico?', options: ['Conjuntivite bacteriana', 'Uveíte anterior', 'Glaucoma agudo de ângulo fechado', 'Ceratite herpética'], correctIndex: 2, explanation: 'Dor intensa + olho vermelho + midríase média fixa + náusea = glaucoma agudo. Emergência oftalmológica!', source: 'Kanski Clinical Ophthalmology' },
+    { question: 'Qual a principal causa de cegueira irreversível no mundo?', options: ['Catarata', 'Glaucoma', 'Degeneração macular', 'Retinopatia diabética'], correctIndex: 1, explanation: 'Glaucoma é a principal causa de cegueira irreversível. Catarata é a principal causa de cegueira reversível.', source: 'OMS - World Report on Vision 2019' },
+  ],
+  references: [
+    { title: 'Kanski Clinical Ophthalmology', author: 'Bowling', type: 'Livro-texto' },
+    { title: 'Oftalmologia Básica', author: 'Vaughan & Asbury', type: 'Livro-texto' },
+  ],
+  mnemonics: [
+    'Olho vermelho emergência: "GUCE" — Glaucoma agudo, Uveíte, Ceratite, Endoftalmite',
+    'Retinopatia diabética: "MEG-N" — Microaneurismas, Exsudatos, hemorraGias, Neovascularização',
+  ],
+};
+
+// ─── NOVA DISCIPLINA: UROLOGIA (ANO 5-6) ──────────────────────
+const urologia: SubjectBundle = {
+  id: 'urologia', name: 'Urologia', year: 5,
+  summary: 'A Urologia estuda as doenças do trato urinário e do sistema reprodutor masculino. Na graduação, o foco está em litíase renal, hiperplasia prostática benigna, câncer de próstata, infecções urinárias, trauma renal e emergências urológicas.',
+  keyPoints: [
+    'Litíase renal: cólica lombar + hematúria. 80% cálcio. TC sem contraste é padrão-ouro. < 5mm: expulsão espontânea',
+    'HPB: sintomas obstrutivos (jato fraco, hesitação) + irritativos (noctúria, urgência). PSA + toque retal',
+    'Câncer de próstata: rastreio controverso. PSA > 4 + toque retal alterado → biópsia. Gleason para estadiamento',
+    'Torção testicular: emergência! Dor escrotal aguda + reflexo cremastérico ausente. Exploração cirúrgica em < 6h',
+    'Fimose: fisiológica até 3-4 anos. Patológica: balanopostite de repetição → circuncisão',
+    'Trauma renal: classificação AAST I-V. Graus I-III: conservador. IV-V: cirúrgico se instabilidade',
+  ],
+  clinicalCorrelation: 'Paciente masculino de 35 anos com dor lombar direita súbita, intensa, irradiando para região inguinal, com hematúria microscópica. TC sem contraste: cálculo de 4mm em ureter distal. Conduta: analgesia (AINE + opioide), hidratação, tamsulosina para facilitar expulsão.',
+  flashcards: [
+    { front: 'Qual a conduta na litíase renal conforme o tamanho?', back: '< 5mm: expulsão espontânea (90%), analgesia + tamsulosina. 5-10mm: LECO ou ureteroscopia. 10-20mm: ureteroscopia ou nefrolitotripsia percutânea. > 20mm: percutânea. Coraliforme: percutânea', difficulty: 'hard' },
+    { front: 'Quais os sinais de torção testicular?', back: 'Dor escrotal aguda intensa, náusea/vômito, testículo elevado e horizontalizado, reflexo cremastérico ausente, sinal de Prehn negativo. USG Doppler: ausência de fluxo. Cirurgia em < 6h!', difficulty: 'medium' },
+    { front: 'Como interpretar o PSA?', back: 'PSA total > 4 ng/mL: suspeita. PSA livre/total < 25%: maior risco de câncer. Velocidade PSA > 0,75/ano: suspeita. Densidade PSA > 0,15: suspeita. PSA pode elevar em: HPB, prostatite, biópsia, ejaculação recente', difficulty: 'hard' },
+    { front: 'Qual a classificação de Gleason no câncer de próstata?', back: 'Soma dos 2 padrões histológicos mais prevalentes (1-5 cada). Gleason 6 (3+3): baixo risco. 7 (3+4 ou 4+3): intermediário. 8-10: alto risco. Hoje usa-se ISUP: Grau 1 (Gleason 6) a Grau 5 (Gleason 9-10)', difficulty: 'hard' },
+    { front: 'Quais as indicações de cirurgia na HPB?', back: 'Retenção urinária refratária, ITU de repetição, hematúria recorrente, litíase vesical, insuficiência renal por obstrução, divertículo vesical grande. Cirurgia: RTU-P (padrão) ou prostatectomia aberta se > 80g', difficulty: 'medium' },
+  ],
+  quiz: [
+    { question: 'Adolescente de 14 anos com dor escrotal aguda há 3 horas, testículo elevado e reflexo cremastérico ausente. Conduta?', options: ['USG Doppler e aguardar resultado', 'Antibioticoterapia para epididimite', 'Exploração cirúrgica imediata', 'Analgesia e observação'], correctIndex: 2, explanation: 'Torção testicular é emergência cirúrgica. Não atrasar com exames. Exploração em < 6h para salvar o testículo.', source: 'Campbell-Walsh Urology' },
+    { question: 'Qual o exame padrão-ouro para diagnóstico de litíase renal?', options: ['Ultrassonografia', 'Radiografia simples de abdome', 'TC de abdome sem contraste', 'Urografia excretora'], correctIndex: 2, explanation: 'TC sem contraste tem sensibilidade > 95% para cálculos renais, incluindo os radiotransparentes (ácido úrico).', source: 'AUA Guidelines on Urolithiasis 2023' },
+  ],
+  references: [
+    { title: 'Campbell-Walsh-Wein Urology', author: 'Partin et al.', type: 'Livro-texto' },
+    { title: 'Smith\'s General Urology', author: 'Tanagho & McAninch', type: 'Livro-texto' },
+  ],
+  mnemonics: [
+    'Litíase: "CHOP" — Cálcio (80%), Hidratação, Oxalato, Purina (ácido úrico)',
+    'Torção testicular: "6 horas" — tempo máximo para salvar o testículo',
+  ],
+};
+
 // ─── EXPORTAÇÃO ─────────────────────────────────────────────
 export const EXPANDED_SUBJECTS: SubjectBundle[] = [
-  psiquiatria, ortopedia, dermatologia, infectologia,
+  psiquiatria, ortopedia, dermatologia, infectologia, oftalmologia, urologia,
 ];
 
-export { psiquiatria, ortopedia, dermatologia, infectologia };
+export { psiquiatria, ortopedia, dermatologia, infectologia, oftalmologia, urologia };

@@ -7,6 +7,7 @@ import { ENV } from "./_core/env";
 import { z } from "zod";
 import Stripe from "stripe";
 import { PLANS } from "./products";
+import { getOrCreateProgress, addXp, getXpHistory, logStudySession, updateUserProfile } from "./db";
 
 function getStripe() {
   return new Stripe(ENV.stripeSecretKey, { apiVersion: "2026-01-28.clover" });
@@ -77,6 +78,53 @@ export const appRouter = router({
         stripeSubscriptionId: user.stripeSubscriptionId,
       };
     }),
+  }),
+
+  // ─── XP & Progress Router ───────────────────────────
+  progress: router({
+    get: protectedProcedure.query(async ({ ctx }) => {
+      return getOrCreateProgress(ctx.user.id);
+    }),
+
+    addXp: protectedProcedure
+      .input(z.object({
+        action: z.string(),
+        xpAmount: z.number(),
+        description: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return addXp(ctx.user.id, input.action, input.xpAmount, input.description);
+      }),
+
+    history: protectedProcedure
+      .input(z.object({ limit: z.number().optional() }).optional())
+      .query(async ({ ctx, input }) => {
+        return getXpHistory(ctx.user.id, input?.limit || 20);
+      }),
+
+    logSession: protectedProcedure
+      .input(z.object({
+        type: z.enum(['pomodoro', 'free_study']),
+        durationMinutes: z.number(),
+        subject: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await logStudySession(ctx.user.id, input.type, input.durationMinutes, input.subject);
+        return { success: true };
+      }),
+  }),
+
+  // ─── User Profile Router ────────────────────────────
+  profile: router({
+    update: protectedProcedure
+      .input(z.object({
+        universityId: z.string().optional(),
+        currentYear: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await updateUserProfile(ctx.user.id, input.universityId, input.currentYear);
+        return { success: true };
+      }),
   }),
 
   // ─── MedGenie AI Router ────────────────────────────────

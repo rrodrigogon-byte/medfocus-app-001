@@ -1,0 +1,1 @@
+ALTER TABLE `user_progress` MODIFY COLUMN `badges` text DEFAULT ('[]');

@@ -26,3 +26,15 @@
 - [x] Conteúdo expandido: Psiquiatria, Ortopedia, Dermatologia, Oftalmologia, Otorrino, Urologia
 - [x] Biblioteca Acadêmica com upload de materiais
 - [x] Correção de integração XP: callbacks reais no PreloadedStudy
+- [x] Pesquisar e incorporar grades curriculares reais de universidades brasileiras de medicina
+- [x] Adicionar recursos acadêmicos reais: livros abertos/free por matéria
+- [x] Adicionar sugestões de compra de livros por matéria
+- [x] Incorporar artigos científicos de fontes confiáveis (SciELO, PubMed, etc.)
+- [x] Incorporar teses de mestrado/doutorado de universidades brasileiras e internacionais
+- [x] Conectar ValidatedLibrary ao Sidebar e renderView
+- [x] Conectar ProgressiveQuizSystem ao Sidebar e renderView
+- [x] Conectar ProfessorDashboard ao Sidebar e renderView
+- [x] Persistir dados de XP e progresso no banco de dados (tRPC routes + schema)
+- [x] Expandir flashcards e quizzes para anos 4-6 com conteúdo baseado em grades reais
+- [x] Painel de Recursos Acadêmicos (grades USP, livros, artigos, teses)
+- [x] Instalar pacotes do commit GitHub (socket.io, bcryptjs, etc.)
