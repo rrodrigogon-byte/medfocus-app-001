@@ -5,6 +5,8 @@
  */
 import React, { useState, useMemo, useEffect } from 'react';
 import { AcademicMaterial, MaterialFilter, MaterialType, Semester } from '../../types';
+import MaterialUpload from './MaterialUpload';
+import MaterialViewer from './MaterialViewer';
 
 // Mock data - In production, this would come from API/database
 const MOCK_MATERIALS: AcademicMaterial[] = [
@@ -156,6 +158,11 @@ const AcademicLibrary: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'rating'>('recent');
+  
+  // New states for upload and viewer
+  const [showUpload, setShowUpload] = useState(false);
+  const [selectedMaterial, setSelectedMaterial] = useState<AcademicMaterial | null>(null);
+  const [userId] = useState('user123'); // In real app, would come from auth context
 
   // Filtered and sorted materials
   const filteredMaterials = useMemo(() => {
@@ -226,7 +233,35 @@ const AcademicLibrary: React.FC = () => {
     return colors[type] || 'text-gray-600 bg-gray-50 dark:text-gray-400 dark:bg-gray-950';
   };
 
+  const handleUploadSuccess = (material: AcademicMaterial) => {
+    setMaterials(prev => [material, ...prev]);
+    setShowUpload(false);
+  };
+
+  const handleMaterialClick = (material: AcademicMaterial) => {
+    setSelectedMaterial(material);
+    // Increment views count in real implementation
+  };
+
   return (
+    <>
+      {/* Material Viewer Modal */}
+      {selectedMaterial && (
+        <MaterialViewer
+          material={selectedMaterial}
+          userId={userId}
+          onClose={() => setSelectedMaterial(null)}
+        />
+      )}
+
+      {/* Material Upload Modal */}
+      {showUpload && (
+        <MaterialUpload
+          onSuccess={handleUploadSuccess}
+          onCancel={() => setShowUpload(false)}
+        />
+      )}
+
     <div className="space-y-6 animate-fade-in pb-20">
       {/* Hero Header */}
       <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background rounded-2xl p-8 border border-border">
@@ -245,6 +280,15 @@ const AcademicLibrary: React.FC = () => {
               Acervo completo de materiais acadêmicos de todas as universidades brasileiras.
               Apostilas, vídeos, resumos, provas e pesquisas organizadas por ano, semestre e disciplina.
             </p>
+            <button
+              onClick={() => setShowUpload(true)}
+              className="mt-4 flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-all"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path d="M12 4v16m8-8H4"/>
+              </svg>
+              Enviar Material
+            </button>
           </div>
           <div className="hidden lg:grid grid-cols-2 gap-4">
             <div className="bg-card border border-border rounded-xl p-4 min-w-[120px]">
@@ -402,7 +446,7 @@ const AcademicLibrary: React.FC = () => {
       ) : (
         <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-3'}>
           {filteredMaterials.map(material => (
-            <MaterialCard key={material.id} material={material} viewMode={viewMode} getTypeColor={getTypeColor} />
+            <MaterialCard key={material.id} material={material} viewMode={viewMode} getTypeColor={getTypeColor} onClick={handleMaterialClick} />
           ))}
         </div>
       )}
@@ -415,10 +459,14 @@ const MaterialCard: React.FC<{
   material: AcademicMaterial; 
   viewMode: 'grid' | 'list';
   getTypeColor: (type: MaterialType) => string;
-}> = ({ material, viewMode, getTypeColor }) => {
+  onClick: (material: AcademicMaterial) => void;
+}> = ({ material, viewMode, getTypeColor, onClick }) => {
   if (viewMode === 'list') {
     return (
-      <div className="bg-card border border-border rounded-xl p-4 hover:border-primary/50 transition-all group">
+      <div 
+        onClick={() => onClick(material)}
+        className="bg-card border border-border rounded-xl p-4 hover:border-primary/50 transition-all group cursor-pointer"
+      >
         <div className="flex items-start gap-4">
           <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center shrink-0">
             <span className="text-2xl">📚</span>
@@ -468,7 +516,10 @@ const MaterialCard: React.FC<{
 
   // Grid View
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden hover:border-primary/50 hover:shadow-lg transition-all group">
+    <div 
+      onClick={() => onClick(material)}
+      className="bg-card border border-border rounded-xl overflow-hidden hover:border-primary/50 hover:shadow-lg transition-all group cursor-pointer"
+    >
       <div className="aspect-video bg-muted flex items-center justify-center">
         <span className="text-5xl">📚</span>
       </div>
@@ -514,6 +565,7 @@ const MaterialCard: React.FC<{
         </div>
       </div>
     </div>
+    </>
   );
 };
 
