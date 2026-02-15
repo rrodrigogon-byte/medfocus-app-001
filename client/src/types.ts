@@ -81,7 +81,8 @@ export type View =
   | 'notifications'
   | 'resources'
   | 'spacedRepetition'
-  | 'classroom';
+  | 'classroom'
+  | 'analytics';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {

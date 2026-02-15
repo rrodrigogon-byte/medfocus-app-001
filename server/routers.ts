@@ -2,12 +2,13 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { TRPCError } from "@trpc/server";
 import { invokeLLM } from "./_core/llm";
 import { ENV } from "./_core/env";
 import { z } from "zod";
 import Stripe from "stripe";
 import { PLANS } from "./products";
-import { getOrCreateProgress, addXp, getXpHistory, logStudySession, updateUserProfile } from "./db";
+import { getOrCreateProgress, addXp, getXpHistory, logStudySession, updateUserProfile, createClassroom, getClassroomsByProfessor, getClassroomsByStudent, getClassroomById, joinClassroom, getEnrollments, removeEnrollment, createActivity, getActivitiesByClassroom, updateActivity, submitActivity, gradeSubmission, getSubmissionsByActivity, getStudentSubmissions, getClassroomAnalytics } from "./db";
 
 function getStripe() {
   return new Stripe(ENV.stripeSecretKey, { apiVersion: "2026-01-28.clover" });
@@ -304,6 +305,140 @@ Retorne um JSON com esta estrutura exata:
         });
         const content = response.choices[0]?.message?.content;
         return typeof content === "string" ? content : "Resumo indisponível.";
+      }),
+  }),
+
+  // ─── Classroom Router ─────────────────────────────────
+  classroom: router({
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string().min(3),
+        subject: z.string().min(2),
+        year: z.number().min(1).max(6),
+        semester: z.number().min(1).max(2),
+        university: z.string().min(2),
+        description: z.string().optional(),
+        maxStudents: z.number().min(1).max(200).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const room = await createClassroom({ ...input, professorId: ctx.user.id });
+        if (!room) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Falha ao criar sala' });
+        return room;
+      }),
+
+    myClassrooms: protectedProcedure.query(async ({ ctx }) => {
+      const asProfessor = await getClassroomsByProfessor(ctx.user.id);
+      const asStudent = await getClassroomsByStudent(ctx.user.id);
+      return { asProfessor, asStudent };
+    }),
+
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const room = await getClassroomById(input.id);
+        if (!room) throw new TRPCError({ code: 'NOT_FOUND', message: 'Sala não encontrada' });
+        return room;
+      }),
+
+    join: protectedProcedure
+      .input(z.object({ code: z.string().min(4) }))
+      .mutation(async ({ ctx, input }) => {
+        const result = await joinClassroom(input.code, ctx.user.id);
+        if ('error' in result) throw new TRPCError({ code: 'BAD_REQUEST', message: result.error });
+        return result.classroom;
+      }),
+
+    enrollments: protectedProcedure
+      .input(z.object({ classroomId: z.number() }))
+      .query(async ({ input }) => {
+        return getEnrollments(input.classroomId);
+      }),
+
+    removeStudent: protectedProcedure
+      .input(z.object({ enrollmentId: z.number() }))
+      .mutation(async ({ input }) => {
+        await removeEnrollment(input.enrollmentId);
+        return { success: true };
+      }),
+
+    createActivity: protectedProcedure
+      .input(z.object({
+        classroomId: z.number(),
+        title: z.string().min(3),
+        type: z.enum(['quiz', 'flashcards', 'assignment', 'reading', 'discussion']),
+        description: z.string().optional(),
+        dueDate: z.date().optional(),
+        points: z.number().optional(),
+        content: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const activity = await createActivity(input);
+        if (!activity) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Falha ao criar atividade' });
+        return activity;
+      }),
+
+    activities: protectedProcedure
+      .input(z.object({ classroomId: z.number() }))
+      .query(async ({ input }) => {
+        return getActivitiesByClassroom(input.classroomId);
+      }),
+
+    updateActivity: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        title: z.string().optional(),
+        description: z.string().optional(),
+        dueDate: z.date().optional(),
+        points: z.number().optional(),
+        status: z.string().optional(),
+        content: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        await updateActivity(id, data);
+        return { success: true };
+      }),
+
+    submit: protectedProcedure
+      .input(z.object({
+        activityId: z.number(),
+        response: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const sub = await submitActivity(input.activityId, ctx.user.id, input.response);
+        if (!sub) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Falha ao enviar resposta' });
+        return sub;
+      }),
+
+    grade: protectedProcedure
+      .input(z.object({
+        submissionId: z.number(),
+        score: z.number().min(0).max(100),
+        feedback: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        await gradeSubmission(input.submissionId, input.score, input.feedback);
+        return { success: true };
+      }),
+
+    submissions: protectedProcedure
+      .input(z.object({ activityId: z.number() }))
+      .query(async ({ input }) => {
+        return getSubmissionsByActivity(input.activityId);
+      }),
+
+    studentSubmissions: protectedProcedure
+      .input(z.object({ classroomId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        return getStudentSubmissions(ctx.user.id, input.classroomId);
+      }),
+
+    analytics: protectedProcedure
+      .input(z.object({ classroomId: z.number() }))
+      .query(async ({ input }) => {
+        const data = await getClassroomAnalytics(input.classroomId);
+        if (!data) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Falha ao carregar analytics' });
+        return data;
       }),
   }),
 });

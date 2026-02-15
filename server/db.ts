@@ -1,6 +1,6 @@
-import { eq, sql, desc } from "drizzle-orm";
+import { eq, and, sql, desc, count, avg } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, userProgress, xpLog, studySessions } from "../drizzle/schema";
+import { InsertUser, users, userProgress, xpLog, studySessions, classrooms, enrollments, activities, submissions } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -182,4 +182,235 @@ export async function updateUserProfile(userId: number, universityId?: string, c
   if (Object.keys(updates).length > 0) {
     await db.update(users).set(updates).where(eq(users.id, userId));
   }
+}
+
+// ─── Classroom Queries ─────────────────────────────
+
+function generateCode(): string {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+export async function createClassroom(data: {
+  name: string; professorId: number; subject: string;
+  year: number; semester: number; university: string;
+  description?: string; maxStudents?: number;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  const code = generateCode();
+  await db.insert(classrooms).values({ ...data, code });
+  const result = await db.select().from(classrooms).where(eq(classrooms.code, code)).limit(1);
+  return result[0] || null;
+}
+
+export async function getClassroomsByProfessor(professorId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(classrooms).where(eq(classrooms.professorId, professorId)).orderBy(desc(classrooms.createdAt));
+}
+
+export async function getClassroomsByStudent(studentId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const enrolled = await db.select({ classroomId: enrollments.classroomId })
+    .from(enrollments)
+    .where(and(eq(enrollments.studentId, studentId), eq(enrollments.status, 'active')));
+  if (enrolled.length === 0) return [];
+  const ids = enrolled.map(e => e.classroomId);
+  const results = await db.select().from(classrooms).where(sql`${classrooms.id} IN (${sql.join(ids.map(id => sql`${id}`), sql`, `)})`);
+  return results;
+}
+
+export async function getClassroomById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(classrooms).where(eq(classrooms.id, id)).limit(1);
+  return result[0] || null;
+}
+
+export async function joinClassroom(code: string, studentId: number) {
+  const db = await getDb();
+  if (!db) return { error: 'Database not available' };
+  const room = await db.select().from(classrooms).where(eq(classrooms.code, code)).limit(1);
+  if (room.length === 0) return { error: 'Sala não encontrada' };
+  const classroom = room[0];
+  if (!classroom.isActive) return { error: 'Sala não está ativa' };
+  // Check if already enrolled
+  const existing = await db.select().from(enrollments)
+    .where(and(eq(enrollments.classroomId, classroom.id), eq(enrollments.studentId, studentId))).limit(1);
+  if (existing.length > 0 && existing[0].status === 'active') return { error: 'Você já está matriculado nesta sala' };
+  if (existing.length > 0) {
+    await db.update(enrollments).set({ status: 'active' }).where(eq(enrollments.id, existing[0].id));
+  } else {
+    // Check max students
+    const enrolledCount = await db.select({ count: count() }).from(enrollments)
+      .where(and(eq(enrollments.classroomId, classroom.id), eq(enrollments.status, 'active')));
+    if (enrolledCount[0].count >= classroom.maxStudents) return { error: 'Sala lotada' };
+    await db.insert(enrollments).values({ classroomId: classroom.id, studentId });
+  }
+  return { classroom };
+}
+
+export async function getEnrollments(classroomId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const enrolled = await db.select()
+    .from(enrollments)
+    .where(and(eq(enrollments.classroomId, classroomId), eq(enrollments.status, 'active')));
+  if (enrolled.length === 0) return [];
+  const studentIds = enrolled.map(e => e.studentId);
+  const students = await db.select({ id: users.id, name: users.name, email: users.email })
+    .from(users)
+    .where(sql`${users.id} IN (${sql.join(studentIds.map(id => sql`${id}`), sql`, `)})`);
+  return enrolled.map(e => ({
+    ...e,
+    student: students.find(s => s.id === e.studentId) || { id: e.studentId, name: 'Desconhecido', email: null },
+  }));
+}
+
+export async function removeEnrollment(enrollmentId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(enrollments).set({ status: 'removed' }).where(eq(enrollments.id, enrollmentId));
+}
+
+// ─── Activity Queries ─────────────────────────────
+
+export async function createActivity(data: {
+  classroomId: number; title: string;
+  type: 'quiz' | 'flashcards' | 'assignment' | 'reading' | 'discussion';
+  description?: string; dueDate?: Date; points?: number; content?: string;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  await db.insert(activities).values({ ...data, status: 'active' });
+  const result = await db.select().from(activities)
+    .where(and(eq(activities.classroomId, data.classroomId), eq(activities.title, data.title)))
+    .orderBy(desc(activities.createdAt)).limit(1);
+  return result[0] || null;
+}
+
+export async function getActivitiesByClassroom(classroomId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(activities).where(eq(activities.classroomId, classroomId)).orderBy(desc(activities.createdAt));
+}
+
+export async function updateActivity(id: number, data: Partial<{ title: string; description: string; dueDate: Date; points: number; status: string; content: string }>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(activities).set(data as any).where(eq(activities.id, id));
+}
+
+// ─── Submission Queries ─────────────────────────────
+
+export async function submitActivity(activityId: number, studentId: number, response: string) {
+  const db = await getDb();
+  if (!db) return null;
+  // Check if already submitted
+  const existing = await db.select().from(submissions)
+    .where(and(eq(submissions.activityId, activityId), eq(submissions.studentId, studentId))).limit(1);
+  if (existing.length > 0) {
+    await db.update(submissions).set({ response, status: 'submitted', submittedAt: new Date() }).where(eq(submissions.id, existing[0].id));
+    return { ...existing[0], response, status: 'submitted' };
+  }
+  await db.insert(submissions).values({ activityId, studentId, response, status: 'submitted', submittedAt: new Date() });
+  const result = await db.select().from(submissions)
+    .where(and(eq(submissions.activityId, activityId), eq(submissions.studentId, studentId))).limit(1);
+  return result[0] || null;
+}
+
+export async function gradeSubmission(submissionId: number, score: number, feedback?: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(submissions).set({ score, feedback, status: 'graded', gradedAt: new Date() }).where(eq(submissions.id, submissionId));
+}
+
+export async function getSubmissionsByActivity(activityId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const subs = await db.select().from(submissions).where(eq(submissions.activityId, activityId));
+  if (subs.length === 0) return [];
+  const studentIds = Array.from(new Set(subs.map(s => s.studentId)));
+  const students = await db.select({ id: users.id, name: users.name, email: users.email })
+    .from(users)
+    .where(sql`${users.id} IN (${sql.join(studentIds.map(id => sql`${id}`), sql`, `)})`);
+  return subs.map(s => ({
+    ...s,
+    student: students.find(st => st.id === s.studentId) || { id: s.studentId, name: 'Desconhecido', email: null },
+  }));
+}
+
+export async function getStudentSubmissions(studentId: number, classroomId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const acts = await db.select({ id: activities.id }).from(activities).where(eq(activities.classroomId, classroomId));
+  if (acts.length === 0) return [];
+  const actIds = acts.map(a => a.id);
+  return db.select().from(submissions)
+    .where(and(
+      eq(submissions.studentId, studentId),
+      sql`${submissions.activityId} IN (${sql.join(actIds.map(id => sql`${id}`), sql`, `)})`
+    ));
+}
+
+// ─── Analytics Queries ─────────────────────────────
+
+export async function getClassroomAnalytics(classroomId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const enrolledCount = await db.select({ count: count() }).from(enrollments)
+    .where(and(eq(enrollments.classroomId, classroomId), eq(enrollments.status, 'active')));
+  
+  const acts = await db.select().from(activities).where(eq(activities.classroomId, classroomId));
+  const actIds = acts.map(a => a.id);
+  
+  let totalSubmissions = 0;
+  let gradedSubmissions = 0;
+  let avgScore = 0;
+  let atRiskStudents: { id: number; name: string | null; email: string | null; avgScore: number }[] = [];
+  
+  if (actIds.length > 0) {
+    const allSubs = await db.select().from(submissions)
+      .where(sql`${submissions.activityId} IN (${sql.join(actIds.map(id => sql`${id}`), sql`, `)})`);
+    totalSubmissions = allSubs.length;
+    const graded = allSubs.filter(s => s.status === 'graded');
+    gradedSubmissions = graded.length;
+    avgScore = graded.length > 0 ? graded.reduce((sum, s) => sum + (s.score || 0), 0) / graded.length : 0;
+    
+    // Find at-risk students (avg score < 60)
+    const studentScores: Record<number, number[]> = {};
+    graded.forEach(s => {
+      if (!studentScores[s.studentId]) studentScores[s.studentId] = [];
+      studentScores[s.studentId].push(s.score || 0);
+    });
+    
+    const atRiskIds = Object.entries(studentScores)
+      .filter(([, scores]) => scores.reduce((a, b) => a + b, 0) / scores.length < 60)
+      .map(([id]) => Number(id));
+    
+    if (atRiskIds.length > 0) {
+      const students = await db.select({ id: users.id, name: users.name, email: users.email })
+        .from(users)
+        .where(sql`${users.id} IN (${sql.join(atRiskIds.map(id => sql`${id}`), sql`, `)})`);
+      atRiskStudents = students.map(s => ({
+        ...s,
+        avgScore: studentScores[s.id] ? studentScores[s.id].reduce((a, b) => a + b, 0) / studentScores[s.id].length : 0,
+      }));
+    }
+  }
+  
+  return {
+    enrolledStudents: enrolledCount[0].count,
+    totalActivities: acts.length,
+    activeActivities: acts.filter(a => a.status === 'active').length,
+    totalSubmissions,
+    gradedSubmissions,
+    avgScore: Math.round(avgScore * 10) / 10,
+    completionRate: totalSubmissions > 0 && enrolledCount[0].count > 0 && acts.length > 0
+      ? Math.round((totalSubmissions / (enrolledCount[0].count * acts.length)) * 100)
+      : 0,
+    atRiskStudents,
+  };
 }

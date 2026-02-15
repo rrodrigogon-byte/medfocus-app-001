@@ -47,3 +47,8 @@
 - [x] MaterialViewer migrado para tRPC (removido Google GenAI do frontend)
 - [x] 30 materiais acadêmicos validados de 7 universidades
 - [x] ClassroomPanel com gestão de salas, atividades e progresso de alunos
+- [x] Criar tabelas de classrooms, enrollments, activities e submissions no banco
+- [x] Implementar rotas tRPC para CRUD de salas, matrículas e atividades
+- [x] Migrar ClassroomPanel de dados mock para tRPC
+- [x] Modo offline com Service Worker para flashcards e quizzes
+- [x] Painel de analytics para professores com gráficos e alertas de alunos em risco

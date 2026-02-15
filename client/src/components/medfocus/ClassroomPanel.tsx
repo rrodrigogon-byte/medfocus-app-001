@@ -1,192 +1,177 @@
 /**
  * ClassroomPanel - Controle de Salas e Atividades por Professores
  * 
- * Permite professores criarem salas de aula virtuais, atribuírem atividades,
- * acompanharem o progresso dos alunos e gerenciarem turmas.
- * Alunos podem entrar em salas via código, ver atividades e acompanhar seu progresso.
+ * Conectado ao banco de dados via tRPC.
+ * Professores: criar salas, atribuir atividades, ver progresso dos alunos.
+ * Alunos: entrar em salas via código, ver atividades, submeter respostas.
  */
 import React, { useState, useMemo } from 'react';
 import { User } from '../../types';
+import { trpc } from '@/lib/trpc';
+import { toast } from 'sonner';
 
 interface ClassroomPanelProps {
   user: User;
 }
 
-interface Classroom {
-  id: string;
-  name: string;
-  code: string;
-  professor: string;
-  subject: string;
-  year: number;
-  semester: number;
-  university: string;
-  description: string;
-  students: number;
-  maxStudents: number;
-  activities: Activity[];
-  createdAt: number;
-  isActive: boolean;
-}
+type PanelView = 'list' | 'create' | 'detail' | 'join' | 'createActivity';
 
-interface Activity {
-  id: string;
-  title: string;
-  type: 'quiz' | 'flashcards' | 'assignment' | 'reading' | 'discussion';
-  description: string;
-  dueDate: number;
-  points: number;
-  status: 'pending' | 'active' | 'completed' | 'overdue';
-  completedBy: number; // percentage
-  attachments?: string[];
-}
+const getActivityIcon = (type: string) => {
+  switch (type) {
+    case 'quiz': return '❓';
+    case 'flashcards': return '🃏';
+    case 'assignment': return '📝';
+    case 'reading': return '📖';
+    case 'discussion': return '💬';
+    default: return '📋';
+  }
+};
 
-interface StudentProgress {
-  studentName: string;
-  activitiesCompleted: number;
-  totalActivities: number;
-  averageScore: number;
-  streak: number;
-  lastActive: number;
-  xpEarned: number;
-}
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'active': return 'bg-teal-500/10 text-teal-500';
+    case 'draft': return 'bg-blue-500/10 text-blue-500';
+    case 'completed': return 'bg-green-500/10 text-green-500';
+    case 'archived': return 'bg-gray-500/10 text-gray-500';
+    default: return 'bg-muted text-muted-foreground';
+  }
+};
 
-type PanelView = 'list' | 'create' | 'detail' | 'join' | 'activity';
+const getStatusLabel = (status: string) => {
+  switch (status) {
+    case 'active': return 'Ativa';
+    case 'draft': return 'Rascunho';
+    case 'completed': return 'Concluída';
+    case 'archived': return 'Arquivada';
+    default: return status;
+  }
+};
 
-const MOCK_CLASSROOMS: Classroom[] = [
-  {
-    id: 'sala_1',
-    name: 'Anatomia Humana - Turma A',
-    code: 'MED-ANA-2026A',
-    professor: 'Prof. Dr. Carlos Silva',
-    subject: 'Anatomia',
-    year: 1,
-    semester: 1,
-    university: 'USP',
-    description: 'Turma de Anatomia Humana do 1º ano de Medicina. Inclui aulas teóricas, práticas em laboratório e avaliações semanais.',
-    students: 45,
-    maxStudents: 60,
-    activities: [
-      { id: 'a1', title: 'Quiz: Sistema Esquelético', type: 'quiz', description: 'Avaliação sobre ossos do membro superior e inferior', dueDate: Date.now() + 3 * 24 * 60 * 60 * 1000, points: 100, status: 'active', completedBy: 62 },
-      { id: 'a2', title: 'Flashcards: Músculos do Tronco', type: 'flashcards', description: 'Revisão dos principais músculos do tronco com origem, inserção e ação', dueDate: Date.now() + 7 * 24 * 60 * 60 * 1000, points: 50, status: 'active', completedBy: 35 },
-      { id: 'a3', title: 'Leitura: Netter Cap. 4-6', type: 'reading', description: 'Leitura dos capítulos 4 a 6 do Atlas de Anatomia Humana (Netter)', dueDate: Date.now() + 5 * 24 * 60 * 60 * 1000, points: 30, status: 'pending', completedBy: 18 },
-      { id: 'a4', title: 'Discussão: Caso Clínico - Fratura de Fêmur', type: 'discussion', description: 'Análise de caso clínico correlacionando anatomia com a clínica', dueDate: Date.now() - 1 * 24 * 60 * 60 * 1000, points: 80, status: 'completed', completedBy: 89 },
-    ],
-    createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
-    isActive: true,
-  },
-  {
-    id: 'sala_2',
-    name: 'Fisiologia Cardiovascular - Turma B',
-    code: 'MED-FIS-2026B',
-    professor: 'Profa. Dra. Ana Martins',
-    subject: 'Fisiologia',
-    year: 2,
-    semester: 1,
-    university: 'UNICAMP',
-    description: 'Estudo aprofundado do sistema cardiovascular: hemodinâmica, eletrofisiologia cardíaca e regulação da pressão arterial.',
-    students: 38,
-    maxStudents: 50,
-    activities: [
-      { id: 'b1', title: 'Quiz: Ciclo Cardíaco', type: 'quiz', description: 'Avaliação sobre as fases do ciclo cardíaco e curvas de pressão-volume', dueDate: Date.now() + 2 * 24 * 60 * 60 * 1000, points: 100, status: 'active', completedBy: 45 },
-      { id: 'b2', title: 'Trabalho: Regulação da PA', type: 'assignment', description: 'Trabalho escrito sobre mecanismos de regulação da pressão arterial', dueDate: Date.now() + 14 * 24 * 60 * 60 * 1000, points: 200, status: 'pending', completedBy: 5 },
-    ],
-    createdAt: Date.now() - 15 * 24 * 60 * 60 * 1000,
-    isActive: true,
-  },
-  {
-    id: 'sala_3',
-    name: 'Clínica Médica I - Turma A',
-    code: 'MED-CLI-2026A',
-    professor: 'Prof. Dr. Roberto Almeida',
-    subject: 'Clínica Médica',
-    year: 4,
-    semester: 1,
-    university: 'UFMG',
-    description: 'Introdução à semiologia e propedêutica médica. Anamnese, exame físico e raciocínio clínico.',
-    students: 52,
-    maxStudents: 60,
-    activities: [
-      { id: 'c1', title: 'Caso Clínico: Dor Torácica', type: 'discussion', description: 'Discussão de caso clínico de paciente com dor torácica aguda', dueDate: Date.now() + 1 * 24 * 60 * 60 * 1000, points: 150, status: 'active', completedBy: 70 },
-      { id: 'c2', title: 'Quiz: Semiologia Cardíaca', type: 'quiz', description: 'Avaliação sobre ausculta cardíaca e sopros', dueDate: Date.now() + 4 * 24 * 60 * 60 * 1000, points: 100, status: 'active', completedBy: 28 },
-    ],
-    createdAt: Date.now() - 45 * 24 * 60 * 60 * 1000,
-    isActive: true,
-  },
-];
-
-const MOCK_STUDENTS: StudentProgress[] = [
-  { studentName: 'Maria Oliveira', activitiesCompleted: 12, totalActivities: 15, averageScore: 87, streak: 5, lastActive: Date.now() - 2 * 60 * 60 * 1000, xpEarned: 2450 },
-  { studentName: 'João Santos', activitiesCompleted: 14, totalActivities: 15, averageScore: 92, streak: 12, lastActive: Date.now() - 30 * 60 * 1000, xpEarned: 3100 },
-  { studentName: 'Ana Costa', activitiesCompleted: 10, totalActivities: 15, averageScore: 78, streak: 3, lastActive: Date.now() - 24 * 60 * 60 * 1000, xpEarned: 1890 },
-  { studentName: 'Pedro Lima', activitiesCompleted: 15, totalActivities: 15, averageScore: 95, streak: 15, lastActive: Date.now() - 1 * 60 * 60 * 1000, xpEarned: 3650 },
-  { studentName: 'Carla Souza', activitiesCompleted: 8, totalActivities: 15, averageScore: 72, streak: 0, lastActive: Date.now() - 3 * 24 * 60 * 60 * 1000, xpEarned: 1420 },
-  { studentName: 'Lucas Ferreira', activitiesCompleted: 11, totalActivities: 15, averageScore: 84, streak: 7, lastActive: Date.now() - 5 * 60 * 60 * 1000, xpEarned: 2200 },
-];
+const formatDate = (d: Date | string | null | undefined) => {
+  if (!d) return '—';
+  const date = new Date(d);
+  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+};
 
 const ClassroomPanel: React.FC<ClassroomPanelProps> = ({ user }) => {
   const [view, setView] = useState<PanelView>('list');
-  const [selectedClassroom, setSelectedClassroom] = useState<Classroom | null>(null);
+  const [selectedClassroomId, setSelectedClassroomId] = useState<number | null>(null);
   const [joinCode, setJoinCode] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [newClassroom, setNewClassroom] = useState({
     name: '', subject: '', year: 1, semester: 1, university: '', description: '', maxStudents: 60,
   });
+  const [newActivity, setNewActivity] = useState({
+    title: '', type: 'quiz' as 'quiz' | 'flashcards' | 'assignment' | 'reading' | 'discussion',
+    description: '', points: 100, dueDate: '',
+  });
 
   const isProfessor = user.role === 'admin' || user.role === 'professor';
+  const utils = trpc.useUtils();
+
+  // ─── Queries ─────────────────────────────
+  const { data: classroomsData, isLoading: loadingClassrooms } = trpc.classroom.myClassrooms.useQuery(undefined, {
+    retry: 1,
+  });
+
+  const { data: selectedClassroom } = trpc.classroom.getById.useQuery(
+    { id: selectedClassroomId! },
+    { enabled: !!selectedClassroomId }
+  );
+
+  const { data: enrollmentsData } = trpc.classroom.enrollments.useQuery(
+    { classroomId: selectedClassroomId! },
+    { enabled: !!selectedClassroomId && isProfessor }
+  );
+
+  const { data: activitiesData } = trpc.classroom.activities.useQuery(
+    { classroomId: selectedClassroomId! },
+    { enabled: !!selectedClassroomId }
+  );
+
+  const { data: analyticsData } = trpc.classroom.analytics.useQuery(
+    { classroomId: selectedClassroomId! },
+    { enabled: !!selectedClassroomId && isProfessor }
+  );
+
+  // ─── Mutations ─────────────────────────────
+  const createMutation = trpc.classroom.create.useMutation({
+    onSuccess: (room) => {
+      toast.success(`Sala "${room.name}" criada! Código: ${room.code}`);
+      utils.classroom.myClassrooms.invalidate();
+      setView('list');
+      setNewClassroom({ name: '', subject: '', year: 1, semester: 1, university: '', description: '', maxStudents: 60 });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const joinMutation = trpc.classroom.join.useMutation({
+    onSuccess: (room) => {
+      toast.success(`Você entrou na sala "${room.name}"!`);
+      utils.classroom.myClassrooms.invalidate();
+      setSelectedClassroomId(room.id);
+      setView('detail');
+      setJoinCode('');
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const createActivityMutation = trpc.classroom.createActivity.useMutation({
+    onSuccess: () => {
+      toast.success('Atividade criada com sucesso!');
+      utils.classroom.activities.invalidate({ classroomId: selectedClassroomId! });
+      setView('detail');
+      setNewActivity({ title: '', type: 'quiz', description: '', points: 100, dueDate: '' });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const removeStudentMutation = trpc.classroom.removeStudent.useMutation({
+    onSuccess: () => {
+      toast.success('Aluno removido da sala.');
+      utils.classroom.enrollments.invalidate({ classroomId: selectedClassroomId! });
+      utils.classroom.analytics.invalidate({ classroomId: selectedClassroomId! });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const updateActivityMutation = trpc.classroom.updateActivity.useMutation({
+    onSuccess: () => {
+      toast.success('Atividade atualizada!');
+      utils.classroom.activities.invalidate({ classroomId: selectedClassroomId! });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  // ─── Derived Data ─────────────────────────────
+  const allClassrooms = useMemo(() => {
+    if (!classroomsData) return [];
+    return [...classroomsData.asProfessor, ...classroomsData.asStudent];
+  }, [classroomsData]);
 
   const filteredClassrooms = useMemo(() => {
-    return MOCK_CLASSROOMS.filter(c => {
-      if (searchTerm) {
-        const term = searchTerm.toLowerCase();
-        return c.name.toLowerCase().includes(term) || c.subject.toLowerCase().includes(term) || c.professor.toLowerCase().includes(term);
-      }
-      return true;
-    });
-  }, [searchTerm]);
+    if (!searchTerm) return allClassrooms;
+    const term = searchTerm.toLowerCase();
+    return allClassrooms.filter(c =>
+      c.name.toLowerCase().includes(term) ||
+      c.subject.toLowerCase().includes(term) ||
+      c.university.toLowerCase().includes(term)
+    );
+  }, [allClassrooms, searchTerm]);
 
-  const getActivityIcon = (type: Activity['type']) => {
-    switch (type) {
-      case 'quiz': return '❓';
-      case 'flashcards': return '🃏';
-      case 'assignment': return '📝';
-      case 'reading': return '📖';
-      case 'discussion': return '💬';
-    }
-  };
+  // ─── Loading State ─────────────────────────────
+  if (loadingClassrooms) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">Carregando salas...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const getStatusColor = (status: Activity['status']) => {
-    switch (status) {
-      case 'active': return 'bg-teal-500/10 text-teal-500';
-      case 'pending': return 'bg-blue-500/10 text-blue-500';
-      case 'completed': return 'bg-green-500/10 text-green-500';
-      case 'overdue': return 'bg-red-500/10 text-red-500';
-    }
-  };
-
-  const getStatusLabel = (status: Activity['status']) => {
-    switch (status) {
-      case 'active': return 'Ativa';
-      case 'pending': return 'Pendente';
-      case 'completed': return 'Concluída';
-      case 'overdue': return 'Atrasada';
-    }
-  };
-
-  const formatDate = (ts: number) => {
-    const d = new Date(ts);
-    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
-  };
-
-  const formatTimeAgo = (ts: number) => {
-    const diff = Date.now() - ts;
-    const hours = Math.floor(diff / (60 * 60 * 1000));
-    if (hours < 1) return 'Agora';
-    if (hours < 24) return `${hours}h atrás`;
-    return `${Math.floor(hours / 24)}d atrás`;
-  };
-
-  // List View
+  // ─── List View ─────────────────────────────
   const renderList = () => (
     <div className="space-y-6">
       {/* Header Actions */}
@@ -220,24 +205,20 @@ const ClassroomPanel: React.FC<ClassroomPanelProps> = ({ user }) => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-card rounded-xl p-4 border border-border">
           <p className="text-xs text-muted-foreground">Minhas Salas</p>
-          <p className="text-2xl font-bold text-foreground">{filteredClassrooms.length}</p>
+          <p className="text-2xl font-bold text-foreground">{allClassrooms.length}</p>
         </div>
         <div className="bg-card rounded-xl p-4 border border-border">
-          <p className="text-xs text-muted-foreground">Atividades Ativas</p>
-          <p className="text-2xl font-bold text-teal-500">
-            {filteredClassrooms.reduce((sum, c) => sum + c.activities.filter(a => a.status === 'active').length, 0)}
-          </p>
+          <p className="text-xs text-muted-foreground">Como Professor</p>
+          <p className="text-2xl font-bold text-teal-500">{classroomsData?.asProfessor.length || 0}</p>
         </div>
         <div className="bg-card rounded-xl p-4 border border-border">
-          <p className="text-xs text-muted-foreground">Total Alunos</p>
-          <p className="text-2xl font-bold text-blue-500">
-            {filteredClassrooms.reduce((sum, c) => sum + c.students, 0)}
-          </p>
+          <p className="text-xs text-muted-foreground">Como Aluno</p>
+          <p className="text-2xl font-bold text-blue-500">{classroomsData?.asStudent.length || 0}</p>
         </div>
         <div className="bg-card rounded-xl p-4 border border-border">
-          <p className="text-xs text-muted-foreground">Média Conclusão</p>
+          <p className="text-xs text-muted-foreground">Salas Ativas</p>
           <p className="text-2xl font-bold text-green-500">
-            {Math.round(filteredClassrooms.reduce((sum, c) => sum + c.activities.reduce((s, a) => s + a.completedBy, 0) / Math.max(c.activities.length, 1), 0) / Math.max(filteredClassrooms.length, 1))}%
+            {allClassrooms.filter(c => c.isActive).length}
           </p>
         </div>
       </div>
@@ -247,38 +228,24 @@ const ClassroomPanel: React.FC<ClassroomPanelProps> = ({ user }) => {
         {filteredClassrooms.map(classroom => (
           <div
             key={classroom.id}
-            onClick={() => { setSelectedClassroom(classroom); setView('detail'); }}
+            onClick={() => { setSelectedClassroomId(classroom.id); setView('detail'); }}
             className="bg-card rounded-xl border border-border p-4 hover:border-teal-500/30 transition-all cursor-pointer"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="text-sm font-bold text-foreground">{classroom.name}</h3>
-                  {classroom.isActive && (
-                    <span className="w-2 h-2 rounded-full bg-green-500" />
-                  )}
+                  {classroom.isActive && <span className="w-2 h-2 rounded-full bg-green-500" />}
                 </div>
-                <p className="text-xs text-muted-foreground">{classroom.professor} · {classroom.university}</p>
-                <p className="text-xs text-muted-foreground mt-1">{classroom.description.slice(0, 100)}...</p>
+                <p className="text-xs text-muted-foreground">{classroom.university} · {classroom.year}º ano · {classroom.semester}º sem</p>
+                {classroom.description && (
+                  <p className="text-xs text-muted-foreground mt-1">{classroom.description.slice(0, 100)}...</p>
+                )}
               </div>
               <div className="text-right shrink-0">
                 <p className="text-xs font-mono text-teal-500 bg-teal-500/10 px-2 py-0.5 rounded">{classroom.code}</p>
-                <p className="text-[10px] text-muted-foreground mt-1">{classroom.students}/{classroom.maxStudents} alunos</p>
+                <p className="text-[10px] text-muted-foreground mt-1">{classroom.subject}</p>
               </div>
-            </div>
-
-            {/* Activity Summary */}
-            <div className="flex items-center gap-3 mt-3 pt-3 border-t border-border">
-              {classroom.activities.filter(a => a.status === 'active').slice(0, 3).map(activity => (
-                <span key={activity.id} className="flex items-center gap-1 text-[10px] text-muted-foreground bg-muted px-2 py-1 rounded-lg">
-                  {getActivityIcon(activity.type)} {activity.title.slice(0, 25)}...
-                </span>
-              ))}
-              {classroom.activities.filter(a => a.status === 'active').length > 3 && (
-                <span className="text-[10px] text-muted-foreground">
-                  +{classroom.activities.filter(a => a.status === 'active').length - 3} mais
-                </span>
-              )}
             </div>
           </div>
         ))}
@@ -296,61 +263,76 @@ const ClassroomPanel: React.FC<ClassroomPanelProps> = ({ user }) => {
     </div>
   );
 
-  // Detail View
+  // ─── Detail View ─────────────────────────────
   const renderDetail = () => {
-    if (!selectedClassroom) return null;
+    if (!selectedClassroom) {
+      return (
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      );
+    }
 
     return (
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <button onClick={() => { setView('list'); setSelectedClassroom(null); }} className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
+          <button onClick={() => { setView('list'); setSelectedClassroomId(null); }} className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
           </button>
           <div className="flex-1">
             <h2 className="text-lg font-bold text-foreground">{selectedClassroom.name}</h2>
-            <p className="text-xs text-muted-foreground">{selectedClassroom.professor} · {selectedClassroom.university} · {selectedClassroom.year}º ano</p>
+            <p className="text-xs text-muted-foreground">{selectedClassroom.university} · {selectedClassroom.year}º ano · {selectedClassroom.subject}</p>
           </div>
           <span className="text-xs font-mono text-teal-500 bg-teal-500/10 px-3 py-1 rounded-lg">{selectedClassroom.code}</span>
         </div>
 
         {/* Classroom Stats */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-card rounded-xl p-3 border border-border text-center">
-            <p className="text-xl font-bold text-foreground">{selectedClassroom.students}</p>
-            <p className="text-[10px] text-muted-foreground">Alunos</p>
+        {analyticsData && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-card rounded-xl p-3 border border-border text-center">
+              <p className="text-xl font-bold text-foreground">{analyticsData.enrolledStudents}</p>
+              <p className="text-[10px] text-muted-foreground">Alunos</p>
+            </div>
+            <div className="bg-card rounded-xl p-3 border border-border text-center">
+              <p className="text-xl font-bold text-teal-500">{analyticsData.activeActivities}</p>
+              <p className="text-[10px] text-muted-foreground">Ativas</p>
+            </div>
+            <div className="bg-card rounded-xl p-3 border border-border text-center">
+              <p className="text-xl font-bold text-blue-500">{analyticsData.totalSubmissions}</p>
+              <p className="text-[10px] text-muted-foreground">Submissões</p>
+            </div>
+            <div className="bg-card rounded-xl p-3 border border-border text-center">
+              <p className="text-xl font-bold text-green-500">{analyticsData.completionRate}%</p>
+              <p className="text-[10px] text-muted-foreground">Conclusão</p>
+            </div>
           </div>
-          <div className="bg-card rounded-xl p-3 border border-border text-center">
-            <p className="text-xl font-bold text-teal-500">{selectedClassroom.activities.filter(a => a.status === 'active').length}</p>
-            <p className="text-[10px] text-muted-foreground">Ativas</p>
-          </div>
-          <div className="bg-card rounded-xl p-3 border border-border text-center">
-            <p className="text-xl font-bold text-green-500">
-              {Math.round(selectedClassroom.activities.reduce((s, a) => s + a.completedBy, 0) / Math.max(selectedClassroom.activities.length, 1))}%
-            </p>
-            <p className="text-[10px] text-muted-foreground">Conclusão</p>
-          </div>
-        </div>
+        )}
 
         {/* Activities */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-foreground">Atividades</h3>
+            <h3 className="text-sm font-bold text-foreground">Atividades ({activitiesData?.length || 0})</h3>
             {isProfessor && (
-              <button className="text-xs text-teal-500 hover:text-teal-400 font-medium">
+              <button
+                onClick={() => setView('createActivity')}
+                className="text-xs text-teal-500 hover:text-teal-400 font-medium"
+              >
                 + Nova Atividade
               </button>
             )}
           </div>
           <div className="space-y-2">
-            {selectedClassroom.activities.map(activity => (
+            {activitiesData?.map(activity => (
               <div key={activity.id} className="bg-card rounded-xl border border-border p-4 hover:border-teal-500/30 transition-all">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
                     <span className="text-xl">{getActivityIcon(activity.type)}</span>
                     <div>
                       <h4 className="text-sm font-medium text-foreground">{activity.title}</h4>
-                      <p className="text-xs text-muted-foreground mt-0.5">{activity.description}</p>
+                      {activity.description && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{activity.description}</p>
+                      )}
                       <div className="flex items-center gap-3 mt-2">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${getStatusColor(activity.status)}`}>
                           {getStatusLabel(activity.status)}
@@ -364,66 +346,63 @@ const ClassroomPanel: React.FC<ClassroomPanelProps> = ({ user }) => {
                       </div>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <div className="w-12 h-12 rounded-full border-2 border-teal-500/30 flex items-center justify-center">
-                      <span className="text-xs font-bold text-teal-500">{activity.completedBy}%</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Progress bar */}
-                <div className="mt-3 h-1.5 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-teal-500 rounded-full transition-all" style={{ width: `${activity.completedBy}%` }} />
+                  {isProfessor && activity.status === 'draft' && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        updateActivityMutation.mutate({ id: activity.id, status: 'active' });
+                      }}
+                      className="text-[10px] px-2 py-1 bg-teal-500 text-white rounded-lg hover:bg-teal-600"
+                    >
+                      Ativar
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
+            {(!activitiesData || activitiesData.length === 0) && (
+              <div className="text-center py-8 bg-muted/50 rounded-xl">
+                <p className="text-sm text-muted-foreground">Nenhuma atividade ainda.</p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Student Progress (Professor View) */}
-        {isProfessor && (
+        {/* Enrolled Students (Professor View) */}
+        {isProfessor && enrollmentsData && enrollmentsData.length > 0 && (
           <div>
-            <h3 className="text-sm font-bold text-foreground mb-3">Progresso dos Alunos</h3>
+            <h3 className="text-sm font-bold text-foreground mb-3">Alunos Matriculados ({enrollmentsData.length})</h3>
             <div className="bg-card rounded-xl border border-border overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border">
                       <th className="text-left p-3 text-xs text-muted-foreground font-medium">Aluno</th>
-                      <th className="text-center p-3 text-xs text-muted-foreground font-medium">Atividades</th>
-                      <th className="text-center p-3 text-xs text-muted-foreground font-medium">Média</th>
-                      <th className="text-center p-3 text-xs text-muted-foreground font-medium">Streak</th>
-                      <th className="text-center p-3 text-xs text-muted-foreground font-medium">XP</th>
-                      <th className="text-right p-3 text-xs text-muted-foreground font-medium">Último Acesso</th>
+                      <th className="text-center p-3 text-xs text-muted-foreground font-medium">Email</th>
+                      <th className="text-center p-3 text-xs text-muted-foreground font-medium">Matriculado em</th>
+                      <th className="text-right p-3 text-xs text-muted-foreground font-medium">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {MOCK_STUDENTS.map((student, i) => (
-                      <tr key={i} className="border-b border-border/50 hover:bg-muted/50">
+                    {enrollmentsData.map((enrollment: any) => (
+                      <tr key={enrollment.id} className="border-b border-border/50 hover:bg-muted/50">
                         <td className="p-3">
                           <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-full bg-teal-500/20 flex items-center justify-center text-[10px] font-bold text-teal-500">
-                              {student.studentName.charAt(0)}
+                              {enrollment.student?.name?.charAt(0) || '?'}
                             </div>
-                            <span className="text-sm text-foreground font-medium">{student.studentName}</span>
+                            <span className="text-sm text-foreground font-medium">{enrollment.student?.name || 'Desconhecido'}</span>
                           </div>
                         </td>
-                        <td className="p-3 text-center">
-                          <span className="text-sm text-foreground">{student.activitiesCompleted}/{student.totalActivities}</span>
-                        </td>
-                        <td className="p-3 text-center">
-                          <span className={`text-sm font-medium ${student.averageScore >= 80 ? 'text-green-500' : student.averageScore >= 60 ? 'text-yellow-500' : 'text-red-500'}`}>
-                            {student.averageScore}%
-                          </span>
-                        </td>
-                        <td className="p-3 text-center">
-                          <span className="text-sm text-foreground">{student.streak} 🔥</span>
-                        </td>
-                        <td className="p-3 text-center">
-                          <span className="text-sm text-teal-500 font-medium">{student.xpEarned.toLocaleString()}</span>
-                        </td>
+                        <td className="p-3 text-center text-xs text-muted-foreground">{enrollment.student?.email || '—'}</td>
+                        <td className="p-3 text-center text-xs text-muted-foreground">{formatDate(enrollment.enrolledAt)}</td>
                         <td className="p-3 text-right">
-                          <span className="text-xs text-muted-foreground">{formatTimeAgo(student.lastActive)}</span>
+                          <button
+                            onClick={() => removeStudentMutation.mutate({ enrollmentId: enrollment.id })}
+                            className="text-[10px] text-red-500 hover:text-red-400"
+                          >
+                            Remover
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -433,11 +412,27 @@ const ClassroomPanel: React.FC<ClassroomPanelProps> = ({ user }) => {
             </div>
           </div>
         )}
+
+        {/* At-Risk Students Alert */}
+        {isProfessor && analyticsData && analyticsData.atRiskStudents.length > 0 && (
+          <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4">
+            <h3 className="text-sm font-bold text-red-500 mb-2">Alunos em Risco ({analyticsData.atRiskStudents.length})</h3>
+            <p className="text-xs text-muted-foreground mb-3">Alunos com média abaixo de 60% nas atividades avaliadas.</p>
+            <div className="space-y-2">
+              {analyticsData.atRiskStudents.map((student: any) => (
+                <div key={student.id} className="flex items-center justify-between bg-card rounded-lg p-2 border border-border">
+                  <span className="text-sm text-foreground">{student.name || student.email}</span>
+                  <span className="text-xs font-medium text-red-500">{Math.round(student.avgScore)}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
 
-  // Join View
+  // ─── Join View ─────────────────────────────
   const renderJoin = () => (
     <div className="max-w-md mx-auto space-y-6">
       <div className="flex items-center gap-3">
@@ -461,55 +456,23 @@ const ClassroomPanel: React.FC<ClassroomPanelProps> = ({ user }) => {
             type="text"
             value={joinCode}
             onChange={e => setJoinCode(e.target.value.toUpperCase())}
-            placeholder="MED-XXX-0000X"
+            placeholder="Ex: ABC123"
             className="w-full mt-1 px-4 py-3 bg-muted rounded-xl text-center text-lg font-mono text-foreground placeholder:text-muted-foreground border-0 focus:ring-2 focus:ring-teal-500 tracking-wider"
           />
         </div>
 
         <button
-          onClick={() => {
-            // Find classroom by code
-            const found = MOCK_CLASSROOMS.find(c => c.code === joinCode);
-            if (found) {
-              setSelectedClassroom(found);
-              setView('detail');
-              setJoinCode('');
-            }
-          }}
-          disabled={joinCode.length < 5}
+          onClick={() => joinMutation.mutate({ code: joinCode })}
+          disabled={joinCode.length < 4 || joinMutation.isPending}
           className="w-full py-3 bg-teal-500 text-white rounded-xl font-medium hover:bg-teal-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Entrar na Sala
+          {joinMutation.isPending ? 'Entrando...' : 'Entrar na Sala'}
         </button>
-
-        {joinCode.length >= 5 && !MOCK_CLASSROOMS.find(c => c.code === joinCode) && (
-          <p className="text-xs text-red-500 text-center">Código não encontrado. Verifique com seu professor.</p>
-        )}
-      </div>
-
-      {/* Quick Access */}
-      <div className="bg-card rounded-xl border border-border p-4">
-        <h3 className="text-sm font-bold text-foreground mb-3">Salas Disponíveis</h3>
-        <div className="space-y-2">
-          {MOCK_CLASSROOMS.slice(0, 3).map(c => (
-            <button
-              key={c.id}
-              onClick={() => { setSelectedClassroom(c); setView('detail'); }}
-              className="w-full flex items-center justify-between p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors text-left"
-            >
-              <div>
-                <p className="text-sm font-medium text-foreground">{c.name}</p>
-                <p className="text-[10px] text-muted-foreground">{c.professor} · {c.university}</p>
-              </div>
-              <span className="text-[10px] font-mono text-teal-500">{c.code}</span>
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   );
 
-  // Create View (Professor only)
+  // ─── Create View (Professor only) ─────────────────────────────
   const renderCreate = () => (
     <div className="max-w-lg mx-auto space-y-6">
       <div className="flex items-center gap-3">
@@ -599,16 +562,106 @@ const ClassroomPanel: React.FC<ClassroomPanelProps> = ({ user }) => {
         </div>
 
         <button
-          onClick={() => setView('list')}
-          disabled={!newClassroom.name || !newClassroom.subject}
+          onClick={() => createMutation.mutate(newClassroom)}
+          disabled={!newClassroom.name || !newClassroom.subject || !newClassroom.university || createMutation.isPending}
           className="w-full py-3 bg-teal-500 text-white rounded-xl font-medium hover:bg-teal-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Criar Sala de Aula
+          {createMutation.isPending ? 'Criando...' : 'Criar Sala de Aula'}
         </button>
 
         <p className="text-[10px] text-muted-foreground text-center">
           Um código único será gerado automaticamente para compartilhar com seus alunos.
         </p>
+      </div>
+    </div>
+  );
+
+  // ─── Create Activity View ─────────────────────────────
+  const renderCreateActivity = () => (
+    <div className="max-w-lg mx-auto space-y-6">
+      <div className="flex items-center gap-3">
+        <button onClick={() => setView('detail')} className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <h2 className="text-lg font-bold text-foreground">Nova Atividade</h2>
+      </div>
+
+      <div className="bg-card rounded-xl border border-border p-6 space-y-4">
+        <div>
+          <label className="text-xs text-muted-foreground font-medium">Título</label>
+          <input
+            type="text"
+            value={newActivity.title}
+            onChange={e => setNewActivity(prev => ({ ...prev, title: e.target.value }))}
+            placeholder="Ex: Quiz - Sistema Esquelético"
+            className="w-full mt-1 px-4 py-2.5 bg-muted rounded-xl text-sm text-foreground placeholder:text-muted-foreground border-0 focus:ring-2 focus:ring-teal-500"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-muted-foreground font-medium">Tipo</label>
+            <select
+              value={newActivity.type}
+              onChange={e => setNewActivity(prev => ({ ...prev, type: e.target.value as any }))}
+              className="w-full mt-1 px-3 py-2.5 bg-muted rounded-xl text-sm text-foreground border-0 focus:ring-2 focus:ring-teal-500"
+            >
+              <option value="quiz">Quiz</option>
+              <option value="flashcards">Flashcards</option>
+              <option value="assignment">Trabalho</option>
+              <option value="reading">Leitura</option>
+              <option value="discussion">Discussão</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground font-medium">Pontuação</label>
+            <input
+              type="number"
+              value={newActivity.points}
+              onChange={e => setNewActivity(prev => ({ ...prev, points: Number(e.target.value) }))}
+              className="w-full mt-1 px-3 py-2.5 bg-muted rounded-xl text-sm text-foreground border-0 focus:ring-2 focus:ring-teal-500"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs text-muted-foreground font-medium">Data de Entrega</label>
+          <input
+            type="date"
+            value={newActivity.dueDate}
+            onChange={e => setNewActivity(prev => ({ ...prev, dueDate: e.target.value }))}
+            className="w-full mt-1 px-4 py-2.5 bg-muted rounded-xl text-sm text-foreground border-0 focus:ring-2 focus:ring-teal-500"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs text-muted-foreground font-medium">Descrição</label>
+          <textarea
+            value={newActivity.description}
+            onChange={e => setNewActivity(prev => ({ ...prev, description: e.target.value }))}
+            placeholder="Descreva a atividade..."
+            rows={3}
+            className="w-full mt-1 px-4 py-2.5 bg-muted rounded-xl text-sm text-foreground placeholder:text-muted-foreground border-0 focus:ring-2 focus:ring-teal-500 resize-none"
+          />
+        </div>
+
+        <button
+          onClick={() => {
+            if (!selectedClassroomId) return;
+            createActivityMutation.mutate({
+              classroomId: selectedClassroomId,
+              title: newActivity.title,
+              type: newActivity.type,
+              description: newActivity.description || undefined,
+              points: newActivity.points,
+              dueDate: newActivity.dueDate ? new Date(newActivity.dueDate) : undefined,
+            });
+          }}
+          disabled={!newActivity.title || createActivityMutation.isPending}
+          className="w-full py-3 bg-teal-500 text-white rounded-xl font-medium hover:bg-teal-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {createActivityMutation.isPending ? 'Criando...' : 'Criar Atividade'}
+        </button>
       </div>
     </div>
   );
@@ -619,6 +672,7 @@ const ClassroomPanel: React.FC<ClassroomPanelProps> = ({ user }) => {
       {view === 'detail' && renderDetail()}
       {view === 'join' && renderJoin()}
       {view === 'create' && renderCreate()}
+      {view === 'createActivity' && renderCreateActivity()}
     </div>
   );
 };

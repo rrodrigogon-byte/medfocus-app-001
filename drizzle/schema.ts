@@ -81,3 +81,78 @@ export const studySessions = mysqlTable("study_sessions", {
 });
 
 export type StudySession = typeof studySessions.$inferSelect;
+
+/**
+ * Classrooms — virtual study rooms created by professors.
+ */
+export const classrooms = mysqlTable("classrooms", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  code: varchar("code", { length: 32 }).notNull().unique(),
+  professorId: int("professorId").notNull(),
+  subject: varchar("subject", { length: 128 }).notNull(),
+  year: int("year").notNull(),
+  semester: int("semester").notNull(),
+  university: varchar("university", { length: 128 }).notNull(),
+  description: text("description"),
+  maxStudents: int("maxStudents").default(60).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Classroom = typeof classrooms.$inferSelect;
+export type InsertClassroom = typeof classrooms.$inferInsert;
+
+/**
+ * Enrollments — students enrolled in classrooms.
+ */
+export const enrollments = mysqlTable("enrollments", {
+  id: int("id").autoincrement().primaryKey(),
+  classroomId: int("classroomId").notNull(),
+  studentId: int("studentId").notNull(),
+  status: mysqlEnum("status", ["active", "inactive", "removed"]).default("active").notNull(),
+  enrolledAt: timestamp("enrolledAt").defaultNow().notNull(),
+});
+
+export type Enrollment = typeof enrollments.$inferSelect;
+export type InsertEnrollment = typeof enrollments.$inferInsert;
+
+/**
+ * Activities — assignments, quizzes, readings created by professors for classrooms.
+ */
+export const activities = mysqlTable("activities", {
+  id: int("id").autoincrement().primaryKey(),
+  classroomId: int("classroomId").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  type: mysqlEnum("type", ["quiz", "flashcards", "assignment", "reading", "discussion"]).notNull(),
+  description: text("description"),
+  dueDate: timestamp("dueDate"),
+  points: int("points").default(100).notNull(),
+  status: mysqlEnum("activityStatus", ["draft", "active", "completed", "archived"]).default("draft").notNull(),
+  content: text("content"), // JSON string for quiz questions, reading links, etc.
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Activity = typeof activities.$inferSelect;
+export type InsertActivity = typeof activities.$inferInsert;
+
+/**
+ * Submissions — student responses/completions for activities.
+ */
+export const submissions = mysqlTable("submissions", {
+  id: int("id").autoincrement().primaryKey(),
+  activityId: int("activityId").notNull(),
+  studentId: int("studentId").notNull(),
+  score: int("score"),
+  status: mysqlEnum("submissionStatus", ["pending", "submitted", "graded"]).default("pending").notNull(),
+  response: text("response"), // JSON string with answers
+  feedback: text("feedback"),
+  submittedAt: timestamp("submittedAt"),
+  gradedAt: timestamp("gradedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Submission = typeof submissions.$inferSelect;
+export type InsertSubmission = typeof submissions.$inferInsert;

@@ -1,0 +1,20 @@
+{
+  "query": "SELECT * FROM __drizzle_migrations ORDER BY created_at;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2zjpxFGuGsCP7jR.90fe89ad03fc --database h6i7Pa9QfnGVEJspNhJrhd --execute SELECT * FROM __drizzle_migrations ORDER BY created_at;",
+  "rows": [
+    {
+      "id": "1",
+      "hash": "814a08e40d7fc2bcfd458759d18319198ca8ae394f2fa15617a78678e9c9c93b",
+      "created_at": "1771181367577"
+    },
+    {
+      "id": "2",
+      "hash": "eb6b15408403343c54f4349edcc8a43cb59a914e525d5ace9382bd3f6d0a0fe8",
+      "created_at": "1771182133304"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\thash\tcreated_at\n1\t814a08e40d7fc2bcfd458759d18319198ca8ae394f2fa15617a78678e9c9c93b\t1771181367577\n2\teb6b15408403343c54f4349edcc8a43cb59a914e525d5ace9382bd3f6d0a0fe8\t1771182133304\n",
+  "stderr": "",
+  "execution_time_ms": 53
+}
