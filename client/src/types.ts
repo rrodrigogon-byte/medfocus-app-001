@@ -54,7 +54,7 @@ export interface User {
   currentYear?: number;
 }
 
-export type View = 'dashboard' | 'planner' | 'timer' | 'assistant' | 'academic' | 'guide' | 'research' | 'materials' | 'weekly';
+export type View = 'dashboard' | 'planner' | 'timer' | 'assistant' | 'academic' | 'guide' | 'research' | 'materials' | 'weekly' | 'library' | 'gamification';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {
