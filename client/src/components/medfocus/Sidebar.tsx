@@ -1,5 +1,8 @@
-
-import React from 'react';
+/**
+ * MedFocus Sidebar — Premium Dark Navigation
+ * Design: Dark sidebar with teal accent, grouped navigation
+ */
+import React, { useState } from 'react';
 import { View } from '../../types';
 
 interface SidebarProps {
@@ -10,63 +13,143 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onLogout, userName }) => {
-  const menuItems = [
-    { id: 'dashboard' as View, label: 'Início', icon: <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg> },
-    { id: 'guide' as View, label: 'Guia Acadêmico', icon: <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 6 4 20"/><path d="M2 12h20"/></svg> },
-    { id: 'planner' as View, label: 'Cronograma', icon: <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg> },
-    { id: 'academic' as View, label: 'Gestão Acadêmica', icon: <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M8 7h6"/><path d="M8 11h8"/><path d="M8 15h6"/></svg> },
-    { id: 'timer' as View, label: 'Foco (Pomodoro)', icon: <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
-    { id: 'assistant' as View, label: 'MedGenie AI', icon: <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg> },
-    { id: 'research' as View, label: 'Pesquisa Global', icon: <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8a3 3 0 0 0-3 3"/></svg> },
-    { id: 'materials' as View, label: 'Materiais de Estudo', icon: <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M8 7h6"/><path d="M8 11h8"/><path d="M8 15h6"/></svg> },
-    { id: 'weekly' as View, label: 'Checklist Semanal', icon: <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg> },
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const navGroups = [
+    {
+      label: 'Principal',
+      items: [
+        { id: 'dashboard' as View, label: 'Painel', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
+        { id: 'guide' as View, label: 'Universidades', icon: 'M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222' },
+        { id: 'planner' as View, label: 'Cronograma', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
+      ]
+    },
+    {
+      label: 'Estudo',
+      items: [
+        { id: 'materials' as View, label: 'Materiais', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
+        { id: 'timer' as View, label: 'Pomodoro', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+        { id: 'weekly' as View, label: 'Checklist', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
+      ]
+    },
+    {
+      label: 'Avançado',
+      items: [
+        { id: 'academic' as View, label: 'Notas & Freq.', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
+        { id: 'assistant' as View, label: 'MedGenie AI', icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z' },
+        { id: 'research' as View, label: 'Pesquisa', icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' },
+      ]
+    }
   ];
 
-  return (
-    <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col hidden md:flex shadow-sm transition-colors duration-300">
-      <div className="p-6">
-        <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400 font-black text-xl mb-8">
-          <div className="w-8 h-8 bg-indigo-700 dark:bg-indigo-600 text-white rounded-lg flex items-center justify-center">M</div>
-          MedFocus
-        </div>
+  const NavIcon = ({ path }: { path: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-[18px] h-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d={path} />
+    </svg>
+  );
 
-        <nav className="space-y-1">
-          {menuItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => onViewChange(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                currentView === item.id 
-                  ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 font-black shadow-sm ring-1 ring-indigo-100 dark:ring-indigo-800' 
-                  : 'text-black dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-indigo-700 dark:hover:text-indigo-400'
-              }`}
-            >
-              {item.icon}
-              {item.label}
+  const sidebarContent = (
+    <div className="flex flex-col h-full">
+      {/* Logo */}
+      <div className={`p-5 flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
+        <div className="w-9 h-9 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+        </div>
+        {!collapsed && <span className="font-display font-bold text-sidebar-foreground text-base tracking-tight">MedFocus</span>}
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 px-3 pb-4 overflow-y-auto custom-scrollbar">
+        {navGroups.map((group, gi) => (
+          <div key={gi} className={gi > 0 ? 'mt-5' : ''}>
+            {!collapsed && (
+              <p className="px-3 mb-2 text-[10px] font-bold text-sidebar-foreground/30 uppercase tracking-[0.15em]">
+                {group.label}
+              </p>
+            )}
+            <div className="space-y-0.5">
+              {group.items.map((item) => {
+                const isActive = currentView === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => { onViewChange(item.id); setMobileOpen(false); }}
+                    title={collapsed ? item.label : undefined}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      isActive
+                        ? 'bg-primary/15 text-primary border border-primary/20'
+                        : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent border border-transparent'
+                    } ${collapsed ? 'justify-center' : ''}`}
+                  >
+                    <NavIcon path={item.icon} />
+                    {!collapsed && <span>{item.label}</span>}
+                    {isActive && !collapsed && (
+                      <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </nav>
+
+      {/* User section */}
+      <div className="p-3 border-t border-sidebar-border">
+        {!collapsed ? (
+          <div className="flex items-center gap-3 px-3 py-2">
+            <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary text-xs font-bold shrink-0">
+              {userName.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <p className="text-xs font-semibold text-sidebar-foreground truncate">{userName}</p>
+              <p className="text-[10px] text-sidebar-foreground/40 font-medium">Estudante de Medicina</p>
+            </div>
+            <button onClick={onLogout} className="p-1.5 text-sidebar-foreground/30 hover:text-destructive rounded-md hover:bg-destructive/10 transition-colors" title="Sair">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
             </button>
-          ))}
-        </nav>
+          </div>
+        ) : (
+          <button onClick={onLogout} className="w-full flex justify-center p-2 text-sidebar-foreground/30 hover:text-destructive rounded-md hover:bg-destructive/10 transition-colors" title="Sair">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          </button>
+        )}
       </div>
+    </div>
+  );
 
-      <div className="mt-auto p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-        <div className="flex items-center gap-3 mb-6 px-2">
-          <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-black dark:text-white font-black border border-slate-300 dark:border-slate-700 shadow-sm">
-            {userName.charAt(0).toUpperCase()}
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <p className="text-sm font-black text-black dark:text-white truncate">{userName}</p>
-            <p className="text-xs text-slate-800 dark:text-slate-400 font-bold">Med Student</p>
-          </div>
-        </div>
-        <button 
-          onClick={onLogout}
-          className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 dark:text-red-400 font-black hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors border border-transparent hover:border-red-100 dark:hover:border-red-900/40"
+  return (
+    <>
+      {/* Mobile hamburger */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="md:hidden fixed top-4 left-4 z-50 p-2.5 bg-card border border-border rounded-lg shadow-lg text-foreground"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div className="md:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
+      )}
+
+      {/* Mobile sidebar */}
+      <aside className={`md:hidden fixed inset-y-0 left-0 z-50 w-64 bg-sidebar transition-transform duration-300 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        {sidebarContent}
+      </aside>
+
+      {/* Desktop sidebar */}
+      <aside className={`hidden md:flex flex-col bg-sidebar transition-all duration-300 ${collapsed ? 'w-16' : 'w-60'}`}>
+        {sidebarContent}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="absolute bottom-20 -right-3 w-6 h-6 bg-sidebar border border-sidebar-border rounded-full flex items-center justify-center text-sidebar-foreground/40 hover:text-sidebar-foreground transition-colors z-10"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-          Sair
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" className={`transition-transform ${collapsed ? 'rotate-180' : ''}`}><path d="M15 19l-7-7 7-7"/></svg>
         </button>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 };
 

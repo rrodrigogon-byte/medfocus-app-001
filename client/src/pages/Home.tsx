@@ -1,7 +1,6 @@
 /**
  * MedFocus Main Application Page
- * Design: Clinical Precision — Swiss Medical Design
- * Teal accent, Space Grotesk headings, IBM Plex Sans body
+ * Design: Medical Precision — Teal accent, Outfit display, Plus Jakarta Sans body
  */
 import React, { useState, useEffect } from 'react';
 import { User, View } from '../types';
@@ -26,11 +25,7 @@ const MedFocusApp: React.FC = () => {
   useEffect(() => {
     const savedUser = localStorage.getItem('medfocus_user');
     if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        localStorage.removeItem('medfocus_user');
-      }
+      try { setUser(JSON.parse(savedUser)); } catch { localStorage.removeItem('medfocus_user'); }
     }
   }, []);
 
@@ -53,27 +48,8 @@ const MedFocusApp: React.FC = () => {
     localStorage.removeItem('medfocus_user');
   };
 
-  const ThemeToggle = () => (
-    <button 
-      onClick={toggleTheme}
-      className="fixed top-4 right-4 z-[100] p-3 bg-card border border-border rounded-lg shadow-lg hover:scale-105 active:scale-95 transition-all text-foreground"
-      aria-label="Alternar tema"
-    >
-      {theme === 'dark' ? (
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
-      ) : (
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
-      )}
-    </button>
-  );
-
   if (!user) {
-    return (
-      <>
-        <ThemeToggle />
-        <Login onLogin={handleLogin} />
-      </>
-    );
+    return <Login onLogin={handleLogin} />;
   }
 
   const renderView = () => {
@@ -92,16 +68,45 @@ const MedFocusApp: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-background text-foreground overflow-hidden transition-colors duration-300">
-      <ThemeToggle />
+    <div className="flex h-screen bg-background text-foreground overflow-hidden">
       <Sidebar 
         currentView={currentView} 
         onViewChange={setCurrentView} 
         onLogout={handleLogout}
         userName={user.name}
       />
-      <main className="flex-1 overflow-y-auto p-4 md:p-8">
-        <div className="max-w-5xl mx-auto animate-fade-in">
+      <main className="flex-1 overflow-y-auto custom-scrollbar">
+        {/* Top bar */}
+        <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-lg border-b border-border px-4 md:px-8 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="md:hidden w-8" /> {/* spacer for mobile hamburger */}
+            <h2 className="text-sm font-display font-bold text-foreground capitalize">
+              {currentView === 'dashboard' ? 'Painel' : 
+               currentView === 'guide' ? 'Universidades' :
+               currentView === 'planner' ? 'Cronograma' :
+               currentView === 'materials' ? 'Materiais de Estudo' :
+               currentView === 'timer' ? 'Pomodoro' :
+               currentView === 'weekly' ? 'Checklist Semanal' :
+               currentView === 'academic' ? 'Gestão Acadêmica' :
+               currentView === 'assistant' ? 'MedGenie AI' :
+               currentView === 'research' ? 'Pesquisa Global' : currentView}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={toggleTheme}
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              aria-label="Alternar tema">
+              {theme === 'dark' ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 md:p-8 max-w-6xl mx-auto">
           {renderView()}
         </div>
       </main>
