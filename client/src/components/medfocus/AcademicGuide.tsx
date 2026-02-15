@@ -1,11 +1,11 @@
 /**
  * MedFocus Academic Guide — Premium University Hub
  * Design: Teal accent, card-based layout, clean typography
+ * Uses tRPC backend for AI content generation (LLM built-in)
  */
 import React, { useState, useEffect } from 'react';
 import { User, University } from '../../types';
-import { syncToCloud } from '../../services/analytics';
-import { generateDeepContent, fetchGlobalResearch } from '../../services/gemini';
+import { trpc } from '@/lib/trpc';
 
 const STUDY_IMG = "https://private-us-east-1.manuscdn.com/sessionFile/IjuoZIpKtB1FShC9GQ88GW/sandbox/gZMRigkW6C4ldwaPiTYiad-img-3_1771179159000_na1fn_bWVkZm9jdXMtc3R1ZHktaWxsdXN0cmF0aW9u.png?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvSWp1b1pJcEt0QjFGU2hDOUdRODhHVy9zYW5kYm94L2daTVJpZ2tXNkM0bGR3YVBpVFlpYWQtaW1nLTNfMTc3MTE3OTE1OTAwMF9uYTFmbl9iV1ZrWm05amRYTXRjM1IxWkhrdGFXeHNkWE4wY21GMGFXOXUucG5nP3gtb3NzLXByb2Nlc3M9aW1hZ2UvcmVzaXplLHdfMTkyMCxoXzE5MjAvZm9ybWF0LHdlYnAvcXVhbGl0eSxxXzgwIiwiQ29uZGl0aW9uIjp7IkRhdGVMZXNzVGhhbiI6eyJBV1M6RXBvY2hUaW1lIjoxNzk4NzYxNjAwfX19XX0_&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=Fd8pgxfsoS6I-SoQUOOJcsFNHrltDUeqbobSeXnurwPJQmBrOz~vq40gkdrb4FCFtlBu8ssNeU56nvRrxeDUIZBxdKdLuMc1MJxt4lmVw87D~Irg24-O8fhcYv1K1QP641YvlTwmCjYBvkYfae0BzxZyrWspL~P3kEQQe5y-k1f5mRRWX1pvqlbqHxehOP5JanZ-l7CQMld3bbrNcBI2EZcOC0XtZKlLNZ-lBT7TQjnwqY-0XHmcN9ynjvWwvOCtqr0pEw8cOXjx-w-CAEk~CkgW6THHV8q3p7P0JFa~NCK3rI8ejqjEIPTNegEwEDqS-wTzPWnxN7iKX9GzZcxg5A__";
 
@@ -39,6 +39,10 @@ const AcademicGuide: React.FC<GuideProps> = ({ user, onUpdateUser }) => {
   const [errorType, setErrorType] = useState<'none' | 'quota' | 'general'>('none');
   const [activeFlashcard, setActiveFlashcard] = useState<number | null>(null);
 
+  // tRPC mutations for AI content generation
+  const generateContentMutation = trpc.ai.generateContent.useMutation();
+  const researchMutation = trpc.ai.research.useMutation();
+
   const selectedUniv = UNIVERSITIES.find(u => u.id === selectedUnivId);
 
   useEffect(() => {
@@ -52,7 +56,6 @@ const AcademicGuide: React.FC<GuideProps> = ({ user, onUpdateUser }) => {
     setSelectedUnivId(univId);
     onUpdateUser({ universityId: univId });
     setViewMode('guide');
-    syncToCloud('university_selected', { univId });
   };
 
   const loadSubjectDetails = async (subject: string) => {
@@ -62,15 +65,38 @@ const AcademicGuide: React.FC<GuideProps> = ({ user, onUpdateUser }) => {
     setErrorType('none'); setSubjectData(null); setActiveFlashcard(null);
 
     if (cachedData) {
-      try { const p = JSON.parse(cachedData); setSubjectData(p.content); setResearchData(p.research); setIsLoading(false); return; } catch { localStorage.removeItem(cacheKey); }
+      try {
+        const p = JSON.parse(cachedData);
+        // Check cache age (24h max)
+        if (p.timestamp && Date.now() - p.timestamp < 24 * 60 * 60 * 1000) {
+          setSubjectData(p.content);
+          setResearchData(p.research);
+          setIsLoading(false);
+          return;
+        }
+        localStorage.removeItem(cacheKey);
+      } catch { localStorage.removeItem(cacheKey); }
     }
+
     try {
       const uName = selectedUniv?.name || 'Universidade';
-      const [content, research] = await Promise.all([generateDeepContent(subject, uName, activeYear), fetchGlobalResearch(subject)]);
-      setSubjectData(content); setResearchData(research);
+
+      // Use tRPC mutations (server-side LLM) instead of direct Google API
+      const [content, research] = await Promise.all([
+        generateContentMutation.mutateAsync({
+          subject,
+          universityName: uName,
+          year: activeYear,
+        }),
+        researchMutation.mutateAsync({ topic: subject }).catch(() => 'Pesquisa indisponível no momento.'),
+      ]);
+
+      setSubjectData(content);
+      setResearchData(research);
       localStorage.setItem(cacheKey, JSON.stringify({ content, research, timestamp: Date.now() }));
     } catch (e: any) {
-      setErrorType(e.message === 'QUOTA_EXCEEDED' ? 'quota' : 'general');
+      console.error('[AcademicGuide] Error generating content:', e);
+      setErrorType(e.message?.includes('quota') || e.message?.includes('QUOTA') ? 'quota' : 'general');
     } finally { setIsLoading(false); }
   };
 
@@ -78,7 +104,7 @@ const AcademicGuide: React.FC<GuideProps> = ({ user, onUpdateUser }) => {
     if (!subjectData || !activeSubject) return;
     const w = window.open('', '_blank');
     if (!w) return;
-    w.document.write(`<html><head><title>${activeSubject}</title><style>body{font-family:'Plus Jakarta Sans',sans-serif;padding:40px;line-height:1.8;color:#1e293b}h1{color:#0d9488;font-size:28px}h2{border-bottom:2px solid #e2e8f0;padding-bottom:8px;margin-top:32px}ul{padding-left:20px}li{margin-bottom:8px}.ref{background:#f0fdfa;padding:16px;border-radius:8px;margin-bottom:8px;border-left:4px solid #0d9488}</style></head><body><h1>${activeSubject}</h1><p>${subjectData.summary}</p><h2>Pontos-Chave para Residência</h2><ul>${subjectData.keyPoints.map((p:any)=>`<li>${p}</li>`).join('')}</ul><h2>Referências</h2>${subjectData.references.map((r:any)=>`<div class="ref"><strong>${r.title}</strong> — ${r.author}<br/><small>Verificado por: ${r.verifiedBy}</small></div>`).join('')}</body></html>`);
+    w.document.write(`<html><head><title>${activeSubject}</title><style>body{font-family:'Plus Jakarta Sans',sans-serif;padding:40px;line-height:1.8;color:#1e293b}h1{color:#0d9488;font-size:28px}h2{border-bottom:2px solid #e2e8f0;padding-bottom:8px;margin-top:32px}ul{padding-left:20px}li{margin-bottom:8px}.ref{background:#f0fdfa;padding:16px;border-radius:8px;margin-bottom:8px;border-left:4px solid #0d9488}</style></head><body><h1>${activeSubject}</h1><p>${subjectData.summary}</p><h2>Pontos-Chave para Residência</h2><ul>${subjectData.keyPoints?.map((p:any)=>`<li>${p}</li>`).join('') || ''}</ul><h2>Referências</h2>${subjectData.references?.map((r:any)=>`<div class="ref"><strong>${r.title}</strong> — ${r.author}<br/><small>Verificado por: ${r.verifiedBy}</small></div>`).join('') || ''}</body></html>`);
     w.document.close(); w.print();
   };
 
@@ -151,7 +177,10 @@ const AcademicGuide: React.FC<GuideProps> = ({ user, onUpdateUser }) => {
         {isLoading ? (
           <div className="h-[50vh] flex flex-col items-center justify-center gap-6">
             <div className="w-14 h-14 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm font-semibold text-primary animate-pulse-soft">Gerando material de excelência...</p>
+            <div className="text-center space-y-2">
+              <p className="text-sm font-semibold text-primary animate-pulse-soft">Gerando material de excelência...</p>
+              <p className="text-xs text-muted-foreground">A IA está analisando o currículo de {selectedUniv?.name}</p>
+            </div>
           </div>
         ) : errorType !== 'none' ? (
           <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-10 text-center space-y-4">
@@ -162,7 +191,12 @@ const AcademicGuide: React.FC<GuideProps> = ({ user, onUpdateUser }) => {
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
               {errorType === 'quota' ? 'A API de IA atingiu o limite. Tente novamente em alguns minutos.' : 'Ocorreu um erro inesperado. Verifique sua conexão e tente novamente.'}
             </p>
-            <button onClick={() => setViewMode('guide')} className="bg-card border border-border px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-muted transition-colors">Voltar ao Currículo</button>
+            <div className="flex gap-3 justify-center">
+              <button onClick={() => activeSubject && loadSubjectDetails(activeSubject)} className="bg-primary text-primary-foreground px-6 py-2.5 rounded-lg text-sm font-semibold hover:opacity-90 transition-all">
+                Tentar Novamente
+              </button>
+              <button onClick={() => setViewMode('guide')} className="bg-card border border-border px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-muted transition-colors">Voltar ao Currículo</button>
+            </div>
           </div>
         ) : subjectData && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -186,7 +220,7 @@ const AcademicGuide: React.FC<GuideProps> = ({ user, onUpdateUser }) => {
                   Pontos-Chave para Residência
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {subjectData.keyPoints.map((p: string, i: number) => (
+                  {subjectData.keyPoints?.map((p: string, i: number) => (
                     <div key={i} className="flex gap-3 p-3 bg-muted/50 rounded-lg border border-border/50">
                       <span className="text-primary font-display font-bold text-sm shrink-0">{String(i + 1).padStart(2, '0')}</span>
                       <p className="text-xs text-foreground/80 leading-relaxed font-medium">{p}</p>
@@ -223,33 +257,86 @@ const AcademicGuide: React.FC<GuideProps> = ({ user, onUpdateUser }) => {
                 </div>
               )}
 
-              {/* References */}
-              <div className="bg-primary/5 border border-primary/20 rounded-xl p-6">
-                <h3 className="font-display font-bold text-foreground mb-4">Referências Bibliográficas</h3>
-                <div className="space-y-3">
-                  {subjectData.references.map((ref: any, i: number) => (
-                    <div key={i} className="flex items-start gap-3 p-3 bg-card rounded-lg border border-border">
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">{ref.title}</p>
-                        <p className="text-xs text-muted-foreground font-medium">{ref.author}</p>
-                        {ref.verifiedBy && (
-                          <div className="flex items-center gap-1.5 mt-1.5">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" className="text-emerald-500"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                            <span className="text-[10px] font-bold text-emerald-600">{ref.verifiedBy}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+              {/* Quiz */}
+              {subjectData.quiz?.length > 0 && (
+                <div className="bg-card border border-border rounded-xl p-6">
+                  <h3 className="font-display font-bold text-foreground mb-4 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                    Quiz — Estilo Residência
+                  </h3>
+                  <div className="space-y-6">
+                    {subjectData.quiz.map((q: any, qi: number) => (
+                      <QuizItem key={qi} question={q} index={qi} />
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* References */}
+              {subjectData.references?.length > 0 && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-6">
+                  <h3 className="font-display font-bold text-foreground mb-4">Referências Bibliográficas</h3>
+                  <div className="space-y-3">
+                    {subjectData.references.map((ref: any, i: number) => (
+                      <div key={i} className="flex items-start gap-3 p-3 bg-card rounded-lg border border-border">
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">{ref.title}</p>
+                          <p className="text-xs text-muted-foreground font-medium">{ref.author}</p>
+                          {ref.verifiedBy && (
+                            <div className="flex items-center gap-1.5 mt-1.5">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" className="text-emerald-500"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                              <span className="text-[10px] font-bold text-emerald-600">{ref.verifiedBy}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Sidebar — Research */}
+            {/* Sidebar — Research + Innovations */}
             <div className="space-y-6">
+              {/* Visual Prompt */}
+              {subjectData.visualPrompt && (
+                <div className="bg-card border border-border rounded-xl p-5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </div>
+                    <h4 className="text-sm font-display font-bold text-foreground">Atlas Visual</h4>
+                  </div>
+                  <p className="text-xs text-foreground/70 leading-relaxed">{subjectData.visualPrompt}</p>
+                </div>
+              )}
+
+              {/* Innovations */}
+              {subjectData.innovations?.length > 0 && (
+                <div className="bg-card border border-border rounded-xl p-5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-display font-bold text-foreground">Inovações Recentes</h4>
+                      <p className="text-[10px] text-amber-500 font-semibold">Avanços 2025/2026</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {subjectData.innovations.map((inn: string, i: number) => (
+                      <div key={i} className="p-3 bg-amber-500/5 rounded-lg border-l-2 border-amber-500 text-xs text-foreground/80 leading-relaxed font-medium">
+                        {inn}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Research */}
               <div className="bg-card border border-border rounded-xl p-5 sticky top-20">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center">
@@ -257,12 +344,12 @@ const AcademicGuide: React.FC<GuideProps> = ({ user, onUpdateUser }) => {
                   </div>
                   <div>
                     <h4 className="text-sm font-display font-bold text-foreground">Pesquisa Global</h4>
-                    <p className="text-[10px] text-rose-500 font-semibold">Avanços 2025/2026</p>
+                    <p className="text-[10px] text-rose-500 font-semibold">Artigos Recentes</p>
                   </div>
                 </div>
                 <div className="space-y-2">
                   {researchData?.split('\n').filter(Boolean).map((line, i) => (
-                    <div key={i} className={`p-3 bg-muted/50 rounded-lg text-xs text-foreground/80 leading-relaxed font-medium ${line.startsWith('-') ? 'border-l-2 border-rose-500' : ''}`}>
+                    <div key={i} className={`p-3 bg-muted/50 rounded-lg text-xs text-foreground/80 leading-relaxed font-medium ${line.startsWith('-') || line.startsWith('*') ? 'border-l-2 border-rose-500' : ''}`}>
                       {line}
                     </div>
                   )) || <p className="text-xs text-muted-foreground">Analisando literatura global...</p>}
@@ -316,12 +403,57 @@ const AcademicGuide: React.FC<GuideProps> = ({ user, onUpdateUser }) => {
             </div>
             <h4 className="font-display font-bold text-foreground text-base leading-tight mb-3 group-hover:text-primary transition-colors">{s}</h4>
             <div className="flex items-center gap-1.5 text-primary text-xs font-semibold opacity-0 group-hover:opacity-100 transition-all">
-              Gerar Material
+              Gerar Material com IA
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
             </div>
           </button>
         ))}
       </div>
+    </div>
+  );
+};
+
+// ============ Quiz Item Component ============
+const QuizItem: React.FC<{ question: any; index: number }> = ({ question, index }) => {
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [showExplanation, setShowExplanation] = useState(false);
+
+  const handleSelect = (optIdx: number) => {
+    if (selectedOption !== null) return;
+    setSelectedOption(optIdx);
+    setShowExplanation(true);
+  };
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm font-semibold text-foreground">
+        <span className="text-primary mr-2">{index + 1}.</span>
+        {question.question}
+      </p>
+      <div className="space-y-2">
+        {question.options?.map((opt: string, oi: number) => {
+          const isCorrect = oi === question.correctIndex;
+          const isSelected = oi === selectedOption;
+          let optClass = 'bg-muted/50 border-border/50 hover:border-primary/30';
+          if (selectedOption !== null) {
+            if (isCorrect) optClass = 'bg-emerald-500/10 border-emerald-500/50 text-emerald-700';
+            else if (isSelected) optClass = 'bg-destructive/10 border-destructive/50 text-destructive';
+          }
+          return (
+            <button key={oi} onClick={() => handleSelect(oi)} disabled={selectedOption !== null}
+              className={`w-full text-left p-3 rounded-lg border text-xs font-medium transition-all ${optClass}`}>
+              <span className="font-bold mr-2">{String.fromCharCode(65 + oi)}.</span>
+              {opt}
+            </button>
+          );
+        })}
+      </div>
+      {showExplanation && question.explanation && (
+        <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+          <p className="text-xs text-foreground/80 leading-relaxed"><span className="font-bold text-primary">Explicação:</span> {question.explanation}</p>
+          {question.source && <p className="text-[10px] text-muted-foreground mt-1">Fonte: {question.source}</p>}
+        </div>
+      )}
     </div>
   );
 };

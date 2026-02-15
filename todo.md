@@ -52,3 +52,5 @@
 - [x] Migrar ClassroomPanel de dados mock para tRPC
 - [x] Modo offline com Service Worker para flashcards e quizzes
 - [x] Painel de analytics para professores com gráficos e alertas de alunos em risco
+- [x] Corrigir erro "Erro ao Gerar Conteúdo" na seção Universidades
+- [x] Garantir que materiais sejam gerados corretamente por universidade usando IA

@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { AcademicMaterial } from '../../types';
-import { trpc } from '../../lib/trpc';
+import { trpc } from '@/lib/trpc';
 import { Streamdown } from 'streamdown';
 
 interface MaterialViewerProps {

@@ -3,7 +3,7 @@
  * Integrado com LLM via tRPC backend
  */
 import React, { useState, useRef, useEffect } from 'react';
-import { trpc } from '../../lib/trpc';
+import { trpc } from '@/lib/trpc';
 
 interface Message {
   role: 'user' | 'assistant';

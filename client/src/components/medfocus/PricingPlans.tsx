@@ -3,7 +3,7 @@
  * Subscription management with Stripe integration
  */
 import React, { useState } from 'react';
-import { trpc } from '../../lib/trpc';
+import { trpc } from '@/lib/trpc';
 import { useAuth } from '../../_core/hooks/useAuth';
 
 const plans = [

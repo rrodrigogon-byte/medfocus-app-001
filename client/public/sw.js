@@ -3,7 +3,7 @@
  * Enhanced offline support: caches flashcards, quizzes, study materials
  * + Push Notifications + Background Sync
  */
-const CACHE_NAME = 'medfocus-v5';
+const CACHE_NAME = 'medfocus-v6';
 const STUDY_CACHE = 'medfocus-study-v1';
 const API_CACHE = 'medfocus-api-v1';
 
@@ -58,19 +58,27 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first for static assets (CSS, JS, fonts, images)
+  // Skip caching for Vite HMR and dev-mode assets
   if (
-    request.destination === 'style' ||
-    request.destination === 'script' ||
+    url.pathname.includes('/@') ||
+    url.pathname.includes('/__vite') ||
+    url.pathname.includes('/node_modules/') ||
+    url.pathname.includes('.vite/') ||
+    url.searchParams.has('v') ||
+    url.searchParams.has('t')
+  ) {
+    return;
+  }
+
+  // Cache-first for static assets (CSS, JS, fonts, images)
+  // Only cache production-like assets (with content hashes)
+  if (
     request.destination === 'font' ||
     request.destination === 'image' ||
-    url.pathname.endsWith('.css') ||
-    url.pathname.endsWith('.js') ||
-    url.pathname.endsWith('.png') ||
-    url.pathname.endsWith('.svg') ||
     url.pathname.endsWith('.woff2') ||
     url.hostname.includes('fonts') ||
-    url.hostname.includes('manuscdn.com')
+    url.hostname.includes('manuscdn.com') ||
+    url.pathname.match(/\/assets\/.*\.[a-f0-9]{8}\./) // hashed production assets
   ) {
     event.respondWith(
       caches.match(request).then((cached) => {

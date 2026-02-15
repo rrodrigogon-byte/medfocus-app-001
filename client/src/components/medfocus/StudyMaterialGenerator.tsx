@@ -3,7 +3,7 @@
  * AI-powered study material generation based on curriculum
  */
 import React, { useState } from 'react';
-import { trpc } from '../../lib/trpc';
+import { trpc } from '@/lib/trpc';
 
 interface StudyMaterial {
   type: string; subject: string; university: string; year: number; content: any; generatedAt: string;

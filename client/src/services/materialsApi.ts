@@ -1,9 +1,9 @@
 /**
  * Materials API Service
- * Comprehensive service for managing academic materials with AI integration
+ * Comprehensive service for managing academic materials
+ * AI features now delegate to tRPC server-side LLM
  */
 
-import { GoogleGenAI, Type } from "@google/genai";
 import { 
   AcademicMaterial, 
   MaterialFilter, 
@@ -12,23 +12,6 @@ import {
 } from '../types';
 
 const API_BASE = '/api/materials'; // Server endpoint (to be implemented)
-
-// ============================================================================
-// AI Service Integration
-// ============================================================================
-
-const apiKey = (import.meta as any).env?.VITE_GOOGLE_API_KEY || '';
-
-let _ai: GoogleGenAI | null = null;
-function getAI() {
-  if (!_ai) {
-    if (!apiKey) {
-      throw new Error('API_KEY_NOT_SET');
-    }
-    _ai = new GoogleGenAI({ apiKey });
-  }
-  return _ai;
-}
 
 // ============================================================================
 // Material CRUD Operations
@@ -50,7 +33,6 @@ export async function fetchMaterials(filter?: MaterialFilter): Promise<AcademicM
     return await response.json();
   } catch (error) {
     console.error('Error fetching materials:', error);
-    // Return mock data for now
     return getMockMaterials(filter);
   }
 }
@@ -106,60 +88,25 @@ export async function deleteMaterial(id: string): Promise<void> {
 }
 
 // ============================================================================
-// AI-Powered Features
+// AI-Powered Features (now use tRPC server-side)
+// These functions are kept as interfaces for components that may still import them.
+// For new code, use trpc.ai.* mutations directly.
 // ============================================================================
 
 export interface MaterialAnalysis {
   summary: string;
   keyTopics: string[];
   difficulty: 'iniciante' | 'intermediário' | 'avançado';
-  estimatedReadingTime: number; // in minutes
+  estimatedReadingTime: number;
   suggestedPrerequisites: string[];
   relatedTopics: string[];
 }
 
 export async function analyzeMaterialWithAI(
-  materialContent: string,
-  materialType: MaterialType
+  _materialContent: string,
+  _materialType: MaterialType
 ): Promise<MaterialAnalysis> {
-  try {
-    const prompt = `Analise este material acadêmico de medicina (tipo: ${materialType}).
-
-CONTEÚDO:
-${materialContent.slice(0, 5000)} // Limit to first 5000 chars
-
-Retorne uma análise estruturada incluindo:
-1. Resumo executivo (2-3 frases)
-2. Principais tópicos abordados
-3. Nível de dificuldade
-4. Tempo estimado de leitura
-5. Pré-requisitos sugeridos
-6. Tópicos relacionados para estudo complementar`;
-
-    const response = await getAI().models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            summary: { type: Type.STRING },
-            keyTopics: { type: Type.ARRAY, items: { type: Type.STRING } },
-            difficulty: { type: Type.STRING },
-            estimatedReadingTime: { type: Type.NUMBER },
-            suggestedPrerequisites: { type: Type.ARRAY, items: { type: Type.STRING } },
-            relatedTopics: { type: Type.ARRAY, items: { type: Type.STRING } }
-          }
-        }
-      }
-    });
-
-    return JSON.parse(response.text || '{}');
-  } catch (error) {
-    console.error('AI analysis error:', error);
-    throw new Error('Análise de IA indisponível');
-  }
+  throw new Error('Use trpc.ai.generateContent mutation instead');
 }
 
 export interface QuizQuestion {
@@ -171,54 +118,10 @@ export interface QuizQuestion {
 }
 
 export async function generateQuizFromMaterial(
-  materialContent: string,
-  numQuestions: number = 5
+  _materialContent: string,
+  _numQuestions: number = 5
 ): Promise<QuizQuestion[]> {
-  try {
-    const prompt = `Com base neste material de medicina, gere ${numQuestions} questões de múltipla escolha estilo residência médica.
-
-MATERIAL:
-${materialContent.slice(0, 5000)}
-
-REQUISITOS:
-- Questões contextualizadas e aplicadas
-- 5 alternativas por questão
-- Explicação detalhada da resposta correta
-- Misture dificuldades (fácil, médio, difícil)
-- Foco em raciocínio clínico`;
-
-    const response = await getAI().models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            questions: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  question: { type: Type.STRING },
-                  options: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  correctIndex: { type: Type.NUMBER },
-                  explanation: { type: Type.STRING },
-                  difficulty: { type: Type.STRING }
-                }
-              }
-            }
-          }
-        }
-      }
-    });
-
-    const result = JSON.parse(response.text || '{"questions":[]}');
-    return result.questions || [];
-  } catch (error) {
-    console.error('Quiz generation error:', error);
-    throw new Error('Geração de quiz indisponível');
-  }
+  throw new Error('Use trpc.ai.generateQuiz mutation instead');
 }
 
 export interface Flashcard {
@@ -229,52 +132,10 @@ export interface Flashcard {
 }
 
 export async function generateFlashcardsFromMaterial(
-  materialContent: string,
-  numCards: number = 10
+  _materialContent: string,
+  _numCards: number = 10
 ): Promise<Flashcard[]> {
-  try {
-    const prompt = `Crie ${numCards} flashcards de alta qualidade baseados neste material de medicina.
-
-MATERIAL:
-${materialContent.slice(0, 5000)}
-
-FORMATO:
-- Frente: Pergunta objetiva ou conceito
-- Verso: Resposta completa mas concisa
-- Use Active Recall e Spaced Repetition principles
-- Foque em conceitos-chave e aplicações clínicas`;
-
-    const response = await getAI().models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            flashcards: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  front: { type: Type.STRING },
-                  back: { type: Type.STRING },
-                  category: { type: Type.STRING },
-                  difficulty: { type: Type.STRING }
-                }
-              }
-            }
-          }
-        }
-      }
-    });
-
-    const result = JSON.parse(response.text || '{"flashcards":[]}');
-    return result.flashcards || [];
-  } catch (error) {
-    console.error('Flashcard generation error:', error);
-    throw new Error('Geração de flashcards indisponível');
-  }
+  throw new Error('Use trpc.ai.generateFlashcards mutation instead');
 }
 
 export interface MindMap {
@@ -286,83 +147,15 @@ export interface MindMap {
   }[];
 }
 
-export async function generateMindMap(materialContent: string): Promise<MindMap> {
-  try {
-    const prompt = `Crie um mapa mental estruturado deste material médico.
-
-MATERIAL:
-${materialContent.slice(0, 5000)}
-
-ESTRUTURA:
-- Tópico central claro
-- 4-6 ramos principais
-- 3-5 subtópicos por ramo
-- Hierarquia lógica de conceitos`;
-
-    const response = await getAI().models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            centralTopic: { type: Type.STRING },
-            branches: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  title: { type: Type.STRING },
-                  subtopics: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  color: { type: Type.STRING }
-                }
-              }
-            }
-          }
-        }
-      }
-    });
-
-    return JSON.parse(response.text || '{}');
-  } catch (error) {
-    console.error('Mind map generation error:', error);
-    throw new Error('Geração de mapa mental indisponível');
-  }
+export async function generateMindMap(_materialContent: string): Promise<MindMap> {
+  throw new Error('Use trpc.ai.generateMindMap mutation instead');
 }
 
 export async function generateSummary(
-  materialContent: string,
-  summaryType: 'curto' | 'médio' | 'detalhado' = 'médio'
+  _materialContent: string,
+  _summaryType: 'curto' | 'médio' | 'detalhado' = 'médio'
 ): Promise<string> {
-  try {
-    const lengthGuide = {
-      curto: '150-200 palavras',
-      médio: '300-400 palavras',
-      detalhado: '600-800 palavras'
-    };
-
-    const prompt = `Crie um resumo ${summaryType} (${lengthGuide[summaryType]}) deste material médico.
-
-MATERIAL:
-${materialContent.slice(0, 8000)}
-
-REQUISITOS:
-- Foco em conceitos essenciais
-- Linguagem clara e objetiva
-- Estrutura com tópicos quando apropriado
-- Inclua correlações clínicas importantes`;
-
-    const response = await getAI().models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-    });
-
-    return response.text || '';
-  } catch (error) {
-    console.error('Summary generation error:', error);
-    throw new Error('Geração de resumo indisponível');
-  }
+  throw new Error('Use trpc.ai.generateSummary mutation instead');
 }
 
 // ============================================================================
@@ -455,7 +248,7 @@ export async function deleteAnnotation(annotationId: string): Promise<void> {
 }
 
 // ============================================================================
-// University Scrapers (Mock - Real implementation would be server-side)
+// University Scrapers (Mock)
 // ============================================================================
 
 export interface UniversitySource {
@@ -472,14 +265,12 @@ export interface UniversitySource {
 export async function scrapeUniversityMaterials(
   universityId: string
 ): Promise<Partial<AcademicMaterial>[]> {
-  // This would be implemented server-side with proper web scraping
-  // For now, return empty array
   console.log(`Scraping materials from university: ${universityId}`);
   return [];
 }
 
 // ============================================================================
-// AI-Powered Recommendations
+// AI-Powered Recommendations (stub)
 // ============================================================================
 
 export interface MaterialRecommendation {
@@ -489,35 +280,14 @@ export interface MaterialRecommendation {
 }
 
 export async function getRecommendations(
-  userId: string,
-  context: {
+  _userId: string,
+  _context: {
     currentMaterial?: string;
     userHistory?: string[];
     preferences?: string[];
   }
 ): Promise<MaterialRecommendation[]> {
-  try {
-    const prompt = `Com base no perfil do usuário e contexto de estudo, recomende materiais acadêmicos de medicina.
-
-CONTEXTO:
-- Material atual: ${context.currentMaterial || 'Nenhum'}
-- Histórico recente: ${context.userHistory?.join(', ') || 'Nenhum'}
-- Interesses: ${context.preferences?.join(', ') || 'Não especificado'}
-
-Retorne 5 recomendações com score de relevância (0-1) e justificativa.`;
-
-    const response = await getAI().models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-    });
-
-    // Parse AI response and match with actual materials
-    // This is simplified - real implementation would query database
-    return [];
-  } catch (error) {
-    console.error('Recommendation error:', error);
-    return [];
-  }
+  return [];
 }
 
 // ============================================================================
@@ -525,10 +295,7 @@ Retorne 5 recomendações com score de relevância (0-1) e justificativa.`;
 // ============================================================================
 
 function getMockMaterials(filter?: MaterialFilter): AcademicMaterial[] {
-  // Return filtered mock data based on filter
-  const mockMaterials: AcademicMaterial[] = [
-    // ... (existing mock materials from AcademicLibrary component)
-  ];
+  const mockMaterials: AcademicMaterial[] = [];
 
   let filtered = mockMaterials;
 
@@ -560,7 +327,7 @@ export const MaterialsAPI = {
   updateMaterial,
   deleteMaterial,
   
-  // AI Features
+  // AI Features (stubs — use tRPC mutations directly)
   analyzeMaterialWithAI,
   generateQuizFromMaterial,
   generateFlashcardsFromMaterial,
