@@ -497,3 +497,93 @@ export async function rateMaterial(id: number, qualityScore: number) {
   if (!db) return;
   await db.update(generatedMaterials).set({ qualityScore }).where(eq(generatedMaterials.id, id));
 }
+
+// ─── Library Materials (AI-Curated Academic References) ─────────────────────────────
+
+import { libraryMaterials, userSavedMaterials } from "../drizzle/schema";
+
+export async function searchLibraryMaterials(query: string, filters?: { subject?: string; year?: number; type?: string; language?: string }, limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions: any[] = [];
+  if (filters?.subject) conditions.push(sql`${libraryMaterials.subject} LIKE ${`%${filters.subject}%`}`);
+  if (filters?.year) conditions.push(eq(libraryMaterials.year, filters.year));
+  if (filters?.type) conditions.push(eq(libraryMaterials.type, filters.type as any));
+  if (filters?.language) conditions.push(eq(libraryMaterials.language, filters.language));
+  if (query) {
+    conditions.push(sql`(${libraryMaterials.title} LIKE ${`%${query}%`} OR ${libraryMaterials.description} LIKE ${`%${query}%`} OR ${libraryMaterials.authorName} LIKE ${`%${query}%`} OR ${libraryMaterials.tags} LIKE ${`%${query}%`})`);
+  }
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+  return db.select().from(libraryMaterials).where(where).orderBy(desc(libraryMaterials.relevanceScore)).limit(limit);
+}
+
+export async function saveLibraryMaterial(data: {
+  title: string; description: string; type: string; subject: string; specialty?: string; year?: number;
+  authorName: string; authorTitle?: string; authorInstitution?: string; authorCountry?: string;
+  source?: string; doi?: string; externalUrl?: string; publishedYear?: number; impactFactor?: string;
+  relevanceScore?: number; searchQuery?: string; language?: string; tags?: string;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  // Check if already exists by title + authorName
+  const existing = await db.select({ id: libraryMaterials.id }).from(libraryMaterials)
+    .where(and(eq(libraryMaterials.title, data.title), eq(libraryMaterials.authorName, data.authorName)))
+    .limit(1);
+  if (existing.length > 0) return existing[0].id;
+  await db.insert(libraryMaterials).values(data as any);
+  const result = await db.select({ id: libraryMaterials.id }).from(libraryMaterials)
+    .where(and(eq(libraryMaterials.title, data.title), eq(libraryMaterials.authorName, data.authorName)))
+    .limit(1);
+  return result[0]?.id || null;
+}
+
+export async function getLibraryMaterialById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(libraryMaterials).where(eq(libraryMaterials.id, id)).limit(1);
+  if (result.length > 0) {
+    await db.update(libraryMaterials).set({ views: (result[0].views || 0) + 1 }).where(eq(libraryMaterials.id, id));
+  }
+  return result[0] || null;
+}
+
+export async function toggleSaveMaterial(userId: number, materialId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  const existing = await db.select().from(userSavedMaterials)
+    .where(and(eq(userSavedMaterials.userId, userId), eq(userSavedMaterials.materialId, materialId)))
+    .limit(1);
+  if (existing.length > 0) {
+    await db.delete(userSavedMaterials).where(eq(userSavedMaterials.id, existing[0].id));
+    await db.update(libraryMaterials).set({ saves: sql`GREATEST(${libraryMaterials.saves} - 1, 0)` }).where(eq(libraryMaterials.id, materialId));
+    return false; // unsaved
+  }
+  await db.insert(userSavedMaterials).values({ userId, materialId });
+  await db.update(libraryMaterials).set({ saves: sql`${libraryMaterials.saves} + 1` }).where(eq(libraryMaterials.id, materialId));
+  return true; // saved
+}
+
+export async function getUserSavedMaterialIds(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const saved = await db.select({ materialId: userSavedMaterials.materialId }).from(userSavedMaterials)
+    .where(eq(userSavedMaterials.userId, userId));
+  return saved.map(s => s.materialId);
+}
+
+export async function getUserSavedMaterialsFull(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const saved = await db.select({ materialId: userSavedMaterials.materialId }).from(userSavedMaterials)
+    .where(eq(userSavedMaterials.userId, userId));
+  if (saved.length === 0) return [];
+  const ids = saved.map(s => s.materialId);
+  return db.select().from(libraryMaterials)
+    .where(sql`${libraryMaterials.id} IN (${sql.join(ids.map(id => sql`${id}`), sql`, `)})`);
+}
+
+export async function getPopularLibraryMaterials(limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(libraryMaterials).orderBy(desc(libraryMaterials.views)).limit(limit);
+}

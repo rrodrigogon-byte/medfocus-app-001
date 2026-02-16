@@ -50,6 +50,13 @@
       "when": 1771194121457,
       "tag": "0006_lush_demogoblin",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1771200509367,
+      "tag": "0007_tranquil_morg",
+      "breakpoints": true
     }
   ]
 }

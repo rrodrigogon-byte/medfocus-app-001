@@ -8,7 +8,7 @@ import { ENV } from "./_core/env";
 import { z } from "zod";
 import Stripe from "stripe";
 import { PLANS } from "./products";
-import { getOrCreateProgress, addXp, getXpHistory, logStudySession, updateUserProfile, createClassroom, getClassroomsByProfessor, getClassroomsByStudent, getClassroomById, joinClassroom, getEnrollments, removeEnrollment, createActivity, getActivitiesByClassroom, updateActivity, submitActivity, gradeSubmission, getSubmissionsByActivity, getStudentSubmissions, getClassroomAnalytics, findGeneratedMaterial, saveGeneratedMaterial, getUserMaterialHistory, getGeneratedMaterialById, rateMaterial } from "./db";
+import { getOrCreateProgress, addXp, getXpHistory, logStudySession, updateUserProfile, createClassroom, getClassroomsByProfessor, getClassroomsByStudent, getClassroomById, joinClassroom, getEnrollments, removeEnrollment, createActivity, getActivitiesByClassroom, updateActivity, submitActivity, gradeSubmission, getSubmissionsByActivity, getStudentSubmissions, getClassroomAnalytics, findGeneratedMaterial, saveGeneratedMaterial, getUserMaterialHistory, getGeneratedMaterialById, rateMaterial, searchLibraryMaterials, saveLibraryMaterial, getLibraryMaterialById, toggleSaveMaterial, getUserSavedMaterialIds, getUserSavedMaterialsFull, getPopularLibraryMaterials } from "./db";
 
 function getStripe() {
   return new Stripe(ENV.stripeSecretKey, { apiVersion: "2026-01-28.clover" });
@@ -630,6 +630,231 @@ Retorne um JSON com esta estrutura exata:
         const data = await getClassroomAnalytics(input.classroomId);
         if (!data) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Falha ao carregar analytics' });
         return data;
+      }),
+  }),
+
+  // ─── Library Router (AI-Curated Academic References) ─────────────────────────────
+  library: router({
+    // Search existing materials in DB
+    search: publicProcedure
+      .input(z.object({
+        query: z.string().optional().default(''),
+        subject: z.string().optional(),
+        year: z.number().optional(),
+        type: z.string().optional(),
+        language: z.string().optional(),
+      }))
+      .query(async ({ input }) => {
+        return searchLibraryMaterials(input.query, {
+          subject: input.subject,
+          year: input.year,
+          type: input.type,
+          language: input.language,
+        });
+      }),
+
+    // Get popular materials
+    popular: publicProcedure.query(async () => {
+      return getPopularLibraryMaterials(30);
+    }),
+
+    // Get material by ID
+    getById: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const material = await getLibraryMaterialById(input.id);
+        if (!material) throw new TRPCError({ code: 'NOT_FOUND', message: 'Material não encontrado' });
+        return material;
+      }),
+
+    // Toggle save/unsave material
+    toggleSave: protectedProcedure
+      .input(z.object({ materialId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const saved = await toggleSaveMaterial(ctx.user.id, input.materialId);
+        return { saved };
+      }),
+
+    // Get user saved material IDs
+    savedIds: protectedProcedure.query(async ({ ctx }) => {
+      return getUserSavedMaterialIds(ctx.user.id);
+    }),
+
+    // Get user saved materials full
+    savedMaterials: protectedProcedure.query(async ({ ctx }) => {
+      return getUserSavedMaterialsFull(ctx.user.id);
+    }),
+
+    // AI-powered search: finds and curates academic materials from renowned sources
+    aiSearch: publicProcedure
+      .input(z.object({
+        query: z.string().min(3),
+        subject: z.string().optional(),
+        year: z.number().optional(),
+        specialty: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        // First check if we already have cached results for this query
+        const existing = await searchLibraryMaterials(input.query, {
+          subject: input.subject,
+          year: input.year,
+        }, 10);
+        if (existing.length >= 5) return { materials: existing, fromCache: true };
+
+        // Use LLM to find and curate academic materials
+        const yearContext = input.year ? `para o ${input.year}° ano de medicina` : 'para estudantes de medicina';
+        const specialtyContext = input.specialty ? ` na especialidade de ${input.specialty}` : '';
+        const subjectContext = input.subject ? ` sobre ${input.subject}` : '';
+
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `Você é um bibliotecário acadêmico especializado em medicina. Sua função é recomendar materiais acadêmicos REAIS e VALIDADOS de professores, mestres, doutores e pesquisadores renomados do Brasil e do mundo.
+
+REGRAS IMPORTANTES:
+- Recomende APENAS materiais que existem de verdade (livros publicados, artigos reais, diretrizes oficiais)
+- Inclua o nome REAL do autor com sua titulação (Prof. Dr., PhD, etc.)
+- Inclua a instituição real do autor (USP, Harvard, Oxford, etc.)
+- Priorize fontes brasileiras (SciELO, BDTD, Portal CAPES) e internacionais (PubMed, NEJM, Lancet, BMJ)
+- Inclua DOI quando possível
+- Inclua o ano de publicação real
+- Inclua fator de impacto quando aplicável
+- Varie os tipos: livros-texto, artigos de revisão, diretrizes, atlas, videoaulas, teses
+- Priorize autores renomados: professores titulares, livre-docentes, pesquisadores CNPq, membros de academias
+
+Retorne um JSON com array de materiais acadêmicos.`
+            },
+            {
+              role: "user",
+              content: `Busque materiais acadêmicos validados sobre: "${input.query}"${subjectContext}${specialtyContext} ${yearContext}.
+
+Retorne 8-12 materiais de alta qualidade com autores reais e renomados.`
+            }
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "library_materials",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  materials: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        title: { type: "string", description: "Título completo do material" },
+                        description: { type: "string", description: "Descrição detalhada do conteúdo e relevância" },
+                        type: { type: "string", description: "Tipo: livro, artigo, diretriz, atlas, videoaula, podcast, tese, revisao_sistematica, caso_clinico, guideline" },
+                        subject: { type: "string", description: "Disciplina ou área" },
+                        specialty: { type: "string", description: "Especialidade médica" },
+                        authorName: { type: "string", description: "Nome completo do autor principal" },
+                        authorTitle: { type: "string", description: "Titulação: Prof. Dr., PhD, etc." },
+                        authorInstitution: { type: "string", description: "Instituição do autor" },
+                        authorCountry: { type: "string", description: "País do autor" },
+                        source: { type: "string", description: "Fonte: PubMed, SciELO, NEJM, Lancet, editora, etc." },
+                        doi: { type: "string", description: "DOI se disponível, ou string vazia" },
+                        publishedYear: { type: "integer", description: "Ano de publicação" },
+                        impactFactor: { type: "string", description: "Fator de impacto se aplicável, ou string vazia" },
+                        language: { type: "string", description: "Idioma: pt-BR, en, es" },
+                        tags: { type: "string", description: "Tags separadas por vírgula" },
+                        relevanceScore: { type: "integer", description: "Score de relevância 0-100" }
+                      },
+                      required: ["title", "description", "type", "subject", "specialty", "authorName", "authorTitle", "authorInstitution", "authorCountry", "source", "doi", "publishedYear", "impactFactor", "language", "tags", "relevanceScore"],
+                      additionalProperties: false
+                    }
+                  }
+                },
+                required: ["materials"],
+                additionalProperties: false
+              }
+            }
+          }
+        });
+
+        const content = response.choices[0]?.message?.content;
+        if (!content) return { materials: existing, fromCache: true };
+
+        try {
+          const parsed = JSON.parse(typeof content === 'string' ? content : '');
+          const savedMaterials: any[] = [];
+
+          // Save each material to DB
+          for (const mat of parsed.materials) {
+            const validTypes = ['livro', 'artigo', 'diretriz', 'atlas', 'videoaula', 'podcast', 'tese', 'revisao_sistematica', 'caso_clinico', 'guideline'];
+            const materialType = validTypes.includes(mat.type) ? mat.type : 'artigo';
+            
+            const id = await saveLibraryMaterial({
+              title: mat.title,
+              description: mat.description,
+              type: materialType,
+              subject: mat.subject || input.subject || input.query,
+              specialty: mat.specialty || null,
+              year: input.year || undefined,
+              authorName: mat.authorName,
+              authorTitle: mat.authorTitle || null,
+              authorInstitution: mat.authorInstitution || null,
+              authorCountry: mat.authorCountry || 'Brasil',
+              source: mat.source || null,
+              doi: mat.doi || null,
+              publishedYear: mat.publishedYear || null,
+              impactFactor: mat.impactFactor || null,
+              relevanceScore: mat.relevanceScore || 80,
+              searchQuery: input.query,
+              language: mat.language || 'pt-BR',
+              tags: JSON.stringify(mat.tags ? mat.tags.split(',').map((t: string) => t.trim()) : []),
+            });
+
+            savedMaterials.push({
+              id,
+              ...mat,
+              type: materialType,
+              aiCurated: true,
+              views: 0,
+              saves: 0,
+            });
+          }
+
+          return { materials: savedMaterials, fromCache: false };
+        } catch (e) {
+          console.error('[Library AI Search] Parse error:', e);
+          return { materials: existing, fromCache: true };
+        }
+      }),
+
+    // AI-powered deep dive: generates detailed study content for a specific material
+    aiDeepDive: publicProcedure
+      .input(z.object({
+        materialId: z.number().optional(),
+        title: z.string(),
+        subject: z.string(),
+        authorName: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `Você é um professor de medicina brasileiro com vasta experiência acadêmica. Gere um resumo acadêmico detalhado e aprofundado sobre o material solicitado. Use linguagem técnica mas acessível. Inclua:
+- Contexto e importância do tema
+- Conceitos fundamentais
+- Aplicações clínicas
+- Pontos-chave para estudo
+- Questões para reflexão
+- Referências complementares reais
+
+Use markdown para formatação.`
+            },
+            {
+              role: "user",
+              content: `Gere um resumo acadêmico aprofundado sobre: "${input.title}" de ${input.authorName}, na área de ${input.subject}. Inclua os conceitos mais importantes, aplicações clínicas e referências complementares.`
+            }
+          ],
+        });
+        const content = response.choices[0]?.message?.content;
+        return { content: content || 'Conteúdo indisponível.' };
       }),
   }),
 });

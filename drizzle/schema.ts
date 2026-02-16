@@ -180,3 +180,66 @@ export const generatedMaterials = mysqlTable("generated_materials", {
 
 export type GeneratedMaterial = typeof generatedMaterials.$inferSelect;
 export type InsertGeneratedMaterial = typeof generatedMaterials.$inferInsert;
+
+/**
+ * Library Materials — AI-curated academic references from renowned professors, 
+ * doctors and researchers from Brazil and worldwide.
+ * Each entry is validated by IA and linked to real academic sources.
+ */
+export const libraryMaterials = mysqlTable("library_materials", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 500 }).notNull(),
+  description: text("description").notNull(),
+  type: mysqlEnum("libraryMaterialType", [
+    "livro", "artigo", "diretriz", "atlas", "videoaula", "podcast",
+    "tese", "revisao_sistematica", "caso_clinico", "guideline"
+  ]).notNull(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  specialty: varchar("specialty", { length: 255 }),
+  year: int("year"), // medical year (1-6)
+  
+  // Author info — professors, doctors, researchers
+  authorName: varchar("authorName", { length: 500 }).notNull(),
+  authorTitle: varchar("authorTitle", { length: 255 }), // Dr., Prof., PhD, etc.
+  authorInstitution: varchar("authorInstitution", { length: 500 }),
+  authorCountry: varchar("authorCountry", { length: 64 }).default("Brasil"),
+  
+  // Source & validation
+  source: varchar("source", { length: 500 }), // PubMed, SciELO, NEJM, Lancet, etc.
+  doi: varchar("doi", { length: 255 }),
+  externalUrl: text("externalUrl"),
+  publishedYear: int("publishedYear"),
+  impactFactor: varchar("impactFactor", { length: 32 }),
+  
+  // AI metadata
+  aiCurated: boolean("aiCurated").default(true).notNull(),
+  relevanceScore: int("relevanceScore").default(80), // 0-100
+  searchQuery: varchar("searchQuery", { length: 500 }), // query that generated this result
+  
+  // User interaction
+  views: int("views").default(0).notNull(),
+  saves: int("saves").default(0).notNull(),
+  rating: int("rating"), // avg 0-50 (x10)
+  
+  language: varchar("language", { length: 10 }).default("pt-BR"),
+  tags: text("tags"), // JSON array of tags
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type LibraryMaterial = typeof libraryMaterials.$inferSelect;
+export type InsertLibraryMaterial = typeof libraryMaterials.$inferInsert;
+
+/**
+ * User saved library materials — bookmarks for quick access.
+ */
+export const userSavedMaterials = mysqlTable("user_saved_materials", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  materialId: int("materialId").notNull(),
+  notes: text("notes"),
+  savedAt: timestamp("savedAt").defaultNow().notNull(),
+});
+
+export type UserSavedMaterial = typeof userSavedMaterials.$inferSelect;

@@ -61,3 +61,7 @@
 - [x] Personalização por perfil do aluno — adaptar conteúdo por ano/semestre e desempenho
 - [x] Corrigir erro de React duplicado (useState null) no TRPCProvider causando tela branca
 - [x] Resolver definitivamente o erro de React duplicado — forçar invalidação do Vite deps cache no browser
+- [x] Integrar IA na Biblioteca para busca inteligente de materiais acadêmicos validados
+- [x] Criar rotas tRPC para busca de referências de professores, mestres e doutores renomados
+- [x] Reescrever componente Biblioteca com catálogo curado por IA e importação de materiais
+- [x] Incluir fontes renomadas do Brasil e do mundo (PubMed, SciELO, Lancet, NEJM, etc.)
