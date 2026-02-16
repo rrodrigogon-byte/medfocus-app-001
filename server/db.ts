@@ -1,6 +1,6 @@
 import { eq, and, sql, desc, count, avg } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, userProgress, xpLog, studySessions, classrooms, enrollments, activities, submissions } from "../drizzle/schema";
+import { InsertUser, users, userProgress, xpLog, studySessions, classrooms, enrollments, activities, submissions, generatedMaterials, libraryMaterials, userSavedMaterials, materialReviews, pubmedArticles, userStudyHistory } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -417,7 +417,6 @@ export async function getClassroomAnalytics(classroomId: number) {
 
 // ─── Generated Materials (AI Content History) ─────────────────────────────
 
-import { generatedMaterials } from "../drizzle/schema";
 
 export async function findGeneratedMaterial(userId: number, universityId: string, subject: string, year: number, contentType: string = 'full') {
   const db = await getDb();
@@ -500,7 +499,6 @@ export async function rateMaterial(id: number, qualityScore: number) {
 
 // ─── Library Materials (AI-Curated Academic References) ─────────────────────────────
 
-import { libraryMaterials, userSavedMaterials } from "../drizzle/schema";
 
 export async function searchLibraryMaterials(query: string, filters?: { subject?: string; year?: number; type?: string; language?: string }, limit = 20) {
   const db = await getDb();
@@ -586,4 +584,188 @@ export async function getPopularLibraryMaterials(limit = 20) {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(libraryMaterials).orderBy(desc(libraryMaterials.views)).limit(limit);
+}
+
+
+// ─── PubMed/SciELO Cached Articles ─────────────────────────────
+
+export async function searchPubmedCache(query: string, source?: string, limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [];
+  if (query) {
+    conditions.push(sql`(${pubmedArticles.title} LIKE ${'%' + query + '%'} OR ${pubmedArticles.abstractText} LIKE ${'%' + query + '%'})`);
+  }
+  if (source) {
+    conditions.push(eq(pubmedArticles.source, source as any));
+  }
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+  return db.select().from(pubmedArticles).where(where).orderBy(desc(pubmedArticles.createdAt)).limit(limit);
+}
+
+export async function savePubmedArticle(data: {
+  pmid: string;
+  title: string;
+  authors: string; // JSON array
+  journal?: string;
+  pubDate?: string;
+  doi?: string;
+  abstractText?: string;
+  source?: 'pubmed' | 'scielo';
+  searchQuery?: string;
+  keywords?: string; // JSON array
+  language?: string;
+  isOpenAccess?: boolean;
+  citationCount?: number;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  // Check if already exists
+  const existing = await db.select().from(pubmedArticles).where(eq(pubmedArticles.pmid, data.pmid)).limit(1);
+  if (existing.length > 0) return existing[0].id;
+  const result = await db.insert(pubmedArticles).values({
+    pmid: data.pmid,
+    title: data.title,
+    authors: data.authors,
+    journal: data.journal || null,
+    pubDate: data.pubDate || null,
+    doi: data.doi || null,
+    abstractText: data.abstractText || null,
+    source: data.source || 'pubmed',
+    searchQuery: data.searchQuery || null,
+    keywords: data.keywords || null,
+    language: data.language || 'en',
+    isOpenAccess: data.isOpenAccess || false,
+    citationCount: data.citationCount || null,
+  });
+  return result[0].insertId;
+}
+
+export async function getPubmedArticleByPmid(pmid: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(pubmedArticles).where(eq(pubmedArticles.pmid, pmid)).limit(1);
+  if (result.length > 0) {
+    await db.update(pubmedArticles).set({ views: (result[0].views || 0) + 1 }).where(eq(pubmedArticles.pmid, pmid));
+  }
+  return result[0] || null;
+}
+
+// ─── Material Reviews ─────────────────────────────
+
+export async function addMaterialReview(materialId: number, userId: number, rating: number, comment?: string) {
+  const db = await getDb();
+  if (!db) return null;
+  // Check if user already reviewed this material
+  const existing = await db.select().from(materialReviews)
+    .where(and(eq(materialReviews.materialId, materialId), eq(materialReviews.userId, userId)))
+    .limit(1);
+  if (existing.length > 0) {
+    // Update existing review
+    await db.update(materialReviews).set({ rating, comment: comment || null })
+      .where(eq(materialReviews.id, existing[0].id));
+    // Update average rating on material
+    const avgResult = await db.select({ avgRating: avg(materialReviews.rating) }).from(materialReviews)
+      .where(eq(materialReviews.materialId, materialId));
+    const avgRating = Math.round(Number(avgResult[0]?.avgRating || 0) * 10);
+    await db.update(libraryMaterials).set({ rating: avgRating }).where(eq(libraryMaterials.id, materialId));
+    return existing[0].id;
+  }
+  const result = await db.insert(materialReviews).values({
+    materialId, userId, rating, comment: comment || null,
+  });
+  // Update average rating on material
+  const avgResult = await db.select({ avgRating: avg(materialReviews.rating) }).from(materialReviews)
+    .where(eq(materialReviews.materialId, materialId));
+  const avgRating = Math.round(Number(avgResult[0]?.avgRating || 0) * 10);
+  await db.update(libraryMaterials).set({ rating: avgRating }).where(eq(libraryMaterials.id, materialId));
+  return result[0].insertId;
+}
+
+export async function getMaterialReviews(materialId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const reviews = await db.select().from(materialReviews)
+    .where(eq(materialReviews.materialId, materialId))
+    .orderBy(desc(materialReviews.createdAt));
+  // Enrich with user names
+  const enriched = [];
+  for (const review of reviews) {
+    const user = await db.select({ name: users.name }).from(users).where(eq(users.id, review.userId)).limit(1);
+    enriched.push({ ...review, userName: user[0]?.name || 'Anônimo' });
+  }
+  return enriched;
+}
+
+export async function markReviewHelpful(reviewId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(materialReviews).set({ helpful: sql`${materialReviews.helpful} + 1` })
+    .where(eq(materialReviews.id, reviewId));
+}
+
+// ─── User Study History (for recommendations) ─────────────────────────────
+
+export async function trackStudyActivity(userId: number, data: {
+  itemType: 'material' | 'article' | 'quiz' | 'flashcard' | 'subject';
+  itemId: string;
+  itemTitle: string;
+  subject?: string;
+  score?: number;
+  timeSpentMinutes?: number;
+  completed?: boolean;
+}) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(userStudyHistory).values({
+    userId,
+    itemType: data.itemType,
+    itemId: data.itemId,
+    itemTitle: data.itemTitle,
+    subject: data.subject || null,
+    score: data.score || null,
+    timeSpentMinutes: data.timeSpentMinutes || null,
+    completed: data.completed || false,
+  });
+}
+
+export async function getUserStudyHistoryData(userId: number, limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(userStudyHistory)
+    .where(eq(userStudyHistory.userId, userId))
+    .orderBy(desc(userStudyHistory.createdAt))
+    .limit(limit);
+}
+
+export async function getUserTopSubjects(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.select({
+    subject: userStudyHistory.subject,
+    count: count(),
+  }).from(userStudyHistory)
+    .where(and(eq(userStudyHistory.userId, userId), sql`${userStudyHistory.subject} IS NOT NULL`))
+    .groupBy(userStudyHistory.subject)
+    .orderBy(desc(count()))
+    .limit(10);
+  return result;
+}
+
+export async function getUserQuizPerformance(userId: number) {
+  const db = await getDb();
+  if (!db) return { avgScore: 0, totalQuizzes: 0 };
+  const result = await db.select({
+    avgScore: avg(userStudyHistory.score),
+    totalQuizzes: count(),
+  }).from(userStudyHistory)
+    .where(and(
+      eq(userStudyHistory.userId, userId),
+      eq(userStudyHistory.itemType, 'quiz'),
+      sql`${userStudyHistory.score} IS NOT NULL`
+    ));
+  return {
+    avgScore: Math.round(Number(result[0]?.avgScore || 0)),
+    totalQuizzes: Number(result[0]?.totalQuizzes || 0),
+  };
 }

@@ -8,7 +8,7 @@ import { ENV } from "./_core/env";
 import { z } from "zod";
 import Stripe from "stripe";
 import { PLANS } from "./products";
-import { getOrCreateProgress, addXp, getXpHistory, logStudySession, updateUserProfile, createClassroom, getClassroomsByProfessor, getClassroomsByStudent, getClassroomById, joinClassroom, getEnrollments, removeEnrollment, createActivity, getActivitiesByClassroom, updateActivity, submitActivity, gradeSubmission, getSubmissionsByActivity, getStudentSubmissions, getClassroomAnalytics, findGeneratedMaterial, saveGeneratedMaterial, getUserMaterialHistory, getGeneratedMaterialById, rateMaterial, searchLibraryMaterials, saveLibraryMaterial, getLibraryMaterialById, toggleSaveMaterial, getUserSavedMaterialIds, getUserSavedMaterialsFull, getPopularLibraryMaterials } from "./db";
+import { getOrCreateProgress, addXp, getXpHistory, logStudySession, updateUserProfile, createClassroom, getClassroomsByProfessor, getClassroomsByStudent, getClassroomById, joinClassroom, getEnrollments, removeEnrollment, createActivity, getActivitiesByClassroom, updateActivity, submitActivity, gradeSubmission, getSubmissionsByActivity, getStudentSubmissions, getClassroomAnalytics, findGeneratedMaterial, saveGeneratedMaterial, getUserMaterialHistory, getGeneratedMaterialById, rateMaterial, searchLibraryMaterials, saveLibraryMaterial, getLibraryMaterialById, toggleSaveMaterial, getUserSavedMaterialIds, getUserSavedMaterialsFull, getPopularLibraryMaterials, searchPubmedCache, savePubmedArticle, getPubmedArticleByPmid, addMaterialReview, getMaterialReviews, markReviewHelpful, trackStudyActivity, getUserStudyHistoryData, getUserTopSubjects, getUserQuizPerformance } from "./db";
 
 function getStripe() {
   return new Stripe(ENV.stripeSecretKey, { apiVersion: "2026-01-28.clover" });
@@ -821,6 +821,263 @@ Retorne 8-12 materiais de alta qualidade com autores reais e renomados.`
         } catch (e) {
           console.error('[Library AI Search] Parse error:', e);
           return { materials: existing, fromCache: true };
+        }
+      }),
+
+    // ─── PubMed/SciELO Real Search ─────────────────────────────
+    pubmedSearch: publicProcedure
+      .input(z.object({
+        query: z.string().min(2),
+        source: z.enum(['pubmed', 'scielo']).optional().default('pubmed'),
+        maxResults: z.number().optional().default(10),
+      }))
+      .mutation(async ({ input }) => {
+        // Check cache first
+        const cached = await searchPubmedCache(input.query, input.source, input.maxResults);
+        if (cached.length >= 3) return { articles: cached, fromCache: true };
+
+        try {
+          if (input.source === 'pubmed') {
+            // Real PubMed E-utilities API
+            const searchUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(input.query + ' medicine')}&retmax=${input.maxResults}&retmode=json&sort=relevance`;
+            const searchRes = await fetch(searchUrl);
+            const searchData = await searchRes.json() as any;
+            const pmids = searchData?.esearchresult?.idlist || [];
+            if (pmids.length === 0) return { articles: cached, fromCache: true };
+
+            // Fetch summaries
+            const summaryUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${pmids.join(',')}&retmode=json`;
+            const summaryRes = await fetch(summaryUrl);
+            const summaryData = await summaryRes.json() as any;
+
+            // Fetch abstracts
+            const abstractUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=${pmids.join(',')}&rettype=abstract&retmode=text`;
+            const abstractRes = await fetch(abstractUrl);
+            const abstractText = await abstractRes.text();
+            const abstracts = abstractText.split(/\n\n\d+\. /).filter(Boolean);
+
+            const articles: any[] = [];
+            for (let i = 0; i < pmids.length; i++) {
+              const pmid = pmids[i];
+              const summary = summaryData?.result?.[pmid];
+              if (!summary) continue;
+
+              const authors = (summary.authors || []).map((a: any) => a.name);
+              const article = {
+                pmid,
+                title: summary.title || '',
+                authors: JSON.stringify(authors),
+                journal: summary.source || summary.fulljournalname || '',
+                pubDate: summary.pubdate || '',
+                doi: (summary.elocationid || '').replace('doi: ', ''),
+                abstractText: abstracts[i] || '',
+                source: 'pubmed' as const,
+                searchQuery: input.query,
+                keywords: JSON.stringify(summary.keywords || []),
+                language: (summary.lang || ['en'])[0] || 'en',
+                isOpenAccess: false,
+              };
+              await savePubmedArticle(article);
+              articles.push({ ...article, id: i, authors: JSON.parse(article.authors), keywords: JSON.parse(article.keywords || '[]') });
+            }
+            return { articles, fromCache: false };
+          } else {
+            // SciELO search
+            const scieloUrl = `https://search.scielo.org/?q=${encodeURIComponent(input.query)}&lang=pt&count=${input.maxResults}&output=json&from=0`;
+            const scieloRes = await fetch(scieloUrl);
+            const text = await scieloRes.text();
+            // SciELO may not return proper JSON, use LLM to extract
+            const llmResponse = await invokeLLM({
+              messages: [
+                { role: 'system', content: 'Extract article data from this SciELO search response. Return JSON array of articles with: pmid (use PID), title, authors (array), journal, pubDate, doi, abstractText, language.' },
+                { role: 'user', content: `Extract articles from: ${text.substring(0, 4000)}` }
+              ],
+            });
+            const content = llmResponse.choices[0]?.message?.content;
+            if (!content) return { articles: cached, fromCache: true };
+            try {
+              const parsed = JSON.parse(typeof content === 'string' ? content : '');
+              const scieloArticles = Array.isArray(parsed) ? parsed : parsed.articles || [];
+              for (const art of scieloArticles) {
+                await savePubmedArticle({
+                  pmid: art.pmid || `scielo-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                  title: art.title || '',
+                  authors: JSON.stringify(art.authors || []),
+                  journal: art.journal || '',
+                  pubDate: art.pubDate || '',
+                  doi: art.doi || '',
+                  abstractText: art.abstractText || '',
+                  source: 'scielo',
+                  searchQuery: input.query,
+                  language: art.language || 'pt',
+                });
+              }
+              return { articles: scieloArticles, fromCache: false };
+            } catch { return { articles: cached, fromCache: true }; }
+          }
+        } catch (err) {
+          console.error('[PubMed/SciELO] Search error:', err);
+          return { articles: cached, fromCache: true };
+        }
+      }),
+
+    // Get PubMed article by PMID
+    getArticle: publicProcedure
+      .input(z.object({ pmid: z.string() }))
+      .query(async ({ input }) => {
+        return getPubmedArticleByPmid(input.pmid);
+      }),
+
+    // ─── Material Reviews ─────────────────────────────
+    addReview: protectedProcedure
+      .input(z.object({
+        materialId: z.number(),
+        rating: z.number().min(1).max(5),
+        comment: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const id = await addMaterialReview(input.materialId, ctx.user.id, input.rating, input.comment);
+        // Track study activity
+        await trackStudyActivity(ctx.user.id, {
+          itemType: 'material',
+          itemId: input.materialId.toString(),
+          itemTitle: `Review for material #${input.materialId}`,
+          score: input.rating * 20, // Convert 1-5 to 0-100
+        });
+        return { id };
+      }),
+
+    getReviews: publicProcedure
+      .input(z.object({ materialId: z.number() }))
+      .query(async ({ input }) => {
+        return getMaterialReviews(input.materialId);
+      }),
+
+    markHelpful: protectedProcedure
+      .input(z.object({ reviewId: z.number() }))
+      .mutation(async ({ input }) => {
+        await markReviewHelpful(input.reviewId);
+        return { success: true };
+      }),
+
+    // ─── Study History & Tracking ─────────────────────────────
+    trackActivity: protectedProcedure
+      .input(z.object({
+        itemType: z.enum(['material', 'article', 'quiz', 'flashcard', 'subject']),
+        itemId: z.string(),
+        itemTitle: z.string(),
+        subject: z.string().optional(),
+        score: z.number().optional(),
+        timeSpentMinutes: z.number().optional(),
+        completed: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await trackStudyActivity(ctx.user.id, input);
+        return { success: true };
+      }),
+
+    studyHistory: protectedProcedure
+      .input(z.object({ limit: z.number().optional() }).optional())
+      .query(async ({ ctx, input }) => {
+        return getUserStudyHistoryData(ctx.user.id, input?.limit || 50);
+      }),
+
+    // ─── AI-Powered Recommendations ─────────────────────────────
+    getRecommendations: protectedProcedure
+      .input(z.object({
+        limit: z.number().optional().default(10),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Get user's study profile
+        const topSubjects = await getUserTopSubjects(ctx.user.id);
+        const quizPerf = await getUserQuizPerformance(ctx.user.id);
+        const recentHistory = await getUserStudyHistoryData(ctx.user.id, 30);
+        const user = ctx.user;
+
+        const subjectsList = topSubjects.map(s => `${s.subject} (${s.count}x)`).join(', ');
+        const recentTitles = recentHistory.slice(0, 10).map(h => h.itemTitle).join(', ');
+        const yearContext = user.currentYear ? `${user.currentYear}° ano` : '';
+        const universityContext = user.universityId || '';
+
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: 'system',
+              content: `Você é um sistema de recomendação acadêmica para estudantes de medicina. Com base no perfil do aluno, recomende materiais acadêmicos personalizados de professores e pesquisadores renomados.
+
+REGRAS:
+- Recomende materiais REAIS de autores reais
+- Adapte ao nível do aluno (ano, desempenho)
+- Diversifique tipos (livros, artigos, videoaulas, diretrizes)
+- Priorize áreas onde o aluno tem mais dificuldade (scores baixos)
+- Inclua materiais complementares para áreas de interesse
+- Inclua fontes brasileiras e internacionais`
+            },
+            {
+              role: 'user',
+              content: `Perfil do aluno:
+- Ano: ${yearContext || 'não informado'}
+- Universidade: ${universityContext || 'não informada'}
+- Disciplinas mais estudadas: ${subjectsList || 'nenhuma ainda'}
+- Desempenho em quizzes: média ${quizPerf.avgScore}% em ${quizPerf.totalQuizzes} quizzes
+- Materiais recentes: ${recentTitles || 'nenhum'}
+
+Recomende ${input.limit} materiais acadêmicos personalizados.`
+            }
+          ],
+          response_format: {
+            type: 'json_schema',
+            json_schema: {
+              name: 'recommendations',
+              strict: true,
+              schema: {
+                type: 'object',
+                properties: {
+                  recommendations: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        title: { type: 'string' },
+                        description: { type: 'string' },
+                        type: { type: 'string' },
+                        subject: { type: 'string' },
+                        authorName: { type: 'string' },
+                        authorTitle: { type: 'string' },
+                        authorInstitution: { type: 'string' },
+                        source: { type: 'string' },
+                        reason: { type: 'string', description: 'Por que este material é recomendado para este aluno' },
+                        difficulty: { type: 'string', description: 'básico, intermediário ou avançado' },
+                        relevanceScore: { type: 'integer' },
+                      },
+                      required: ['title', 'description', 'type', 'subject', 'authorName', 'authorTitle', 'authorInstitution', 'source', 'reason', 'difficulty', 'relevanceScore'],
+                      additionalProperties: false,
+                    }
+                  },
+                  insights: {
+                    type: 'object',
+                    properties: {
+                      strengths: { type: 'array', items: { type: 'string' } },
+                      areasToImprove: { type: 'array', items: { type: 'string' } },
+                      studyTip: { type: 'string' },
+                    },
+                    required: ['strengths', 'areasToImprove', 'studyTip'],
+                    additionalProperties: false,
+                  }
+                },
+                required: ['recommendations', 'insights'],
+                additionalProperties: false,
+              }
+            }
+          }
+        });
+
+        const content = response.choices[0]?.message?.content;
+        if (!content) return { recommendations: [], insights: { strengths: [], areasToImprove: [], studyTip: '' } };
+        try {
+          return JSON.parse(typeof content === 'string' ? content : '');
+        } catch {
+          return { recommendations: [], insights: { strengths: [], areasToImprove: [], studyTip: '' } };
         }
       }),
 

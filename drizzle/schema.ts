@@ -243,3 +243,68 @@ export const userSavedMaterials = mysqlTable("user_saved_materials", {
 });
 
 export type UserSavedMaterial = typeof userSavedMaterials.$inferSelect;
+
+/**
+ * Material Reviews — ratings and comments from students on library materials.
+ * Creates a collaborative quality ranking system.
+ */
+export const materialReviews = mysqlTable("material_reviews", {
+  id: int("id").autoincrement().primaryKey(),
+  materialId: int("materialId").notNull(),
+  userId: int("userId").notNull(),
+  rating: int("rating").notNull(), // 1-5 stars
+  comment: text("comment"),
+  helpful: int("helpful").default(0).notNull(), // upvotes
+  reported: boolean("reported").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type MaterialReview = typeof materialReviews.$inferSelect;
+export type InsertMaterialReview = typeof materialReviews.$inferInsert;
+
+/**
+ * PubMed/SciELO cached articles — real search results from scientific databases.
+ * Cached to avoid repeated API calls and provide faster access.
+ */
+export const pubmedArticles = mysqlTable("pubmed_articles", {
+  id: int("id").autoincrement().primaryKey(),
+  pmid: varchar("pmid", { length: 32 }).notNull().unique(),
+  title: text("title").notNull(),
+  authors: text("authors").notNull(), // JSON array of author names
+  journal: varchar("journal", { length: 500 }),
+  pubDate: varchar("pubDate", { length: 32 }),
+  doi: varchar("doi", { length: 255 }),
+  abstractText: text("abstractText"),
+  source: mysqlEnum("articleSource", ["pubmed", "scielo"]).default("pubmed").notNull(),
+  searchQuery: varchar("searchQuery", { length: 500 }),
+  keywords: text("keywords"), // JSON array
+  language: varchar("language", { length: 10 }).default("en"),
+  isOpenAccess: boolean("isOpenAccess").default(false),
+  citationCount: int("citationCount"),
+  views: int("views").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PubmedArticle = typeof pubmedArticles.$inferSelect;
+export type InsertPubmedArticle = typeof pubmedArticles.$inferInsert;
+
+/**
+ * User study history — tracks which subjects, materials and quizzes the user has engaged with.
+ * Used for AI-powered personalized recommendations.
+ */
+export const userStudyHistory = mysqlTable("user_study_history", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  itemType: mysqlEnum("itemType", ["material", "article", "quiz", "flashcard", "subject"]).notNull(),
+  itemId: varchar("itemId", { length: 255 }).notNull(), // material ID, PMID, subject name, etc.
+  itemTitle: varchar("itemTitle", { length: 500 }).notNull(),
+  subject: varchar("subject", { length: 255 }),
+  score: int("score"), // quiz score, rating given, etc.
+  timeSpentMinutes: int("timeSpentMinutes"),
+  completed: boolean("completed").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type UserStudyHistory = typeof userStudyHistory.$inferSelect;
+export type InsertUserStudyHistory = typeof userStudyHistory.$inferInsert;

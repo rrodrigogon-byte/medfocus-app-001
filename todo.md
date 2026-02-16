@@ -65,3 +65,10 @@
 - [x] Criar rotas tRPC para busca de referências de professores, mestres e doutores renomados
 - [x] Reescrever componente Biblioteca com catálogo curado por IA e importação de materiais
 - [x] Incluir fontes renomadas do Brasil e do mundo (PubMed, SciELO, Lancet, NEJM, etc.)
+- [x] Integrar busca real via API PubMed (NCBI E-utilities) no backend
+- [x] Integrar busca real via API SciELO no backend
+- [x] Sistema de avaliação de materiais (rating 1-5 estrelas)
+- [x] Sistema de comentários em materiais com moderação
+- [x] Ranking colaborativo de qualidade baseado em avaliações
+- [x] Recomendações personalizadas por IA baseadas no histórico de estudo
+- [x] Atualizar AcademicLibrary com abas de PubMed/SciELO, avaliações e recomendações
