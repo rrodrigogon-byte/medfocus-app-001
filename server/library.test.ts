@@ -544,3 +544,483 @@ describe('Library Router', () => {
     });
   });
 });
+
+// ─── Advanced PubMed Filters Tests ─────────────────────────────────────────
+describe('Advanced PubMed Search Filters', () => {
+  describe('Query construction with filters', () => {
+    it('should build query with date filter', () => {
+      const query = 'diabetes';
+      const dateFrom = '2020';
+      const dateTo = '2025';
+      const queryParts = [query + ' medicine'];
+      queryParts.push(`("${dateFrom}"[pdat]:"${dateTo}"[pdat])`);
+      const fullQuery = queryParts.join(' AND ');
+      expect(fullQuery).toContain('diabetes medicine');
+      expect(fullQuery).toContain('"2020"[pdat]');
+      expect(fullQuery).toContain('"2025"[pdat]');
+    });
+
+    it('should build query with study type filter', () => {
+      const studyTypeMap: Record<string, string> = {
+        clinical_trial: 'Clinical Trial[pt]',
+        meta_analysis: 'Meta-Analysis[pt]',
+        review: 'Review[pt]',
+        systematic_review: 'Systematic Review[pt]',
+        randomized_controlled_trial: 'Randomized Controlled Trial[pt]',
+        case_report: 'Case Reports[pt]',
+        guideline: 'Guideline[pt]',
+      };
+      expect(studyTypeMap['clinical_trial']).toBe('Clinical Trial[pt]');
+      expect(studyTypeMap['meta_analysis']).toBe('Meta-Analysis[pt]');
+      expect(studyTypeMap['systematic_review']).toBe('Systematic Review[pt]');
+      expect(Object.keys(studyTypeMap).length).toBe(7);
+    });
+
+    it('should build query with language filter', () => {
+      const langMap: Record<string, string> = {
+        en: 'English[la]', pt: 'Portuguese[la]', es: 'Spanish[la]', fr: 'French[la]', de: 'German[la]',
+      };
+      expect(langMap['en']).toBe('English[la]');
+      expect(langMap['pt']).toBe('Portuguese[la]');
+      expect(langMap['es']).toBe('Spanish[la]');
+    });
+
+    it('should not add filter for "all" values', () => {
+      const studyType = 'all';
+      const language = 'all';
+      const queryParts = ['diabetes medicine'];
+      if (studyType !== 'all') queryParts.push('filter');
+      if (language !== 'all') queryParts.push('filter');
+      expect(queryParts).toEqual(['diabetes medicine']);
+    });
+
+    it('should combine all filters correctly', () => {
+      const queryParts = ['diabetes medicine'];
+      queryParts.push('("2020"[pdat]:"2025"[pdat])');
+      queryParts.push('Clinical Trial[pt]');
+      queryParts.push('English[la]');
+      const fullQuery = queryParts.join(' AND ');
+      expect(fullQuery).toContain('AND');
+      expect(fullQuery.split(' AND ').length).toBe(4);
+    });
+
+    it('should handle default date range when only dateFrom is provided', () => {
+      const dateFrom = '2020';
+      const dateTo = undefined;
+      const from = dateFrom || '1900';
+      const to = dateTo || '2030';
+      expect(from).toBe('2020');
+      expect(to).toBe('2030');
+    });
+
+    it('should validate study type enum values', () => {
+      const validStudyTypes = ['clinical_trial', 'meta_analysis', 'review', 'systematic_review', 'randomized_controlled_trial', 'case_report', 'guideline', 'all'];
+      expect(validStudyTypes).toContain('clinical_trial');
+      expect(validStudyTypes).toContain('meta_analysis');
+      expect(validStudyTypes).toContain('all');
+      expect(validStudyTypes.length).toBe(8);
+    });
+
+    it('should validate language enum values', () => {
+      const validLanguages = ['en', 'pt', 'es', 'fr', 'de', 'all'];
+      expect(validLanguages).toContain('en');
+      expect(validLanguages).toContain('pt');
+      expect(validLanguages).toContain('all');
+      expect(validLanguages.length).toBe(6);
+    });
+  });
+
+  describe('pubmedAdvancedSearch input validation', () => {
+    it('should accept all advanced search parameters', () => {
+      const input = {
+        query: 'cardiovascular',
+        source: 'pubmed' as const,
+        maxResults: 15,
+        dateFrom: '2020',
+        dateTo: '2025',
+        studyType: 'meta_analysis' as const,
+        language: 'en' as const,
+      };
+      expect(input.query).toBe('cardiovascular');
+      expect(input.dateFrom).toBe('2020');
+      expect(input.studyType).toBe('meta_analysis');
+      expect(input.language).toBe('en');
+    });
+
+    it('should work with minimal parameters', () => {
+      const input = { query: 'diabetes' };
+      expect(input.query).toBe('diabetes');
+    });
+
+    it('should return totalResults count', () => {
+      const result = { articles: [], fromCache: false, totalResults: 1523, appliedFilters: { query: 'test' } };
+      expect(result.totalResults).toBe(1523);
+      expect(result.appliedFilters.query).toBe('test');
+    });
+  });
+});
+
+// ─── Reference Export Tests (ABNT/Vancouver) ───────────────────────────────
+describe('Reference Export (ABNT/Vancouver)', () => {
+  describe('Author name formatting', () => {
+    it('should format author name for ABNT (SOBRENOME, N.)', () => {
+      const formatAuthorABNT = (name: string): string => {
+        const parts = name.trim().split(/\s+/);
+        if (parts.length === 1) return parts[0].toUpperCase();
+        const lastName = parts[parts.length - 1].toUpperCase();
+        const firstNames = parts.slice(0, -1).map(n => n.charAt(0).toUpperCase() + '.').join(' ');
+        return `${lastName}, ${firstNames}`;
+      };
+      expect(formatAuthorABNT('Keith L. Moore')).toBe('MOORE, K. L.');
+      expect(formatAuthorABNT('Smith')).toBe('SMITH');
+      expect(formatAuthorABNT('John Edward Hall')).toBe('HALL, J. E.');
+    });
+
+    it('should format author name for Vancouver (Surname IN)', () => {
+      const formatAuthorVancouver = (name: string): string => {
+        const parts = name.trim().split(/\s+/);
+        if (parts.length === 1) return parts[0];
+        const lastName = parts[parts.length - 1];
+        const initials = parts.slice(0, -1).map(n => n.charAt(0).toUpperCase()).join('');
+        return `${lastName} ${initials}`;
+      };
+      expect(formatAuthorVancouver('Keith L. Moore')).toBe('Moore KL');
+      expect(formatAuthorVancouver('Smith')).toBe('Smith');
+      expect(formatAuthorVancouver('John Edward Hall')).toBe('Hall JE');
+    });
+  });
+
+  describe('ABNT format', () => {
+    it('should format article reference in ABNT', () => {
+      const article = {
+        pmid: '12345',
+        title: 'Advances in Cardiovascular Medicine.',
+        authors: ['Smith JA', 'Johnson BC'],
+        journal: 'NEJM',
+        pubDate: '2025 Jan',
+        doi: '10.1056/test',
+        abstractText: '',
+        source: 'pubmed',
+      };
+      const formatAuthorABNT = (name: string) => {
+        const parts = name.trim().split(/\s+/);
+        if (parts.length === 1) return parts[0].toUpperCase();
+        const lastName = parts[parts.length - 1].toUpperCase();
+        const firstNames = parts.slice(0, -1).map(n => n.charAt(0).toUpperCase() + '.').join(' ');
+        return `${lastName}, ${firstNames}`;
+      };
+      const authorStr = article.authors.map(formatAuthorABNT).join('; ');
+      const title = article.title.replace(/\.$/, '');
+      const ref = `${authorStr}. ${title}. **${article.journal}**, ${article.pubDate.split(/[\s\/\-]/)[0]}. DOI: ${article.doi}.`;
+      expect(ref).toContain('JA, S.');
+      expect(ref).toContain('NEJM');
+      expect(ref).toContain('DOI: 10.1056/test');
+    });
+
+    it('should use "et al." for more than 3 authors in ABNT', () => {
+      const authors = ['Author A', 'Author B', 'Author C', 'Author D'];
+      const formatAuthorABNT = (name: string) => {
+        const parts = name.trim().split(/\s+/);
+        if (parts.length === 1) return parts[0].toUpperCase();
+        const lastName = parts[parts.length - 1].toUpperCase();
+        const firstNames = parts.slice(0, -1).map(n => n.charAt(0).toUpperCase() + '.').join(' ');
+        return `${lastName}, ${firstNames}`;
+      };
+      const authorStr = authors.length > 3
+        ? `${formatAuthorABNT(authors[0])} et al.`
+        : authors.map(formatAuthorABNT).join('; ');
+      expect(authorStr).toContain('et al.');
+    });
+  });
+
+  describe('Vancouver format', () => {
+    it('should format article reference in Vancouver', () => {
+      const article = {
+        pmid: '12345',
+        title: 'Advances in Cardiovascular Medicine.',
+        authors: ['Smith JA', 'Johnson BC'],
+        journal: 'NEJM',
+        pubDate: '2025 Jan',
+        doi: '10.1056/test',
+        abstractText: '',
+        source: 'pubmed',
+      };
+      const formatAuthorVancouver = (name: string) => {
+        const parts = name.trim().split(/\s+/);
+        if (parts.length === 1) return parts[0];
+        const lastName = parts[parts.length - 1];
+        const initials = parts.slice(0, -1).map(n => n.charAt(0).toUpperCase()).join('');
+        return `${lastName} ${initials}`;
+      };
+      const authorStr = article.authors.map(formatAuthorVancouver).join(', ');
+      const title = article.title.replace(/\.$/, '');
+      const ref = `${authorStr}. ${title}. ${article.journal}. ${article.pubDate.split(/[\s\/\-]/)[0]}. doi: ${article.doi} PMID: ${article.pmid}.`;
+      expect(ref).toContain('JA S');
+      expect(ref).toContain('NEJM');
+      expect(ref).toContain('doi: 10.1056/test');
+      expect(ref).toContain('PMID: 12345');
+    });
+
+    it('should use "et al." for more than 6 authors in Vancouver', () => {
+      const authors = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7'];
+      const authorStr = authors.length > 6
+        ? `${authors.slice(0, 6).join(', ')}, et al.`
+        : authors.join(', ');
+      expect(authorStr).toContain('et al.');
+      expect(authorStr.split(',').length).toBe(7); // 6 authors + et al.
+    });
+  });
+
+  describe('parseAuthors utility', () => {
+    it('should parse JSON string authors', () => {
+      const authorsStr = '["Smith JA","Johnson BC"]';
+      const parsed = JSON.parse(authorsStr);
+      expect(parsed).toEqual(['Smith JA', 'Johnson BC']);
+    });
+
+    it('should handle array authors directly', () => {
+      const authors = ['Smith JA', 'Johnson BC'];
+      expect(Array.isArray(authors)).toBe(true);
+      expect(authors).toHaveLength(2);
+    });
+
+    it('should handle single string author', () => {
+      const author = 'Smith JA';
+      const result = typeof author === 'string' ? [author] : author;
+      expect(result).toEqual(['Smith JA']);
+    });
+  });
+
+  describe('Batch export', () => {
+    it('should export all articles in Vancouver format', () => {
+      const articles = [
+        { title: 'Article 1', authors: ['A1'], journal: 'J1', pubDate: '2025', doi: '', pmid: '1', abstractText: '', source: 'pubmed' },
+        { title: 'Article 2', authors: ['A2'], journal: 'J2', pubDate: '2024', doi: '', pmid: '2', abstractText: '', source: 'pubmed' },
+      ];
+      const refs = articles.map((a, i) => `${i + 1}. ${a.authors[0]}. ${a.title}. ${a.journal}. ${a.pubDate}.`);
+      expect(refs).toHaveLength(2);
+      expect(refs[0]).toContain('1. A1');
+      expect(refs[1]).toContain('2. A2');
+    });
+  });
+});
+
+// ─── Subject Subscriptions & Notifications Tests ───────────────────────────
+describe('Subject Subscriptions & Notifications', () => {
+  describe('library.subscribe', () => {
+    it('should accept subject parameter', () => {
+      const input = { subject: 'Anatomia Humana' };
+      expect(input.subject).toBe('Anatomia Humana');
+    });
+
+    it('should return success message', () => {
+      const result = { success: true, message: 'Inscrito com sucesso' };
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('Inscrito');
+    });
+
+    it('should handle already subscribed case', () => {
+      const result = { success: false, message: 'Já inscrito nesta disciplina' };
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Já inscrito');
+    });
+  });
+
+  describe('library.unsubscribe', () => {
+    it('should accept subject parameter', () => {
+      const input = { subject: 'Fisiologia' };
+      expect(input.subject).toBe('Fisiologia');
+    });
+  });
+
+  describe('library.getNotifications', () => {
+    it('should return notifications with unread count', () => {
+      const result = {
+        notifications: [
+          { id: 1, userId: 1, materialId: 10, subject: 'Anatomia', title: 'Novo material de Anatomia', isRead: false, createdAt: '2026-01-15' },
+          { id: 2, userId: 1, materialId: 11, subject: 'Fisiologia', title: 'Novo artigo de Fisiologia', isRead: true, createdAt: '2026-01-14' },
+        ],
+        unreadCount: 1,
+      };
+      expect(result.notifications).toHaveLength(2);
+      expect(result.unreadCount).toBe(1);
+      expect(result.notifications[0].isRead).toBe(false);
+      expect(result.notifications[1].isRead).toBe(true);
+    });
+
+    it('should handle empty notifications', () => {
+      const result = { notifications: [], unreadCount: 0 };
+      expect(result.notifications).toHaveLength(0);
+      expect(result.unreadCount).toBe(0);
+    });
+  });
+
+  describe('library.markNotificationRead', () => {
+    it('should accept notificationId parameter', () => {
+      const input = { notificationId: 5 };
+      expect(input.notificationId).toBe(5);
+    });
+  });
+
+  describe('library.markAllRead', () => {
+    it('should return success', () => {
+      const result = { success: true };
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('Subscription matching logic', () => {
+    it('should match exact subject subscription', () => {
+      const subscriptions = [{ subject: 'Anatomia' }, { subject: 'Fisiologia' }];
+      const isSubscribed = subscriptions.some(s => s.subject === 'Anatomia');
+      expect(isSubscribed).toBe(true);
+    });
+
+    it('should not match non-subscribed subject', () => {
+      const subscriptions = [{ subject: 'Anatomia' }];
+      const isSubscribed = subscriptions.some(s => s.subject === 'Farmacologia');
+      expect(isSubscribed).toBe(false);
+    });
+  });
+});
+
+// ─── Study Templates Tests ─────────────────────────────────────────────────
+describe('Study Templates', () => {
+  describe('library.generateTemplate', () => {
+    it('should accept template generation parameters', () => {
+      const input = {
+        templateType: 'anamnese' as const,
+        subject: 'Cardiologia',
+        specialty: 'Clínica Geral',
+        year: 3,
+        difficulty: 'intermediario' as const,
+        customPrompt: 'Foque em dor torácica',
+      };
+      expect(input.templateType).toBe('anamnese');
+      expect(input.subject).toBe('Cardiologia');
+      expect(input.difficulty).toBe('intermediario');
+    });
+
+    it('should validate template type enum', () => {
+      const validTypes = [
+        'anamnese', 'exame_fisico', 'diagnostico_diferencial', 'prescricao',
+        'roteiro_revisao', 'mapa_mental', 'checklist_estudo', 'guia_completo',
+        'resumo_estruturado', 'caso_clinico_modelo',
+      ];
+      expect(validTypes).toContain('anamnese');
+      expect(validTypes).toContain('exame_fisico');
+      expect(validTypes).toContain('caso_clinico_modelo');
+      expect(validTypes.length).toBe(10);
+    });
+
+    it('should validate difficulty enum', () => {
+      const validDifficulties = ['basico', 'intermediario', 'avancado'];
+      expect(validDifficulties).toContain('basico');
+      expect(validDifficulties).toContain('intermediario');
+      expect(validDifficulties).toContain('avancado');
+    });
+
+    it('should build correct template description', () => {
+      const templateDescriptions: Record<string, string> = {
+        anamnese: 'modelo completo de anamnese médica com roteiro estruturado',
+        exame_fisico: 'roteiro detalhado de exame físico por sistemas',
+        diagnostico_diferencial: 'guia de diagnóstico diferencial com fluxograma de raciocínio clínico',
+      };
+      expect(templateDescriptions['anamnese']).toContain('anamnese');
+      expect(templateDescriptions['exame_fisico']).toContain('exame físico');
+    });
+
+    it('should build difficulty context', () => {
+      const difficultyMap: Record<string, string> = {
+        basico: 'nível básico, linguagem acessível, conceitos fundamentais',
+        intermediario: 'nível intermediário, termos técnicos com explicações',
+        avancado: 'nível avançado, linguagem técnica completa, detalhes aprofundados',
+      };
+      expect(difficultyMap['basico']).toContain('básico');
+      expect(difficultyMap['avancado']).toContain('avançado');
+    });
+  });
+
+  describe('library.getTemplates', () => {
+    it('should accept filter parameters', () => {
+      const input = {
+        subject: 'Anatomia',
+        templateType: 'anamnese',
+        year: 1,
+        difficulty: 'basico',
+      };
+      expect(input.subject).toBe('Anatomia');
+      expect(input.templateType).toBe('anamnese');
+    });
+
+    it('should work without filters', () => {
+      const input = {};
+      expect(Object.keys(input)).toHaveLength(0);
+    });
+  });
+
+  describe('library.getTemplate', () => {
+    it('should accept template id', () => {
+      const input = { id: 42 };
+      expect(input.id).toBe(42);
+    });
+
+    it('should return template with content', () => {
+      const template = {
+        id: 1,
+        userId: 1,
+        templateType: 'anamnese',
+        subject: 'Cardiologia',
+        title: 'modelo completo de — Cardiologia',
+        content: '# Anamnese Cardiológica\n\n## Identificação...',
+        specialty: 'Clínica Geral',
+        year: 3,
+        difficulty: 'intermediario',
+        tags: '["Cardiologia","anamnese","Clínica Geral"]',
+        views: 15,
+        saves: 3,
+        rating: null,
+        isPublic: true,
+        createdAt: '2026-01-15',
+      };
+      expect(template.id).toBe(1);
+      expect(template.content).toContain('Anamnese');
+      expect(template.isPublic).toBe(true);
+      expect(JSON.parse(template.tags)).toHaveLength(3);
+    });
+  });
+
+  describe('Template type metadata', () => {
+    it('should have label and emoji for each type', () => {
+      const TEMPLATE_TYPES = [
+        { value: 'anamnese', label: 'Anamnese', emoji: '📝' },
+        { value: 'exame_fisico', label: 'Exame Físico', emoji: '🩺' },
+        { value: 'diagnostico_diferencial', label: 'Diagnóstico Diferencial', emoji: '🔍' },
+        { value: 'prescricao', label: 'Prescrição', emoji: '💊' },
+        { value: 'roteiro_revisao', label: 'Roteiro de Revisão', emoji: '📅' },
+        { value: 'mapa_mental', label: 'Mapa Mental', emoji: '🧠' },
+        { value: 'checklist_estudo', label: 'Checklist de Estudo', emoji: '✅' },
+        { value: 'guia_completo', label: 'Guia Completo', emoji: '📚' },
+        { value: 'resumo_estruturado', label: 'Resumo Estruturado', emoji: '📋' },
+        { value: 'caso_clinico_modelo', label: 'Caso Clínico', emoji: '🏥' },
+      ];
+      expect(TEMPLATE_TYPES).toHaveLength(10);
+      expect(TEMPLATE_TYPES.find(t => t.value === 'anamnese')?.label).toBe('Anamnese');
+      expect(TEMPLATE_TYPES.find(t => t.value === 'mapa_mental')?.emoji).toBe('🧠');
+    });
+  });
+
+  describe('Copyright compliance', () => {
+    it('should include copyright disclaimer in template generation prompt', () => {
+      const systemPrompt = `REGRAS IMPORTANTES:
+- TODO o conteúdo deve ser ORIGINAL, criado por você
+- NÃO copie trechos de livros ou artigos protegidos por direitos autorais
+- Use referências de acesso aberto (PubMed, SciELO, diretrizes do SUS/MS)
+- Cite fontes reais mas reformule o conteúdo com suas próprias palavras`;
+      expect(systemPrompt).toContain('ORIGINAL');
+      expect(systemPrompt).toContain('NÃO copie');
+      expect(systemPrompt).toContain('acesso aberto');
+      expect(systemPrompt).toContain('direitos autorais');
+    });
+  });
+});

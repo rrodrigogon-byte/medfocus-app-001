@@ -308,3 +308,65 @@ export const userStudyHistory = mysqlTable("user_study_history", {
 
 export type UserStudyHistory = typeof userStudyHistory.$inferSelect;
 export type InsertUserStudyHistory = typeof userStudyHistory.$inferInsert;
+
+/**
+ * Subject Subscriptions — users subscribe to subjects to receive notifications
+ * when new materials are added to those subjects.
+ */
+export const subjectSubscriptions = mysqlTable("subject_subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SubjectSubscription = typeof subjectSubscriptions.$inferSelect;
+export type InsertSubjectSubscription = typeof subjectSubscriptions.$inferInsert;
+
+/**
+ * Material Notifications — alerts sent to users when new materials match their subscribed subjects.
+ */
+export const materialNotifications = mysqlTable("material_notifications", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  materialId: int("materialId").notNull(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
+  isRead: boolean("isRead").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type MaterialNotification = typeof materialNotifications.$inferSelect;
+export type InsertMaterialNotification = typeof materialNotifications.$inferInsert;
+
+/**
+ * Generated Study Templates — AI-generated original study templates and guides.
+ * All content is original (not copied), respecting copyright.
+ * Types: anamnese, exame_fisico, diagnostico_diferencial, prescricao, 
+ *        roteiro_revisao, mapa_mental, checklist_estudo, guia_completo
+ */
+export const studyTemplates = mysqlTable("study_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
+  templateType: mysqlEnum("templateType", [
+    "anamnese", "exame_fisico", "diagnostico_diferencial", "prescricao",
+    "roteiro_revisao", "mapa_mental", "checklist_estudo", "guia_completo",
+    "resumo_estruturado", "caso_clinico_modelo"
+  ]).notNull(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
+  content: text("content").notNull(), // Markdown content
+  specialty: varchar("specialty", { length: 255 }),
+  year: int("year"), // medical year 1-6
+  difficulty: mysqlEnum("difficulty", ["basico", "intermediario", "avancado"]).default("intermediario"),
+  tags: text("tags"), // JSON array
+  views: int("views").default(0).notNull(),
+  saves: int("saves").default(0).notNull(),
+  rating: int("rating"), // avg 0-50 (x10)
+  isPublic: boolean("isPublic").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type StudyTemplate = typeof studyTemplates.$inferSelect;
+export type InsertStudyTemplate = typeof studyTemplates.$inferInsert;

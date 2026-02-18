@@ -769,3 +769,149 @@ export async function getUserQuizPerformance(userId: number) {
     totalQuizzes: Number(result[0]?.totalQuizzes || 0),
   };
 }
+
+// ─── Subject Subscriptions & Notifications ─────────────────────────────
+import { subjectSubscriptions, materialNotifications, studyTemplates } from "../drizzle/schema";
+
+export async function subscribeToSubject(userId: number, subject: string) {
+  const db = await getDb();
+  if (!db) return false;
+  const existing = await db.select().from(subjectSubscriptions)
+    .where(and(eq(subjectSubscriptions.userId, userId), eq(subjectSubscriptions.subject, subject)))
+    .limit(1);
+  if (existing.length > 0) return false; // already subscribed
+  await db.insert(subjectSubscriptions).values({ userId, subject });
+  return true;
+}
+
+export async function unsubscribeFromSubject(userId: number, subject: string) {
+  const db = await getDb();
+  if (!db) return false;
+  await db.delete(subjectSubscriptions)
+    .where(and(eq(subjectSubscriptions.userId, userId), eq(subjectSubscriptions.subject, subject)));
+  return true;
+}
+
+export async function getUserSubscriptions(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(subjectSubscriptions)
+    .where(eq(subjectSubscriptions.userId, userId))
+    .orderBy(desc(subjectSubscriptions.createdAt));
+}
+
+export async function getSubscribersForSubject(subject: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(subjectSubscriptions)
+    .where(eq(subjectSubscriptions.subject, subject));
+}
+
+export async function createMaterialNotification(userId: number, materialId: number, subject: string, title: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(materialNotifications).values({ userId, materialId, subject, title });
+}
+
+export async function getUserNotifications(userId: number, limit = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(materialNotifications)
+    .where(eq(materialNotifications.userId, userId))
+    .orderBy(desc(materialNotifications.createdAt))
+    .limit(limit);
+}
+
+export async function getUnreadNotificationCount(userId: number) {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db.select({ count: count() }).from(materialNotifications)
+    .where(and(eq(materialNotifications.userId, userId), eq(materialNotifications.isRead, false)));
+  return result[0]?.count || 0;
+}
+
+export async function markNotificationRead(notificationId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(materialNotifications).set({ isRead: true })
+    .where(eq(materialNotifications.id, notificationId));
+}
+
+export async function markAllNotificationsRead(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(materialNotifications).set({ isRead: true })
+    .where(and(eq(materialNotifications.userId, userId), eq(materialNotifications.isRead, false)));
+}
+
+// Notify all subscribers when a new material is added to a subject
+export async function notifySubscribersOfNewMaterial(materialId: number, subject: string, title: string) {
+  const db = await getDb();
+  if (!db) return;
+  // Find all subscribers matching this subject (partial match)
+  const subscribers = await db.select().from(subjectSubscriptions)
+    .where(sql`${subjectSubscriptions.subject} LIKE ${'%' + subject + '%'} OR ${subject} LIKE CONCAT('%', ${subjectSubscriptions.subject}, '%')`);
+  for (const sub of subscribers) {
+    await createMaterialNotification(sub.userId, materialId, subject, title);
+  }
+}
+
+// ─── Study Templates ─────────────────────────────
+
+export async function saveStudyTemplate(data: {
+  userId?: number;
+  templateType: string;
+  subject: string;
+  title: string;
+  content: string;
+  specialty?: string;
+  year?: number;
+  difficulty?: string;
+  tags?: string;
+  isPublic?: boolean;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  await db.insert(studyTemplates).values(data as any);
+  const result = await db.select().from(studyTemplates)
+    .orderBy(desc(studyTemplates.createdAt))
+    .limit(1);
+  return result[0] || null;
+}
+
+export async function getStudyTemplates(filters?: {
+  subject?: string;
+  templateType?: string;
+  year?: number;
+  difficulty?: string;
+}, limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions: any[] = [eq(studyTemplates.isPublic, true)];
+  if (filters?.subject) conditions.push(sql`${studyTemplates.subject} LIKE ${'%' + filters.subject + '%'}`);
+  if (filters?.templateType) conditions.push(eq(studyTemplates.templateType, filters.templateType as any));
+  if (filters?.year) conditions.push(eq(studyTemplates.year, filters.year));
+  if (filters?.difficulty) conditions.push(eq(studyTemplates.difficulty, filters.difficulty as any));
+  return db.select().from(studyTemplates)
+    .where(and(...conditions))
+    .orderBy(desc(studyTemplates.views))
+    .limit(limit);
+}
+
+export async function getStudyTemplateById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(studyTemplates).where(eq(studyTemplates.id, id)).limit(1);
+  if (result.length > 0) {
+    await db.update(studyTemplates).set({ views: (result[0].views || 0) + 1 }).where(eq(studyTemplates.id, id));
+  }
+  return result[0] || null;
+}
+
+export async function getUserTemplates(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(studyTemplates)
+    .where(eq(studyTemplates.userId, userId))
+    .orderBy(desc(studyTemplates.createdAt));
+}

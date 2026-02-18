@@ -8,7 +8,7 @@ import { ENV } from "./_core/env";
 import { z } from "zod";
 import Stripe from "stripe";
 import { PLANS } from "./products";
-import { getOrCreateProgress, addXp, getXpHistory, logStudySession, updateUserProfile, createClassroom, getClassroomsByProfessor, getClassroomsByStudent, getClassroomById, joinClassroom, getEnrollments, removeEnrollment, createActivity, getActivitiesByClassroom, updateActivity, submitActivity, gradeSubmission, getSubmissionsByActivity, getStudentSubmissions, getClassroomAnalytics, findGeneratedMaterial, saveGeneratedMaterial, getUserMaterialHistory, getGeneratedMaterialById, rateMaterial, searchLibraryMaterials, saveLibraryMaterial, getLibraryMaterialById, toggleSaveMaterial, getUserSavedMaterialIds, getUserSavedMaterialsFull, getPopularLibraryMaterials, searchPubmedCache, savePubmedArticle, getPubmedArticleByPmid, addMaterialReview, getMaterialReviews, markReviewHelpful, trackStudyActivity, getUserStudyHistoryData, getUserTopSubjects, getUserQuizPerformance } from "./db";
+import { getOrCreateProgress, addXp, getXpHistory, logStudySession, updateUserProfile, createClassroom, getClassroomsByProfessor, getClassroomsByStudent, getClassroomById, joinClassroom, getEnrollments, removeEnrollment, createActivity, getActivitiesByClassroom, updateActivity, submitActivity, gradeSubmission, getSubmissionsByActivity, getStudentSubmissions, getClassroomAnalytics, findGeneratedMaterial, saveGeneratedMaterial, getUserMaterialHistory, getGeneratedMaterialById, rateMaterial, searchLibraryMaterials, saveLibraryMaterial, getLibraryMaterialById, toggleSaveMaterial, getUserSavedMaterialIds, getUserSavedMaterialsFull, getPopularLibraryMaterials, searchPubmedCache, savePubmedArticle, getPubmedArticleByPmid, addMaterialReview, getMaterialReviews, markReviewHelpful, trackStudyActivity, getUserStudyHistoryData, getUserTopSubjects, getUserQuizPerformance, subscribeToSubject, unsubscribeFromSubject, getUserSubscriptions, getUserNotifications, getUnreadNotificationCount, markNotificationRead, markAllNotificationsRead, notifySubscribersOfNewMaterial, saveStudyTemplate, getStudyTemplates, getStudyTemplateById, getUserTemplates } from "./db";
 
 function getStripe() {
   return new Stripe(ENV.stripeSecretKey, { apiVersion: "2026-01-28.clover" });
@@ -1079,6 +1079,281 @@ Recomende ${input.limit} materiais acadêmicos personalizados.`
         } catch {
           return { recommendations: [], insights: { strengths: [], areasToImprove: [], studyTip: '' } };
         }
+      }),
+
+    // ─── Advanced PubMed Search with Filters ─────────────────────────────
+    pubmedAdvancedSearch: publicProcedure
+      .input(z.object({
+        query: z.string().min(2),
+        source: z.enum(['pubmed', 'scielo']).optional().default('pubmed'),
+        maxResults: z.number().optional().default(10),
+        dateFrom: z.string().optional(), // YYYY format
+        dateTo: z.string().optional(), // YYYY format
+        studyType: z.enum(['clinical_trial', 'meta_analysis', 'review', 'systematic_review', 'randomized_controlled_trial', 'case_report', 'guideline', 'all']).optional().default('all'),
+        language: z.enum(['en', 'pt', 'es', 'fr', 'de', 'all']).optional().default('all'),
+      }))
+      .mutation(async ({ input }) => {
+        // Build PubMed query with filters
+        let queryParts = [input.query + ' medicine'];
+        
+        // Date filter
+        if (input.dateFrom || input.dateTo) {
+          const from = input.dateFrom || '1900';
+          const to = input.dateTo || '2030';
+          queryParts.push(`("${from}"[pdat]:"${to}"[pdat])`);
+        }
+        
+        // Study type filter for PubMed
+        const studyTypeMap: Record<string, string> = {
+          clinical_trial: 'Clinical Trial[pt]',
+          meta_analysis: 'Meta-Analysis[pt]',
+          review: 'Review[pt]',
+          systematic_review: 'Systematic Review[pt]',
+          randomized_controlled_trial: 'Randomized Controlled Trial[pt]',
+          case_report: 'Case Reports[pt]',
+          guideline: 'Guideline[pt]',
+        };
+        if (input.studyType && input.studyType !== 'all' && studyTypeMap[input.studyType]) {
+          queryParts.push(studyTypeMap[input.studyType]);
+        }
+        
+        // Language filter
+        const langMap: Record<string, string> = {
+          en: 'English[la]', pt: 'Portuguese[la]', es: 'Spanish[la]', fr: 'French[la]', de: 'German[la]',
+        };
+        if (input.language && input.language !== 'all' && langMap[input.language]) {
+          queryParts.push(langMap[input.language]);
+        }
+        
+        const fullQuery = queryParts.join(' AND ');
+        
+        // Check cache first
+        const cached = await searchPubmedCache(input.query, input.source, input.maxResults);
+        
+        try {
+          if (input.source === 'pubmed') {
+            const searchUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(fullQuery)}&retmax=${input.maxResults}&retmode=json&sort=relevance`;
+            const searchRes = await fetch(searchUrl);
+            const searchData = await searchRes.json() as any;
+            const pmids = searchData?.esearchresult?.idlist || [];
+            if (pmids.length === 0) return { articles: cached, fromCache: true, totalResults: parseInt(searchData?.esearchresult?.count || '0'), appliedFilters: { query: fullQuery } };
+            
+            const summaryUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${pmids.join(',')}&retmode=json`;
+            const summaryRes = await fetch(summaryUrl);
+            const summaryData = await summaryRes.json() as any;
+            
+            const abstractUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=${pmids.join(',')}&rettype=abstract&retmode=text`;
+            const abstractRes = await fetch(abstractUrl);
+            const abstractText = await abstractRes.text();
+            const abstracts = abstractText.split(/\n\n\d+\. /).filter(Boolean);
+            
+            const articles: any[] = [];
+            for (let i = 0; i < pmids.length; i++) {
+              const pmid = pmids[i];
+              const summary = summaryData?.result?.[pmid];
+              if (!summary) continue;
+              const authors = (summary.authors || []).map((a: any) => a.name);
+              const article = {
+                pmid,
+                title: summary.title || '',
+                authors: JSON.stringify(authors),
+                journal: summary.source || summary.fulljournalname || '',
+                pubDate: summary.pubdate || '',
+                doi: (summary.elocationid || '').replace('doi: ', ''),
+                abstractText: abstracts[i] || '',
+                source: 'pubmed' as const,
+                searchQuery: input.query,
+                keywords: JSON.stringify(summary.keywords || []),
+                language: (summary.lang || ['en'])[0] || 'en',
+                isOpenAccess: false,
+                pubType: summary.pubtype || [],
+              };
+              await savePubmedArticle(article);
+              articles.push({ ...article, id: i, authors: JSON.parse(article.authors), keywords: JSON.parse(article.keywords || '[]') });
+            }
+            return { articles, fromCache: false, totalResults: parseInt(searchData?.esearchresult?.count || '0'), appliedFilters: { query: fullQuery } };
+          } else {
+            // SciELO search with filters
+            let scieloLang = '';
+            if (input.language && input.language !== 'all') scieloLang = `&lang=${input.language}`;
+            const scieloUrl = `https://search.scielo.org/?q=${encodeURIComponent(input.query)}&lang=pt&count=${input.maxResults}&output=json&from=0${scieloLang}`;
+            const scieloRes = await fetch(scieloUrl);
+            const text = await scieloRes.text();
+            const llmResponse = await invokeLLM({
+              messages: [
+                { role: 'system', content: 'Extract article data from this SciELO search response. Return JSON array of articles with: pmid (use PID), title, authors (array), journal, pubDate, doi, abstractText, language, pubType (array of types like Review, Clinical Trial, etc).' },
+                { role: 'user', content: `Extract articles from: ${text.substring(0, 4000)}` }
+              ],
+            });
+            const content = llmResponse.choices[0]?.message?.content;
+            if (!content) return { articles: cached, fromCache: true, totalResults: 0, appliedFilters: { query: input.query } };
+            try {
+              const parsed = JSON.parse(typeof content === 'string' ? content : '');
+              const scieloArticles = Array.isArray(parsed) ? parsed : parsed.articles || [];
+              for (const art of scieloArticles) {
+                await savePubmedArticle({
+                  pmid: art.pmid || `scielo-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                  title: art.title || '',
+                  authors: JSON.stringify(art.authors || []),
+                  journal: art.journal || '',
+                  pubDate: art.pubDate || '',
+                  doi: art.doi || '',
+                  abstractText: art.abstractText || '',
+                  source: 'scielo',
+                  searchQuery: input.query,
+                  language: art.language || 'pt',
+                });
+              }
+              return { articles: scieloArticles, fromCache: false, totalResults: scieloArticles.length, appliedFilters: { query: input.query } };
+            } catch { return { articles: cached, fromCache: true, totalResults: 0, appliedFilters: { query: input.query } }; }
+          }
+        } catch (err) {
+          console.error('[PubMed Advanced] Search error:', err);
+          return { articles: cached, fromCache: true, totalResults: 0, appliedFilters: { query: input.query } };
+        }
+      }),
+
+    // ─── Subject Subscriptions & Notifications ─────────────────────────────
+    subscribe: protectedProcedure
+      .input(z.object({ subject: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        const result = await subscribeToSubject(ctx.user.id, input.subject);
+        return { success: result, message: result ? 'Inscrito com sucesso' : 'Já inscrito nesta disciplina' };
+      }),
+
+    unsubscribe: protectedProcedure
+      .input(z.object({ subject: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        await unsubscribeFromSubject(ctx.user.id, input.subject);
+        return { success: true };
+      }),
+
+    getSubscriptions: protectedProcedure
+      .query(async ({ ctx }) => {
+        return getUserSubscriptions(ctx.user.id);
+      }),
+
+    getNotifications: protectedProcedure
+      .query(async ({ ctx }) => {
+        const notifications = await getUserNotifications(ctx.user.id);
+        const unreadCount = await getUnreadNotificationCount(ctx.user.id);
+        return { notifications, unreadCount };
+      }),
+
+    markNotificationRead: protectedProcedure
+      .input(z.object({ notificationId: z.number() }))
+      .mutation(async ({ input }) => {
+        await markNotificationRead(input.notificationId);
+        return { success: true };
+      }),
+
+    markAllRead: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        await markAllNotificationsRead(ctx.user.id);
+        return { success: true };
+      }),
+
+    // ─── Study Templates (AI-Generated, Copyright-Safe) ─────────────────────────────
+    generateTemplate: protectedProcedure
+      .input(z.object({
+        templateType: z.enum([
+          'anamnese', 'exame_fisico', 'diagnostico_diferencial', 'prescricao',
+          'roteiro_revisao', 'mapa_mental', 'checklist_estudo', 'guia_completo',
+          'resumo_estruturado', 'caso_clinico_modelo'
+        ]),
+        subject: z.string(),
+        specialty: z.string().optional(),
+        year: z.number().optional(),
+        difficulty: z.enum(['basico', 'intermediario', 'avancado']).optional().default('intermediario'),
+        customPrompt: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const templateDescriptions: Record<string, string> = {
+          anamnese: 'modelo completo de anamnese médica com roteiro estruturado',
+          exame_fisico: 'roteiro detalhado de exame físico por sistemas',
+          diagnostico_diferencial: 'guia de diagnóstico diferencial com fluxograma de raciocínio clínico',
+          prescricao: 'modelo de prescrição médica com posologia e orientações',
+          roteiro_revisao: 'roteiro de revisão completo com cronograma e tópicos-chave',
+          mapa_mental: 'mapa mental textual com hierarquia de conceitos e conexões',
+          checklist_estudo: 'checklist de estudo completo com todos os tópicos essenciais',
+          guia_completo: 'guia de estudo completo e aprofundado com referências abertas',
+          resumo_estruturado: 'resumo acadêmico estruturado com seções e pontos-chave',
+          caso_clinico_modelo: 'caso clínico fictício para estudo com perguntas e resolução',
+        };
+
+        const difficultyMap: Record<string, string> = {
+          basico: 'nível básico, linguagem acessível, conceitos fundamentais',
+          intermediario: 'nível intermediário, termos técnicos com explicações',
+          avancado: 'nível avançado, linguagem técnica completa, detalhes aprofundados',
+        };
+
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: 'system',
+              content: `Você é um professor de medicina brasileiro com vasta experiência acadêmica. Gere um ${templateDescriptions[input.templateType] || 'material de estudo'} sobre o tema solicitado.
+
+REGRAS IMPORTANTES:
+- TODO o conteúdo deve ser ORIGINAL, criado por você
+- NÃO copie trechos de livros ou artigos protegidos por direitos autorais
+- Use referências de acesso aberto (PubMed, SciELO, diretrizes do SUS/MS)
+- Cite fontes reais mas reformule o conteúdo com suas próprias palavras
+- Inclua referências bibliográficas no final (formato Vancouver)
+- Nível: ${difficultyMap[input.difficulty || 'intermediario']}
+- Use markdown para formatação rica
+- Inclua tabelas, listas e seções bem organizadas
+- Adicione dicas clínicas práticas quando relevante
+- Para casos clínicos, use dados fictícios mas realistas
+${input.customPrompt ? `\nInstrução adicional do aluno: ${input.customPrompt}` : ''}`
+            },
+            {
+              role: 'user',
+              content: `Gere um ${templateDescriptions[input.templateType] || 'material'} sobre: ${input.subject}${input.specialty ? ` (especialidade: ${input.specialty})` : ''}${input.year ? ` para ${input.year}° ano de medicina` : ''}.`
+            }
+          ],
+        });
+
+        const rawContent = response.choices[0]?.message?.content;
+        const content = typeof rawContent === 'string' ? rawContent : 'Conteúdo indisponível.';
+        const title = `${templateDescriptions[input.templateType]?.split(' ').slice(0, 4).join(' ') || input.templateType} — ${input.subject}`;
+
+        // Save to DB
+        const template = await saveStudyTemplate({
+          userId: ctx.user.id,
+          templateType: input.templateType,
+          subject: input.subject,
+          title,
+          content,
+          specialty: input.specialty,
+          year: input.year,
+          difficulty: input.difficulty,
+          tags: JSON.stringify([input.subject, input.templateType, input.specialty].filter(Boolean)),
+          isPublic: true,
+        });
+
+        return { template, content };
+      }),
+
+    getTemplates: publicProcedure
+      .input(z.object({
+        subject: z.string().optional(),
+        templateType: z.string().optional(),
+        year: z.number().optional(),
+        difficulty: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return getStudyTemplates(input || undefined);
+      }),
+
+    getTemplate: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return getStudyTemplateById(input.id);
+      }),
+
+    myTemplates: protectedProcedure
+      .query(async ({ ctx }) => {
+        return getUserTemplates(ctx.user.id);
       }),
 
     // AI-powered deep dive: generates detailed study content for a specific material

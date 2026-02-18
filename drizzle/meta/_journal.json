@@ -64,6 +64,13 @@
       "when": 1771202055885,
       "tag": "0008_bizarre_mentor",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1771454443416,
+      "tag": "0009_fine_paladin",
+      "breakpoints": true
     }
   ]
 }

@@ -72,3 +72,15 @@
 - [x] Ranking colaborativo de qualidade baseado em avaliações
 - [x] Recomendações personalizadas por IA baseadas no histórico de estudo
 - [x] Atualizar AcademicLibrary com abas de PubMed/SciELO, avaliações e recomendações
+- [x] Filtros avançados PubMed: data de publicação, tipo de estudo, idioma
+- [x] Exportar referências no formato ABNT para trabalhos acadêmicos
+- [x] Exportar referências no formato Vancouver para artigos científicos
+- [x] Botão de copiar referência e download como arquivo .txt
+- [x] Sistema de notificações de novos materiais por disciplina
+- [x] Tabela de assinaturas de disciplinas (material_subscriptions)
+- [x] Tabela de notificações de materiais (material_notifications)
+- [x] Painel de notificações com badge e dropdown
+- [x] Templates inovadores de estudo gerados por IA (respeitando direitos autorais)
+- [x] Templates médicos: Anamnese, Exame Físico, Diagnóstico Diferencial, Prescrição
+- [x] Guias de estudo completos por disciplina com referências abertas
+- [x] Aba de Templates na Biblioteca com geração sob demanda
