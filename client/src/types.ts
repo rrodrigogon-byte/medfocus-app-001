@@ -36,14 +36,34 @@ export interface YearContent {
   subjects: string[];
   references: Reference[];
   videoId?: string;
+  phase?: string;             // e.g. 'Básico', 'Clínico', 'Internato'
+  description?: string;       // Descrição do período
+  skills?: string[];          // Habilidades desenvolvidas
+  practicalHours?: number;    // Horas de prática
 }
 
 export interface University {
   id: string;
   name: string;
   state: string;
+  city?: string;
   curriculumType: 'PBL' | 'Tradicional' | 'Misto';
   curriculumByYear: Record<number, YearContent>;
+  // MEC / ENAMED data
+  mecScore?: number;          // Conceito MEC (1-5)
+  enamScore?: number;         // Nota ENAMED (1-5)
+  enamYear?: number;          // Ano da avaliação ENAMED
+  // Metadata
+  category?: 'federal' | 'estadual' | 'municipal' | 'privada' | 'comunitaria';
+  foundedYear?: number;
+  monthlyFee?: string;        // e.g. 'Gratuita' or 'R$ 12.000'
+  totalSeats?: number;        // Vagas por ano
+  duration?: string;          // e.g. '12 semestres'
+  shift?: string;             // e.g. 'Integral'
+  website?: string;
+  // Rankings
+  rufRanking?: number;        // Ranking Universitário Folha
+  qsRanking?: number;         // QS World (se aplicável)
 }
 
 export type UserRole = 'student' | 'professor' | 'coordinator' | 'admin';
@@ -82,7 +102,8 @@ export type View =
   | 'resources'
   | 'spacedRepetition'
   | 'classroom'
-  | 'analytics';
+  | 'analytics'
+  | 'roadmap';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {

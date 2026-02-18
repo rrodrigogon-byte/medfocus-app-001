@@ -30,6 +30,7 @@ import AcademicResourcesPanel from '../components/medfocus/AcademicResourcesPane
 import SpacedRepetitionPanel from '../components/medfocus/SpacedRepetitionPanel';
 import ClassroomPanel from '../components/medfocus/ClassroomPanel';
 import TeacherAnalyticsPanel from '../components/medfocus/TeacherAnalyticsPanel';
+import MedicalRoadmap from '../components/medfocus/MedicalRoadmap';
 import XPToast from '../components/medfocus/XPToast';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
@@ -145,6 +146,7 @@ export default function Home() {
       case 'spacedRepetition': return <SpacedRepetitionPanel />;
       case 'classroom': return <ClassroomPanel user={localUser} />;
       case 'analytics': return <TeacherAnalyticsPanel />;
+      case 'roadmap': return <MedicalRoadmap currentYear={localUser.currentYear || 1} onSelectYear={(y) => { handleUpdateUser({ currentYear: y }); setCurrentView('guide'); }} />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{
@@ -206,7 +208,8 @@ export default function Home() {
                currentView === 'professor' ? 'Painel do Professor' :
                currentView === 'spacedRepetition' ? 'Revisão Espaçada SM-2' :
                currentView === 'classroom' ? 'Sala de Aula' :
-               currentView === 'analytics' ? 'Analytics de Turma' : currentView}
+               currentView === 'analytics' ? 'Analytics de Turma' :
+               currentView === 'roadmap' ? 'Jornada Médica' : currentView}
             </h2>
           </div>
           <div className="flex items-center gap-2">

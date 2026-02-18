@@ -84,3 +84,15 @@
 - [x] Templates médicos: Anamnese, Exame Físico, Diagnóstico Diferencial, Prescrição
 - [x] Guias de estudo completos por disciplina com referências abertas
 - [x] Aba de Templates na Biblioteca com geração sob demanda
+- [x] Expandir UNIVAG com grade curricular detalhada das 12 etapas reais (dados MEC/Scribd)
+- [x] Adicionar mais universidades: UFPR, UFC, UFPE, UEL, UNESP, FAMERP, FAMEMA, Einstein, Santa Casa SP
+- [x] Adicionar referências MEC: nota ENAMED, conceito do curso, dados de avaliação
+- [x] Adicionar rankings mundiais: QS Medicine Top 20, THE Medicine Top 10
+- [x] Criar sistema de referências internacionais (Harvard, Oxford, Johns Hopkins, Stanford, Cambridge)
+- [x] Expandir materiais completos por disciplina do 1° ao 6° ano com conteúdo extenso
+- [x] Criar guias visuais de treinamento por ano (roadmap visual do curso de medicina)
+- [x] Adicionar seção de Recursos por Ano com materiais recomendados e referências abertas
+- [x] Criar componente de Roadmap Visual do curso (timeline interativa 1°-6° ano)
+- [x] Adicionar dados de DCN (Diretrizes Curriculares Nacionais) do MEC 2014
+- [x] Criar seção de comparação entre universidades (grade, metodologia, nota MEC)
+- [x] Expandir referências bibliográficas com links para acesso aberto (SciELO, PubMed Central)

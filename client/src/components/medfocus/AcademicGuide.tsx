@@ -295,15 +295,54 @@ const AcademicGuide: React.FC<GuideProps> = ({ user, onUpdateUser }) => {
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-display font-bold text-lg group-hover:bg-primary group-hover:text-primary-foreground transition-all">
                   {univ.name.split(' ').pop()?.substring(0, 3).toUpperCase() || univ.id.toUpperCase().substring(0, 3)}
                 </div>
-                <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                  univ.curriculumType === 'PBL' ? 'bg-violet-500/10 text-violet-600' :
-                  univ.curriculumType === 'Misto' ? 'bg-amber-500/10 text-amber-600' :
-                  'bg-blue-500/10 text-blue-600'
-                }`}>{univ.curriculumType}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                    univ.curriculumType === 'PBL' ? 'bg-violet-500/10 text-violet-600' :
+                    univ.curriculumType === 'Misto' ? 'bg-amber-500/10 text-amber-600' :
+                    'bg-blue-500/10 text-blue-600'
+                  }`}>{univ.curriculumType}</span>
+                  {univ.category && (
+                    <span className={`px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider ${
+                      univ.category === 'federal' ? 'bg-green-500/10 text-green-600' :
+                      univ.category === 'estadual' ? 'bg-teal-500/10 text-teal-600' :
+                      'bg-gray-500/10 text-gray-500'
+                    }`}>{univ.category}</span>
+                  )}
+                </div>
               </div>
               <h3 className="font-display font-bold text-foreground text-base leading-tight mb-1 group-hover:text-primary transition-colors">{univ.name}</h3>
-              <p className="text-xs text-muted-foreground font-medium">{univ.state}</p>
-              <div className="flex items-center gap-1.5 text-primary text-xs font-semibold mt-4 opacity-0 group-hover:opacity-100 transition-all">
+              <p className="text-xs text-muted-foreground font-medium mb-3">{univ.city ? `${univ.city}, ${univ.state}` : univ.state}</p>
+              
+              {/* MEC/ENAMED Scores */}
+              <div className="flex flex-wrap gap-2 mb-3">
+                {univ.mecScore && (
+                  <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 rounded-md">
+                    <span className="text-[9px] font-bold text-blue-500 uppercase">MEC</span>
+                    <span className="text-[10px] font-extrabold text-blue-600">{univ.mecScore}</span>
+                  </div>
+                )}
+                {univ.enamScore && (
+                  <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 rounded-md">
+                    <span className="text-[9px] font-bold text-emerald-500 uppercase">ENAMED</span>
+                    <span className="text-[10px] font-extrabold text-emerald-600">{univ.enamScore}</span>
+                  </div>
+                )}
+                {univ.rufRanking && (
+                  <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 rounded-md">
+                    <span className="text-[9px] font-bold text-amber-500 uppercase">RUF</span>
+                    <span className="text-[10px] font-extrabold text-amber-600">#{univ.rufRanking}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Quick Info */}
+              <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                {univ.totalSeats && <span>{univ.totalSeats} vagas</span>}
+                {univ.monthlyFee && <span>{univ.monthlyFee}</span>}
+                {univ.shift && <span>{univ.shift}</span>}
+              </div>
+
+              <div className="flex items-center gap-1.5 text-primary text-xs font-semibold mt-3 opacity-0 group-hover:opacity-100 transition-all">
                 Ver currículo completo
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
               </div>
@@ -557,7 +596,31 @@ const AcademicGuide: React.FC<GuideProps> = ({ user, onUpdateUser }) => {
           </button>
           <div className="flex-1">
             <h2 className="text-xl font-display font-extrabold text-foreground tracking-tight">{selectedUniv?.name}</h2>
-            <p className="text-xs text-primary font-semibold mt-0.5">Currículo {selectedUniv?.curriculumType} — {selectedUniv?.state}</p>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <span className="text-xs text-primary font-semibold">Currículo {selectedUniv?.curriculumType} — {selectedUniv?.city ? `${selectedUniv.city}, ${selectedUniv.state}` : selectedUniv?.state}</span>
+              {selectedUniv?.mecScore && (
+                <span className="px-2 py-0.5 bg-blue-500/10 text-blue-600 rounded-md text-[9px] font-bold">MEC {selectedUniv.mecScore}</span>
+              )}
+              {selectedUniv?.enamScore && (
+                <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 rounded-md text-[9px] font-bold">ENAMED {selectedUniv.enamScore}</span>
+              )}
+              {selectedUniv?.rufRanking && (
+                <span className="px-2 py-0.5 bg-amber-500/10 text-amber-600 rounded-md text-[9px] font-bold">RUF #{selectedUniv.rufRanking}</span>
+              )}
+              {selectedUniv?.category && (
+                <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase ${selectedUniv.category === 'federal' ? 'bg-green-500/10 text-green-600' : selectedUniv.category === 'estadual' ? 'bg-teal-500/10 text-teal-600' : 'bg-gray-500/10 text-gray-500'}`}>{selectedUniv.category}</span>
+              )}
+            </div>
+            {/* Quick stats */}
+            <div className="flex flex-wrap items-center gap-3 mt-2 text-[10px] text-muted-foreground">
+              {selectedUniv?.totalSeats && <span>{selectedUniv.totalSeats} vagas/ano</span>}
+              {selectedUniv?.monthlyFee && <span>{selectedUniv.monthlyFee}</span>}
+              {selectedUniv?.duration && <span>{selectedUniv.duration}</span>}
+              {selectedUniv?.shift && <span>{selectedUniv.shift}</span>}
+              {selectedUniv?.website && (
+                <a href={selectedUniv.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline" onClick={e => e.stopPropagation()}>Site oficial</a>
+              )}
+            </div>
           </div>
         </div>
 
@@ -579,6 +642,48 @@ const AcademicGuide: React.FC<GuideProps> = ({ user, onUpdateUser }) => {
           {contentDepthLabel}
         </div>
       </div>
+
+      {/* Year Info Card */}
+      {selectedUniv?.curriculumByYear[activeYear] && (
+        <div className="bg-gradient-to-r from-primary/5 to-violet-500/5 border border-primary/20 rounded-xl p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-primary"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            </div>
+            <div>
+              <h3 className="text-sm font-display font-bold text-foreground">{activeYear}º Ano — {selectedUniv.curriculumByYear[activeYear].phase || 'Ciclo'}</h3>
+              {selectedUniv.curriculumByYear[activeYear].description && (
+                <p className="text-xs text-muted-foreground mt-0.5">{selectedUniv.curriculumByYear[activeYear].description}</p>
+              )}
+            </div>
+          </div>
+          {/* Skills */}
+          {selectedUniv.curriculumByYear[activeYear].skills && selectedUniv.curriculumByYear[activeYear].skills!.length > 0 && (
+            <div className="mt-3">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-primary mb-2">Competências Desenvolvidas</h4>
+              <div className="flex flex-wrap gap-1.5">
+                {selectedUniv.curriculumByYear[activeYear].skills!.map((skill, i) => (
+                  <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary rounded-md text-[10px] font-medium">{skill}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* References */}
+          {selectedUniv.curriculumByYear[activeYear].references && selectedUniv.curriculumByYear[activeYear].references.length > 0 && (
+            <div className="mt-3">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-violet-500 mb-2">Referências Bibliográficas</h4>
+              <div className="space-y-1">
+                {selectedUniv.curriculumByYear[activeYear].references.map((ref, i) => (
+                  <div key={i} className="flex items-start gap-2 text-[10px] text-foreground/70">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-violet-400 shrink-0 mt-0.5"><path d="M4 19.5v-15A2.5 2.5 0 016.5 2H20v20H6.5a2.5 2.5 0 01-2.5-2.5Z"/></svg>
+                    <span>{ref.author} — <em>{ref.title}</em> ({ref.type})</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Subjects Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
