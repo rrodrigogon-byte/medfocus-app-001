@@ -96,3 +96,15 @@
 - [x] Adicionar dados de DCN (Diretrizes Curriculares Nacionais) do MEC 2014
 - [x] Criar seção de comparação entre universidades (grade, metodologia, nota MEC)
 - [x] Expandir referências bibliográficas com links para acesso aberto (SciELO, PubMed Central)
+- [x] Compartilhamento de templates entre alunos via link público
+- [x] Feed de templates compartilhados por disciplina
+- [x] Salas de estudo colaborativo em tempo real com chat
+- [x] Anotações compartilhadas em salas de estudo
+- [x] Integração calendário acadêmico com datas de provas
+- [x] Sugestões automáticas de revisão nos dias anteriores às provas
+- [x] Simulados estilo ENAMED/REVALIDA com banco de questões
+- [x] Cronômetro de simulado com tempo real de prova
+- [x] Relatório de desempenho por área nos simulados
+- [x] Atlas anatômico interativo com SVGs clicáveis por sistema
+- [x] Vincular atlas anatômico às disciplinas de cada ano
+- [x] Integrar Sidebar e rotas para todas as novas funcionalidades

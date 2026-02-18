@@ -370,3 +370,187 @@ export const studyTemplates = mysqlTable("study_templates", {
 
 export type StudyTemplate = typeof studyTemplates.$inferSelect;
 export type InsertStudyTemplate = typeof studyTemplates.$inferInsert;
+
+/**
+ * Shared Templates — templates shared publicly between students.
+ * Links to studyTemplates but tracks sharing metadata.
+ */
+export const sharedTemplates = mysqlTable("shared_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  templateId: int("templateId").notNull(),
+  sharedByUserId: int("sharedByUserId").notNull(),
+  shareCode: varchar("shareCode", { length: 32 }).notNull().unique(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  university: varchar("university", { length: 255 }),
+  year: int("year"),
+  views: int("views").default(0).notNull(),
+  copies: int("copies").default(0).notNull(),
+  likes: int("likes").default(0).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SharedTemplate = typeof sharedTemplates.$inferSelect;
+export type InsertSharedTemplate = typeof sharedTemplates.$inferInsert;
+
+/**
+ * Study Rooms — collaborative real-time study rooms.
+ * Students can join, chat, and share notes.
+ */
+export const studyRooms = mysqlTable("study_rooms", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  code: varchar("code", { length: 16 }).notNull().unique(),
+  createdByUserId: int("createdByUserId").notNull(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  university: varchar("university", { length: 255 }),
+  year: int("year"),
+  description: text("description"),
+  maxParticipants: int("maxParticipants").default(20).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  isPublic: boolean("isPublic").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type StudyRoomDB = typeof studyRooms.$inferSelect;
+export type InsertStudyRoom = typeof studyRooms.$inferInsert;
+
+/**
+ * Study Room Participants — tracks who is in each study room.
+ */
+export const studyRoomParticipants = mysqlTable("study_room_participants", {
+  id: int("id").autoincrement().primaryKey(),
+  roomId: int("roomId").notNull(),
+  userId: int("userId").notNull(),
+  role: mysqlEnum("participantRole", ["owner", "moderator", "member"]).default("member").notNull(),
+  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+});
+
+export type StudyRoomParticipant = typeof studyRoomParticipants.$inferSelect;
+
+/**
+ * Study Room Messages — chat messages in study rooms.
+ */
+export const studyRoomMessages = mysqlTable("study_room_messages", {
+  id: int("id").autoincrement().primaryKey(),
+  roomId: int("roomId").notNull(),
+  userId: int("userId").notNull(),
+  userName: varchar("userName", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  messageType: mysqlEnum("messageType", ["text", "note", "link", "file"]).default("text").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type StudyRoomMessage = typeof studyRoomMessages.$inferSelect;
+
+/**
+ * Shared Notes — collaborative notes in study rooms.
+ */
+export const sharedNotes = mysqlTable("shared_notes", {
+  id: int("id").autoincrement().primaryKey(),
+  roomId: int("roomId").notNull(),
+  userId: int("userId").notNull(),
+  userName: varchar("userName", { length: 255 }).notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
+  content: text("content").notNull(),
+  subject: varchar("subject", { length: 255 }),
+  isPinned: boolean("isPinned").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SharedNote = typeof sharedNotes.$inferSelect;
+
+/**
+ * Academic Calendar Events — exams, deadlines, study sessions.
+ * Linked to subjects and materials for automatic revision suggestions.
+ */
+export const calendarEvents = mysqlTable("calendar_events", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
+  description: text("description"),
+  eventType: mysqlEnum("eventType", [
+    "prova", "trabalho", "seminario", "pratica", "revisao", "simulado", "outro"
+  ]).notNull(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  university: varchar("university", { length: 255 }),
+  year: int("year"),
+  eventDate: timestamp("eventDate").notNull(),
+  reminderDays: int("reminderDays").default(3), // days before to start revision
+  isCompleted: boolean("isCompleted").default(false).notNull(),
+  linkedMaterialIds: text("linkedMaterialIds"), // JSON array of material IDs
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CalendarEvent = typeof calendarEvents.$inferSelect;
+export type InsertCalendarEvent = typeof calendarEvents.$inferInsert;
+
+/**
+ * Revision Suggestions — auto-generated revision plans before exams.
+ */
+export const revisionSuggestions = mysqlTable("revision_suggestions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  calendarEventId: int("calendarEventId").notNull(),
+  suggestedDate: timestamp("suggestedDate").notNull(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  revisionType: mysqlEnum("revisionType", [
+    "leitura", "flashcards", "quiz", "resumo", "simulado"
+  ]).notNull(),
+  materialSuggestion: text("materialSuggestion"), // JSON with suggested materials
+  isCompleted: boolean("isCompleted").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type RevisionSuggestion = typeof revisionSuggestions.$inferSelect;
+
+/**
+ * ENAMED/REVALIDA Simulados — exam simulations with question banks.
+ */
+export const simulados = mysqlTable("simulados", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
+  examType: mysqlEnum("examType", ["enamed", "revalida", "residencia", "custom"]).notNull(),
+  totalQuestions: int("totalQuestions").notNull(),
+  timeLimit: int("timeLimit").notNull(), // minutes
+  areas: text("areas").notNull(), // JSON array of medical areas
+  status: mysqlEnum("simuladoStatus", ["in_progress", "completed", "abandoned"]).default("in_progress").notNull(),
+  score: int("score"), // percentage 0-100
+  correctAnswers: int("correctAnswers"),
+  timeSpent: int("timeSpent"), // minutes actually spent
+  startedAt: timestamp("startedAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+  results: text("results"), // JSON with detailed results per area
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Simulado = typeof simulados.$inferSelect;
+export type InsertSimulado = typeof simulados.$inferInsert;
+
+/**
+ * Simulado Questions — individual questions for ENAMED/REVALIDA simulations.
+ * Generated by AI based on real exam patterns.
+ */
+export const simuladoQuestions = mysqlTable("simulado_questions", {
+  id: int("id").autoincrement().primaryKey(),
+  area: varchar("area", { length: 128 }).notNull(), // Clínica Médica, Cirurgia, Pediatria, etc.
+  subArea: varchar("subArea", { length: 128 }),
+  difficulty: mysqlEnum("questionDifficulty", ["facil", "medio", "dificil"]).default("medio").notNull(),
+  examType: mysqlEnum("questionExamType", ["enamed", "revalida", "residencia"]).default("enamed").notNull(),
+  question: text("question").notNull(),
+  options: text("options").notNull(), // JSON array of 5 options
+  correctIndex: int("correctIndex").notNull(),
+  explanation: text("explanation").notNull(),
+  references: text("references"), // JSON array of references
+  year: int("year"), // year the question was created/based on
+  timesAnswered: int("timesAnswered").default(0).notNull(),
+  timesCorrect: int("timesCorrect").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SimuladoQuestion = typeof simuladoQuestions.$inferSelect;
+export type InsertSimuladoQuestion = typeof simuladoQuestions.$inferInsert;

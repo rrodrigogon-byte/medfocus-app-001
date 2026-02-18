@@ -1,6 +1,6 @@
 import { eq, and, sql, desc, count, avg } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, userProgress, xpLog, studySessions, classrooms, enrollments, activities, submissions, generatedMaterials, libraryMaterials, userSavedMaterials, materialReviews, pubmedArticles, userStudyHistory } from "../drizzle/schema";
+import { InsertUser, users, userProgress, xpLog, studySessions, classrooms, enrollments, activities, submissions, generatedMaterials, libraryMaterials, userSavedMaterials, materialReviews, pubmedArticles, userStudyHistory, sharedTemplates, studyTemplates, studyRooms, studyRoomParticipants, studyRoomMessages, sharedNotes, calendarEvents, revisionSuggestions, simulados, simuladoQuestions, subjectSubscriptions, materialNotifications } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -771,7 +771,6 @@ export async function getUserQuizPerformance(userId: number) {
 }
 
 // ─── Subject Subscriptions & Notifications ─────────────────────────────
-import { subjectSubscriptions, materialNotifications, studyTemplates } from "../drizzle/schema";
 
 export async function subscribeToSubject(userId: number, subject: string) {
   const db = await getDb();
@@ -914,4 +913,226 @@ export async function getUserTemplates(userId: number) {
   return db.select().from(studyTemplates)
     .where(eq(studyTemplates.userId, userId))
     .orderBy(desc(studyTemplates.createdAt));
+}
+
+// ============================================================================
+// Shared Templates
+// ============================================================================
+
+export async function shareTemplate(templateId: number, userId: number, subject: string, university?: string, year?: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const code = Math.random().toString(36).substring(2, 10).toUpperCase();
+  const [result] = await db.insert(sharedTemplates).values({
+    templateId, sharedByUserId: userId, shareCode: code, subject, university, year
+  }).$returningId();
+  return { id: result.id, shareCode: code };
+}
+
+export async function getSharedTemplateByCode(code: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(sharedTemplates).where(eq(sharedTemplates.shareCode, code));
+  if (!rows.length) return null;
+  await db.update(sharedTemplates).set({ views: sql`${sharedTemplates.views} + 1` }).where(eq(sharedTemplates.id, rows[0].id));
+  const template = await db.select().from(studyTemplates).where(eq(studyTemplates.id, rows[0].templateId));
+  return { share: rows[0], template: template[0] || null };
+}
+
+export async function getSharedTemplateFeed(subject?: string, university?: string, limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  let query = db.select({
+    share: sharedTemplates,
+    template: studyTemplates,
+    userName: users.name,
+  }).from(sharedTemplates)
+    .innerJoin(studyTemplates, eq(sharedTemplates.templateId, studyTemplates.id))
+    .innerJoin(users, eq(sharedTemplates.sharedByUserId, users.id))
+    .where(eq(sharedTemplates.isActive, true))
+    .orderBy(desc(sharedTemplates.createdAt))
+    .limit(limit);
+  return await query;
+}
+
+export async function likeSharedTemplate(shareId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(sharedTemplates).set({ likes: sql`${sharedTemplates.likes} + 1` }).where(eq(sharedTemplates.id, shareId));
+}
+
+// ============================================================================
+// Study Rooms (Collaborative)
+// ============================================================================
+
+export async function createStudyRoom(data: { name: string; subject: string; createdByUserId: number; university?: string; year?: number; description?: string; maxParticipants?: number; isPublic?: boolean }) {
+  const db = await getDb();
+  if (!db) return null;
+  const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const [result] = await db.insert(studyRooms).values({ ...data, code }).$returningId();
+  await db.insert(studyRoomParticipants).values({ roomId: result.id, userId: data.createdByUserId, role: 'owner' });
+  return { id: result.id, code };
+}
+
+export async function getStudyRooms(userId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(studyRooms).where(eq(studyRooms.isActive, true)).orderBy(desc(studyRooms.updatedAt)).limit(50);
+}
+
+export async function joinStudyRoom(roomId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  const existing = await db.select().from(studyRoomParticipants).where(and(eq(studyRoomParticipants.roomId, roomId), eq(studyRoomParticipants.userId, userId)));
+  if (existing.length) return true;
+  await db.insert(studyRoomParticipants).values({ roomId, userId, role: 'member' });
+  return true;
+}
+
+export async function getStudyRoomById(roomId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(studyRooms).where(eq(studyRooms.id, roomId));
+  if (!rows.length) return null;
+  const participants = await db.select({ userId: studyRoomParticipants.userId, role: studyRoomParticipants.role, userName: users.name })
+    .from(studyRoomParticipants).innerJoin(users, eq(studyRoomParticipants.userId, users.id))
+    .where(eq(studyRoomParticipants.roomId, roomId));
+  return { room: rows[0], participants };
+}
+
+export async function sendRoomMessage(roomId: number, userId: number, userName: string, content: string, messageType: 'text' | 'note' | 'link' | 'file' = 'text') {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(studyRoomMessages).values({ roomId, userId, userName, content, messageType }).$returningId();
+  return result.id;
+}
+
+export async function getRoomMessages(roomId: number, limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(studyRoomMessages).where(eq(studyRoomMessages.roomId, roomId)).orderBy(desc(studyRoomMessages.createdAt)).limit(limit);
+}
+
+export async function createSharedNote(roomId: number, userId: number, userName: string, title: string, content: string, subject?: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(sharedNotes).values({ roomId, userId, userName, title, content, subject }).$returningId();
+  return result.id;
+}
+
+export async function getRoomNotes(roomId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(sharedNotes).where(eq(sharedNotes.roomId, roomId)).orderBy(desc(sharedNotes.updatedAt));
+}
+
+// ============================================================================
+// Calendar & Revision Suggestions
+// ============================================================================
+
+export async function createCalendarEvent(data: { userId: number; title: string; eventType: 'prova' | 'trabalho' | 'seminario' | 'pratica' | 'revisao' | 'simulado' | 'outro'; subject: string; eventDate: Date; description?: string; university?: string; year?: number; reminderDays?: number; linkedMaterialIds?: string }) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(calendarEvents).values(data).$returningId();
+  return result.id;
+}
+
+export async function getCalendarEvents(userId: number, month?: number, year?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(calendarEvents).where(eq(calendarEvents.userId, userId)).orderBy(calendarEvents.eventDate);
+}
+
+export async function updateCalendarEvent(eventId: number, userId: number, data: Partial<{ title: string; description: string; eventDate: Date; isCompleted: boolean; reminderDays: number; linkedMaterialIds: string }>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(calendarEvents).set(data).where(and(eq(calendarEvents.id, eventId), eq(calendarEvents.userId, userId)));
+}
+
+export async function deleteCalendarEvent(eventId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(calendarEvents).where(and(eq(calendarEvents.id, eventId), eq(calendarEvents.userId, userId)));
+}
+
+export async function createRevisionSuggestions(userId: number, calendarEventId: number, subject: string, eventDate: Date, reminderDays: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const suggestions: { suggestedDate: Date; revisionType: 'leitura' | 'flashcards' | 'quiz' | 'resumo' | 'simulado' }[] = [];
+  const types: ('leitura' | 'flashcards' | 'quiz' | 'resumo' | 'simulado')[] = ['leitura', 'flashcards', 'quiz', 'resumo', 'simulado'];
+  for (let i = reminderDays; i >= 1; i--) {
+    const d = new Date(eventDate);
+    d.setDate(d.getDate() - i);
+    const typeIdx = (reminderDays - i) % types.length;
+    suggestions.push({ suggestedDate: d, revisionType: types[typeIdx] });
+  }
+  for (const s of suggestions) {
+    await db.insert(revisionSuggestions).values({ userId, calendarEventId, subject, suggestedDate: s.suggestedDate, revisionType: s.revisionType });
+  }
+  return suggestions;
+}
+
+export async function getRevisionSuggestions(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select({ suggestion: revisionSuggestions, event: calendarEvents })
+    .from(revisionSuggestions)
+    .innerJoin(calendarEvents, eq(revisionSuggestions.calendarEventId, calendarEvents.id))
+    .where(and(eq(revisionSuggestions.userId, userId), eq(revisionSuggestions.isCompleted, false)))
+    .orderBy(revisionSuggestions.suggestedDate);
+}
+
+export async function completeRevision(revisionId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(revisionSuggestions).set({ isCompleted: true }).where(and(eq(revisionSuggestions.id, revisionId), eq(revisionSuggestions.userId, userId)));
+}
+
+// ============================================================================
+// Simulados ENAMED/REVALIDA
+// ============================================================================
+
+export async function createSimulado(data: { userId: number; title: string; examType: 'enamed' | 'revalida' | 'residencia' | 'custom'; totalQuestions: number; timeLimit: number; areas: string }) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(simulados).values(data).$returningId();
+  return result.id;
+}
+
+export async function getSimulados(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(simulados).where(eq(simulados.userId, userId)).orderBy(desc(simulados.createdAt));
+}
+
+export async function completeSimulado(simuladoId: number, userId: number, score: number, correctAnswers: number, timeSpent: number, results: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(simulados).set({ status: 'completed', score, correctAnswers, timeSpent, results, completedAt: new Date() })
+    .where(and(eq(simulados.id, simuladoId), eq(simulados.userId, userId)));
+}
+
+export async function getSimuladoQuestions(area?: string, examType?: string, difficulty?: string, limit = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  let conditions = [];
+  if (area) conditions.push(eq(simuladoQuestions.area, area));
+  if (examType) conditions.push(eq(simuladoQuestions.examType, examType as any));
+  if (difficulty) conditions.push(eq(simuladoQuestions.difficulty, difficulty as any));
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+  return await db.select().from(simuladoQuestions).where(where).orderBy(sql`RAND()`).limit(limit);
+}
+
+export async function saveSimuladoQuestion(data: { area: string; subArea?: string; difficulty: 'facil' | 'medio' | 'dificil'; examType: 'enamed' | 'revalida' | 'residencia'; question: string; options: string; correctIndex: number; explanation: string; references?: string }) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(simuladoQuestions).values(data).$returningId();
+  return result.id;
+}
+
+export async function getSimuladoStats(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const completed = await db.select({ cnt: count(), avgScore: avg(simulados.score) }).from(simulados).where(and(eq(simulados.userId, userId), eq(simulados.status, 'completed')));
+  return { totalCompleted: Number(completed[0]?.cnt || 0), avgScore: Number(completed[0]?.avgScore || 0) };
 }

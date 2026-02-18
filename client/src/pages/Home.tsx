@@ -31,6 +31,10 @@ import SpacedRepetitionPanel from '../components/medfocus/SpacedRepetitionPanel'
 import ClassroomPanel from '../components/medfocus/ClassroomPanel';
 import TeacherAnalyticsPanel from '../components/medfocus/TeacherAnalyticsPanel';
 import MedicalRoadmap from '../components/medfocus/MedicalRoadmap';
+import SimuladoENAMED from '../components/medfocus/SimuladoENAMED';
+import AnatomyAtlas from '../components/medfocus/AnatomyAtlas';
+import StudyRooms from '../components/medfocus/StudyRooms';
+import AcademicCalendar from '../components/medfocus/AcademicCalendar';
 import XPToast from '../components/medfocus/XPToast';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
@@ -147,6 +151,10 @@ export default function Home() {
       case 'classroom': return <ClassroomPanel user={localUser} />;
       case 'analytics': return <TeacherAnalyticsPanel />;
       case 'roadmap': return <MedicalRoadmap currentYear={localUser.currentYear || 1} onSelectYear={(y) => { handleUpdateUser({ currentYear: y }); setCurrentView('guide'); }} />;
+      case 'simulado': return <SimuladoENAMED />;
+      case 'atlas': return <AnatomyAtlas />;
+      case 'studyRooms': return <StudyRooms />;
+      case 'calendar': return <AcademicCalendar />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{
@@ -209,7 +217,11 @@ export default function Home() {
                currentView === 'spacedRepetition' ? 'Revisão Espaçada SM-2' :
                currentView === 'classroom' ? 'Sala de Aula' :
                currentView === 'analytics' ? 'Analytics de Turma' :
-               currentView === 'roadmap' ? 'Jornada Médica' : currentView}
+               currentView === 'roadmap' ? 'Jornada Médica' :
+               currentView === 'simulado' ? 'Simulados ENAMED' :
+               currentView === 'atlas' ? 'Atlas Anatômico' :
+               currentView === 'studyRooms' ? 'Salas de Estudo' :
+               currentView === 'calendar' ? 'Calendário Acadêmico' : currentView}
             </h2>
           </div>
           <div className="flex items-center gap-2">

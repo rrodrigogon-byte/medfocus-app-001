@@ -8,7 +8,7 @@ import { ENV } from "./_core/env";
 import { z } from "zod";
 import Stripe from "stripe";
 import { PLANS } from "./products";
-import { getOrCreateProgress, addXp, getXpHistory, logStudySession, updateUserProfile, createClassroom, getClassroomsByProfessor, getClassroomsByStudent, getClassroomById, joinClassroom, getEnrollments, removeEnrollment, createActivity, getActivitiesByClassroom, updateActivity, submitActivity, gradeSubmission, getSubmissionsByActivity, getStudentSubmissions, getClassroomAnalytics, findGeneratedMaterial, saveGeneratedMaterial, getUserMaterialHistory, getGeneratedMaterialById, rateMaterial, searchLibraryMaterials, saveLibraryMaterial, getLibraryMaterialById, toggleSaveMaterial, getUserSavedMaterialIds, getUserSavedMaterialsFull, getPopularLibraryMaterials, searchPubmedCache, savePubmedArticle, getPubmedArticleByPmid, addMaterialReview, getMaterialReviews, markReviewHelpful, trackStudyActivity, getUserStudyHistoryData, getUserTopSubjects, getUserQuizPerformance, subscribeToSubject, unsubscribeFromSubject, getUserSubscriptions, getUserNotifications, getUnreadNotificationCount, markNotificationRead, markAllNotificationsRead, notifySubscribersOfNewMaterial, saveStudyTemplate, getStudyTemplates, getStudyTemplateById, getUserTemplates } from "./db";
+import { getOrCreateProgress, addXp, getXpHistory, logStudySession, updateUserProfile, createClassroom, getClassroomsByProfessor, getClassroomsByStudent, getClassroomById, joinClassroom, getEnrollments, removeEnrollment, createActivity, getActivitiesByClassroom, updateActivity, submitActivity, gradeSubmission, getSubmissionsByActivity, getStudentSubmissions, getClassroomAnalytics, findGeneratedMaterial, saveGeneratedMaterial, getUserMaterialHistory, getGeneratedMaterialById, rateMaterial, searchLibraryMaterials, saveLibraryMaterial, getLibraryMaterialById, toggleSaveMaterial, getUserSavedMaterialIds, getUserSavedMaterialsFull, getPopularLibraryMaterials, searchPubmedCache, savePubmedArticle, getPubmedArticleByPmid, addMaterialReview, getMaterialReviews, markReviewHelpful, trackStudyActivity, getUserStudyHistoryData, getUserTopSubjects, getUserQuizPerformance, subscribeToSubject, unsubscribeFromSubject, getUserSubscriptions, getUserNotifications, getUnreadNotificationCount, markNotificationRead, markAllNotificationsRead, notifySubscribersOfNewMaterial, saveStudyTemplate, getStudyTemplates, getStudyTemplateById, getUserTemplates, shareTemplate, getSharedTemplateByCode, getSharedTemplateFeed, likeSharedTemplate, createStudyRoom, getStudyRooms, joinStudyRoom, getStudyRoomById, sendRoomMessage, getRoomMessages, createSharedNote, getRoomNotes, createCalendarEvent, getCalendarEvents, updateCalendarEvent, deleteCalendarEvent, createRevisionSuggestions, getRevisionSuggestions, completeRevision, createSimulado, getSimulados, completeSimulado, getSimuladoQuestions, saveSimuladoQuestion, getSimuladoStats } from "./db";
 
 function getStripe() {
   return new Stripe(ENV.stripeSecretKey, { apiVersion: "2026-01-28.clover" });
@@ -1388,6 +1388,168 @@ Use markdown para formatação.`
         const content = response.choices[0]?.message?.content;
         return { content: content || 'Conteúdo indisponível.' };
       }),
+  }),
+
+  // ─── Shared Templates Router ──────────────────────────────────
+  sharing: router({
+    shareTemplate: protectedProcedure.input(z.object({ templateId: z.number(), subject: z.string(), university: z.string().optional(), year: z.number().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const result = await shareTemplate(input.templateId, ctx.user.id, input.subject, input.university, input.year);
+        if (!result) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Erro ao compartilhar template' });
+        return result;
+      }),
+    getByCode: publicProcedure.input(z.object({ code: z.string() }))
+      .query(async ({ input }) => {
+        return await getSharedTemplateByCode(input.code);
+      }),
+    feed: publicProcedure.input(z.object({ subject: z.string().optional(), university: z.string().optional() }).optional())
+      .query(async ({ input }) => {
+        return await getSharedTemplateFeed(input?.subject, input?.university);
+      }),
+    like: protectedProcedure.input(z.object({ shareId: z.number() }))
+      .mutation(async ({ input }) => {
+        await likeSharedTemplate(input.shareId);
+        return { success: true };
+      }),
+  }),
+
+  // ─── Study Rooms Router ─────────────────────────────────────
+  studyRoom: router({
+    create: protectedProcedure.input(z.object({ name: z.string(), subject: z.string(), university: z.string().optional(), year: z.number().optional(), description: z.string().optional(), maxParticipants: z.number().optional(), isPublic: z.boolean().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const result = await createStudyRoom({ ...input, createdByUserId: ctx.user.id });
+        if (!result) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Erro ao criar sala' });
+        return result;
+      }),
+    list: publicProcedure.query(async () => {
+      return await getStudyRooms();
+    }),
+    getById: protectedProcedure.input(z.object({ roomId: z.number() }))
+      .query(async ({ input }) => {
+        return await getStudyRoomById(input.roomId);
+      }),
+    join: protectedProcedure.input(z.object({ roomId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        return await joinStudyRoom(input.roomId, ctx.user.id);
+      }),
+    sendMessage: protectedProcedure.input(z.object({ roomId: z.number(), content: z.string(), messageType: z.enum(['text', 'note', 'link', 'file']).optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const id = await sendRoomMessage(input.roomId, ctx.user.id, ctx.user.name || 'Anônimo', input.content, input.messageType || 'text');
+        return { id };
+      }),
+    getMessages: protectedProcedure.input(z.object({ roomId: z.number(), limit: z.number().optional() }))
+      .query(async ({ input }) => {
+        return await getRoomMessages(input.roomId, input.limit);
+      }),
+    createNote: protectedProcedure.input(z.object({ roomId: z.number(), title: z.string(), content: z.string(), subject: z.string().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const id = await createSharedNote(input.roomId, ctx.user.id, ctx.user.name || 'Anônimo', input.title, input.content, input.subject);
+        return { id };
+      }),
+    getNotes: protectedProcedure.input(z.object({ roomId: z.number() }))
+      .query(async ({ input }) => {
+        return await getRoomNotes(input.roomId);
+      }),
+  }),
+
+  // ─── Calendar Router ───────────────────────────────────────
+  calendar: router({
+    createEvent: protectedProcedure.input(z.object({
+      title: z.string(), eventType: z.enum(['prova', 'trabalho', 'seminario', 'pratica', 'revisao', 'simulado', 'outro']),
+      subject: z.string(), eventDate: z.string(), description: z.string().optional(),
+      university: z.string().optional(), year: z.number().optional(), reminderDays: z.number().optional(),
+      linkedMaterialIds: z.string().optional()
+    })).mutation(async ({ ctx, input }) => {
+      const eventDate = new Date(input.eventDate);
+      const id = await createCalendarEvent({ ...input, userId: ctx.user.id, eventDate });
+      if (!id) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Erro ao criar evento' });
+      // Auto-generate revision suggestions for exams
+      if (input.eventType === 'prova' || input.eventType === 'simulado') {
+        await createRevisionSuggestions(ctx.user.id, id, input.subject, eventDate, input.reminderDays || 3);
+      }
+      return { id };
+    }),
+    getEvents: protectedProcedure.input(z.object({ month: z.number().optional(), year: z.number().optional() }).optional())
+      .query(async ({ ctx, input }) => {
+        return await getCalendarEvents(ctx.user.id, input?.month, input?.year);
+      }),
+    updateEvent: protectedProcedure.input(z.object({ eventId: z.number(), title: z.string().optional(), description: z.string().optional(), eventDate: z.string().optional(), isCompleted: z.boolean().optional(), reminderDays: z.number().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const { eventId, eventDate, ...rest } = input;
+        const data: any = { ...rest };
+        if (eventDate) data.eventDate = new Date(eventDate);
+        await updateCalendarEvent(eventId, ctx.user.id, data);
+        return { success: true };
+      }),
+    deleteEvent: protectedProcedure.input(z.object({ eventId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteCalendarEvent(input.eventId, ctx.user.id);
+        return { success: true };
+      }),
+    getRevisions: protectedProcedure.query(async ({ ctx }) => {
+      return await getRevisionSuggestions(ctx.user.id);
+    }),
+    completeRevision: protectedProcedure.input(z.object({ revisionId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await completeRevision(input.revisionId, ctx.user.id);
+        return { success: true };
+      }),
+  }),
+
+  // ─── Simulados ENAMED/REVALIDA Router ───────────────────────
+  simulado: router({
+    create: protectedProcedure.input(z.object({
+      title: z.string(), examType: z.enum(['enamed', 'revalida', 'residencia', 'custom']),
+      totalQuestions: z.number(), timeLimit: z.number(), areas: z.array(z.string())
+    })).mutation(async ({ ctx, input }) => {
+      const id = await createSimulado({ ...input, userId: ctx.user.id, areas: JSON.stringify(input.areas) });
+      if (!id) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Erro ao criar simulado' });
+      return { id };
+    }),
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return await getSimulados(ctx.user.id);
+    }),
+    complete: protectedProcedure.input(z.object({
+      simuladoId: z.number(), score: z.number(), correctAnswers: z.number(),
+      timeSpent: z.number(), results: z.string()
+    })).mutation(async ({ ctx, input }) => {
+      await completeSimulado(input.simuladoId, ctx.user.id, input.score, input.correctAnswers, input.timeSpent, input.results);
+      return { success: true };
+    }),
+    getQuestions: protectedProcedure.input(z.object({
+      area: z.string().optional(), examType: z.string().optional(),
+      difficulty: z.string().optional(), limit: z.number().optional()
+    }).optional()).query(async ({ input }) => {
+      return await getSimuladoQuestions(input?.area, input?.examType, input?.difficulty, input?.limit);
+    }),
+    generateQuestions: protectedProcedure.input(z.object({
+      area: z.string(), examType: z.enum(['enamed', 'revalida', 'residencia']),
+      count: z.number().min(1).max(10).default(5), difficulty: z.enum(['facil', 'medio', 'dificil']).default('medio')
+    })).mutation(async ({ input }) => {
+      const response = await invokeLLM({
+        messages: [
+          { role: 'system', content: `Você é um especialista em questões de provas médicas brasileiras (ENAMED, REVALIDA, Residência). Gere questões no formato JSON. Cada questão deve ter: question (enunciado clínico detalhado), options (5 alternativas A-E), correctIndex (0-4), explanation (explicação detalhada com referências). Dificuldade: ${input.difficulty}. Tipo de prova: ${input.examType}. Área: ${input.area}. Gere ${input.count} questões. Responda APENAS com JSON válido no formato: { "questions": [...] }` },
+          { role: 'user', content: `Gere ${input.count} questões de ${input.area} para ${input.examType}, dificuldade ${input.difficulty}.` }
+        ],
+        response_format: { type: 'json_schema', json_schema: { name: 'simulado_questions', strict: true, schema: {
+          type: 'object', properties: { questions: { type: 'array', items: { type: 'object', properties: {
+            question: { type: 'string' }, options: { type: 'array', items: { type: 'string' } },
+            correctIndex: { type: 'integer' }, explanation: { type: 'string' }
+          }, required: ['question', 'options', 'correctIndex', 'explanation'], additionalProperties: false } } },
+          required: ['questions'], additionalProperties: false
+        } } }
+      });
+      const parsed = JSON.parse(typeof response.choices[0]?.message?.content === 'string' ? response.choices[0].message.content : '{}');
+      const saved = [];
+      for (const q of (parsed.questions || [])) {
+        const id = await saveSimuladoQuestion({ area: input.area, examType: input.examType, difficulty: input.difficulty, question: q.question, options: JSON.stringify(q.options), correctIndex: q.correctIndex, explanation: q.explanation });
+        saved.push({ id, ...q });
+      }
+      return saved;
+    }),
+    stats: protectedProcedure.query(async ({ ctx }) => {
+      return await getSimuladoStats(ctx.user.id);
+    }),
   }),
 });
 

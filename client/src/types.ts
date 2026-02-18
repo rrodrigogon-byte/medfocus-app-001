@@ -103,7 +103,11 @@ export type View =
   | 'spacedRepetition'
   | 'classroom'
   | 'analytics'
-  | 'roadmap';
+  | 'roadmap'
+  | 'simulado'
+  | 'atlas'
+  | 'studyRooms'
+  | 'calendar';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {

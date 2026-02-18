@@ -71,6 +71,13 @@
       "when": 1771454443416,
       "tag": "0009_fine_paladin",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1771457464108,
+      "tag": "0010_slimy_blacklash",
+      "breakpoints": true
     }
   ]
 }
