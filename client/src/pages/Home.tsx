@@ -35,6 +35,7 @@ import SimuladoENAMED from '../components/medfocus/SimuladoENAMED';
 import AnatomyAtlas from '../components/medfocus/AnatomyAtlas';
 import StudyRooms from '../components/medfocus/StudyRooms';
 import AcademicCalendar from '../components/medfocus/AcademicCalendar';
+import ReportExporter from '../components/medfocus/ReportExporter';
 import XPToast from '../components/medfocus/XPToast';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
@@ -155,6 +156,7 @@ export default function Home() {
       case 'atlas': return <AnatomyAtlas />;
       case 'studyRooms': return <StudyRooms />;
       case 'calendar': return <AcademicCalendar />;
+      case 'reports': return <ReportExporter />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{
@@ -221,7 +223,8 @@ export default function Home() {
                currentView === 'simulado' ? 'Simulados ENAMED' :
                currentView === 'atlas' ? 'Atlas Anatômico' :
                currentView === 'studyRooms' ? 'Salas de Estudo' :
-               currentView === 'calendar' ? 'Calendário Acadêmico' : currentView}
+               currentView === 'calendar' ? 'Calendário Acadêmico' :
+               currentView === 'reports' ? 'Exportar Relatórios' : currentView}
             </h2>
           </div>
           <div className="flex items-center gap-2">

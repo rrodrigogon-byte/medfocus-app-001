@@ -1,6 +1,7 @@
 /**
  * SimuladoENAMED — Simulados estilo ENAMED/REVALIDA
- * Banco de questões gerado por IA, cronômetro real, relatório de desempenho por área.
+ * Banco de questões REAIS do INEP (domínio público) + geradas por IA
+ * Cronômetro real, relatório de desempenho por área, estatísticas de acerto.
  */
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { trpc } from '@/lib/trpc';
@@ -12,25 +13,33 @@ import {
   Clock, Play, CheckCircle2, XCircle, BarChart3, Trophy, Brain,
   ArrowRight, ArrowLeft, Flag, AlertTriangle, Loader2, RefreshCw,
   Target, Stethoscope, Pill, Baby, Scissors, Heart, Activity,
-  BookOpen, GraduationCap, ChevronDown
+  BookOpen, GraduationCap, ChevronDown, FileText, Sparkles,
+  Database, Download, Shield
 } from 'lucide-react';
+import { REAL_QUESTIONS, QUESTION_STATS, type RealQuestion } from '@/data/realQuestions';
 
 // ─── Medical Areas ─────────────────────────────────────────────
 const MEDICAL_AREAS = [
-  { id: 'clinica_medica', name: 'Clínica Médica', icon: Stethoscope, color: 'text-blue-500' },
-  { id: 'cirurgia', name: 'Cirurgia', icon: Scissors, color: 'text-red-500' },
-  { id: 'pediatria', name: 'Pediatria', icon: Baby, color: 'text-green-500' },
-  { id: 'ginecologia_obstetricia', name: 'Ginecologia e Obstetrícia', icon: Heart, color: 'text-pink-500' },
-  { id: 'medicina_preventiva', name: 'Medicina Preventiva e Social', icon: Activity, color: 'text-purple-500' },
-  { id: 'saude_mental', name: 'Saúde Mental', icon: Brain, color: 'text-yellow-500' },
-  { id: 'urgencia_emergencia', name: 'Urgência e Emergência', icon: AlertTriangle, color: 'text-orange-500' },
-  { id: 'medicina_familia', name: 'Medicina de Família', icon: Heart, color: 'text-teal-500' },
+  { id: 'clinica_medica', name: 'Clínica Médica', realName: 'Clínica Médica', icon: Stethoscope, color: 'text-blue-500' },
+  { id: 'cirurgia', name: 'Cirurgia', realName: 'Cirurgia', icon: Scissors, color: 'text-red-500' },
+  { id: 'pediatria', name: 'Pediatria', realName: 'Pediatria', icon: Baby, color: 'text-green-500' },
+  { id: 'ginecologia_obstetricia', name: 'Ginecologia e Obstetrícia', realName: 'Ginecologia e Obstetrícia', icon: Heart, color: 'text-pink-500' },
+  { id: 'saude_coletiva', name: 'Saúde Coletiva', realName: 'Saúde Coletiva', icon: Activity, color: 'text-purple-500' },
+  { id: 'saude_mental', name: 'Saúde Mental', realName: 'Psiquiatria', icon: Brain, color: 'text-yellow-500' },
+  { id: 'urgencia_emergencia', name: 'Urgência e Emergência', realName: 'Emergência', icon: AlertTriangle, color: 'text-orange-500' },
+  { id: 'etica_medica', name: 'Ética Médica', realName: 'Ética Médica', icon: Shield, color: 'text-teal-500' },
 ];
 
 const EXAM_TYPES = [
-  { id: 'enamed', name: 'ENAMED', description: 'Exame Nacional de Desempenho dos Estudantes de Medicina', questions: 80, time: 300 },
+  { id: 'enamed', name: 'ENAMED', description: 'Exame Nacional de Avaliação da Formação Médica', questions: 80, time: 300 },
   { id: 'revalida', name: 'REVALIDA', description: 'Exame Nacional de Revalidação de Diplomas Médicos', questions: 100, time: 300 },
   { id: 'residencia', name: 'Residência Médica', description: 'Simulado estilo prova de residência', questions: 60, time: 240 },
+];
+
+const QUESTION_SOURCES = [
+  { id: 'real', name: 'Questões Oficiais', description: `${QUESTION_STATS.total} questões reais do INEP`, icon: FileText },
+  { id: 'ai', name: 'Questões por IA', description: 'Geradas sob demanda pela IA', icon: Sparkles },
+  { id: 'mixed', name: 'Misto', description: 'Combina questões reais + IA', icon: Database },
 ];
 
 interface Question {
@@ -40,6 +49,10 @@ interface Question {
   correctIndex: number;
   explanation: string;
   area?: string;
+  source?: 'real' | 'ai';
+  realSource?: string;
+  realNumber?: number;
+  realYear?: number;
 }
 
 interface SimuladoConfig {
@@ -48,9 +61,45 @@ interface SimuladoConfig {
   totalQuestions: number;
   timeLimit: number;
   difficulty: 'facil' | 'medio' | 'dificil';
+  questionSource: 'real' | 'ai' | 'mixed';
 }
 
 type SimuladoPhase = 'config' | 'loading' | 'exam' | 'review' | 'results';
+
+// ─── Helper: Convert real questions to internal format ─────────
+function convertRealQuestion(rq: RealQuestion): Question {
+  const correctIdx = rq.options.findIndex(o => o.letter === rq.correctAnswer);
+  return {
+    question: rq.text,
+    options: rq.options.map(o => o.text),
+    correctIndex: correctIdx >= 0 ? correctIdx : 0,
+    explanation: `Questão ${rq.number} da prova ${rq.source.replace('_', ' ')} (${rq.year}). Gabarito oficial INEP: alternativa ${rq.correctAnswer}.`,
+    area: MEDICAL_AREAS.find(a => a.realName === rq.area)?.id || 'clinica_medica',
+    source: 'real',
+    realSource: rq.source,
+    realNumber: rq.number,
+    realYear: rq.year,
+  };
+}
+
+// ─── Helper: Get real questions by area ────────────────────────
+function getRealQuestionsByArea(areaIds: string[], count: number, examType?: string): Question[] {
+  const areaNames = areaIds.map(id => MEDICAL_AREAS.find(a => a.id === id)?.realName).filter(Boolean);
+  let filtered = REAL_QUESTIONS.filter(q => areaNames.includes(q.area));
+  
+  // Filter by exam type if specified
+  if (examType === 'enamed') {
+    const enamed = filtered.filter(q => q.source === 'ENAMED_2025');
+    if (enamed.length >= count * 0.5) filtered = enamed;
+  } else if (examType === 'revalida') {
+    const revalida = filtered.filter(q => q.source === 'REVALIDA_2024');
+    if (revalida.length >= count * 0.5) filtered = revalida;
+  }
+  
+  // Shuffle and take
+  const shuffled = [...filtered].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count).map(convertRealQuestion);
+}
 
 // ─── Timer Component ───────────────────────────────────────────
 function ExamTimer({ totalSeconds, onTimeUp, isPaused }: { totalSeconds: number; onTimeUp: () => void; isPaused: boolean }) {
@@ -89,7 +138,7 @@ function ExamTimer({ totalSeconds, onTimeUp, isPaused }: { totalSeconds: number;
   );
 }
 
-// ─── Results Chart (simple bar chart) ──────────────────────────
+// ─── Results Chart ─────────────────────────────────────────────
 function AreaChart({ results }: { results: Record<string, { correct: number; total: number }> }) {
   const areas = Object.entries(results);
   return (
@@ -116,11 +165,51 @@ function AreaChart({ results }: { results: Record<string, { correct: number; tot
   );
 }
 
+// ─── Stats Banner ──────────────────────────────────────────────
+function RealQuestionsBanner() {
+  return (
+    <Card className="border-primary/30 bg-primary/5">
+      <CardContent className="py-4">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <FileText className="w-6 h-6 text-primary" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-bold text-sm flex items-center gap-2">
+              Banco de Questões Oficiais INEP
+              <Badge variant="secondary" className="text-xs">Domínio Público</Badge>
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              {QUESTION_STATS.total} questões reais extraídas das provas oficiais do ENAMED 2025 e REVALIDA 2024.2 com gabarito definitivo do INEP.
+            </p>
+            <div className="flex flex-wrap gap-3 mt-2">
+              <span className="text-xs bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded-full">
+                ENAMED 2025: {QUESTION_STATS.bySource.ENAMED_2025} questões
+              </span>
+              <span className="text-xs bg-green-500/10 text-green-600 px-2 py-0.5 rounded-full">
+                REVALIDA 2024: {QUESTION_STATS.bySource.REVALIDA_2024} questões
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {Object.entries(QUESTION_STATS.byArea).map(([area, count]) => (
+                <span key={area} className="text-xs text-muted-foreground">
+                  {area}: {count as number}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Main Component ────────────────────────────────────────────
 const SimuladoENAMED: React.FC = () => {
   const [phase, setPhase] = useState<SimuladoPhase>('config');
   const [config, setConfig] = useState<SimuladoConfig>({
-    examType: 'enamed', areas: [], totalQuestions: 30, timeLimit: 60, difficulty: 'medio'
+    examType: 'enamed', areas: [], totalQuestions: 30, timeLimit: 60, difficulty: 'medio',
+    questionSource: 'mixed'
   });
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQ, setCurrentQ] = useState(0);
@@ -155,38 +244,52 @@ const SimuladoENAMED: React.FC = () => {
       });
       setSimuladoId(sim.id);
 
-      // Generate questions for each area
       const allQuestions: Question[] = [];
-      const questionsPerArea = Math.ceil(config.totalQuestions / config.areas.length);
-      
-      for (const area of config.areas) {
-        try {
-          const generated = await generateMutation.mutateAsync({
-            area,
-            examType: config.examType as 'enamed' | 'revalida' | 'residencia',
-            count: Math.min(questionsPerArea, 5),
-            difficulty: config.difficulty,
-          });
-          allQuestions.push(...generated.map((q: any) => ({ ...q, area })));
-        } catch (e) {
-          console.error(`Erro ao gerar questões para ${area}:`, e);
+
+      if (config.questionSource === 'real' || config.questionSource === 'mixed') {
+        // Get real questions
+        const realCount = config.questionSource === 'real' ? config.totalQuestions : Math.ceil(config.totalQuestions * 0.6);
+        const realQs = getRealQuestionsByArea(config.areas, realCount, config.examType);
+        allQuestions.push(...realQs);
+      }
+
+      if (config.questionSource === 'ai' || config.questionSource === 'mixed') {
+        // Generate AI questions for remaining slots
+        const aiCount = config.questionSource === 'ai' ? config.totalQuestions : Math.max(config.totalQuestions - allQuestions.length, 5);
+        const questionsPerArea = Math.ceil(aiCount / config.areas.length);
+        
+        for (const area of config.areas) {
+          try {
+            const generated = await generateMutation.mutateAsync({
+              area,
+              examType: config.examType as 'enamed' | 'revalida' | 'residencia',
+              count: Math.min(questionsPerArea, 5),
+              difficulty: config.difficulty,
+            });
+            allQuestions.push(...generated.map((q: any) => ({ ...q, area, source: 'ai' as const })));
+          } catch (e) {
+            console.error(`Erro ao gerar questões IA para ${area}:`, e);
+          }
         }
       }
 
       if (allQuestions.length === 0) {
-        toast.error('Não foi possível gerar questões. Tente novamente.');
+        toast.error('Não foi possível obter questões. Tente novamente.');
         setPhase('config');
         return;
       }
 
-      // Shuffle questions
+      // Shuffle and limit
       const shuffled = allQuestions.sort(() => Math.random() - 0.5).slice(0, config.totalQuestions);
       setQuestions(shuffled);
       setAnswers({});
       setFlagged(new Set());
       setCurrentQ(0);
       setPhase('exam');
-      toast.success(`Simulado iniciado com ${shuffled.length} questões!`);
+
+      const realCount = shuffled.filter(q => q.source === 'real').length;
+      const aiCount = shuffled.filter(q => q.source === 'ai').length;
+      toast.success(`Simulado iniciado! ${shuffled.length} questões (${realCount} oficiais INEP + ${aiCount} IA)`);
     } catch (e) {
       toast.error('Erro ao iniciar simulado');
       setPhase('config');
@@ -238,16 +341,27 @@ const SimuladoENAMED: React.FC = () => {
   const results = useMemo(() => {
     let correct = 0;
     const areaResults: Record<string, { correct: number; total: number }> = {};
+    const sourceResults = { real: { correct: 0, total: 0 }, ai: { correct: 0, total: 0 } };
+    
     questions.forEach((q, idx) => {
       const area = q.area || 'geral';
       if (!areaResults[area]) areaResults[area] = { correct: 0, total: 0 };
       areaResults[area].total++;
+      
+      const src = q.source || 'ai';
+      sourceResults[src].total++;
+      
       if (answers[idx] === q.correctIndex) {
         correct++;
         areaResults[area].correct++;
+        sourceResults[src].correct++;
       }
     });
-    return { correct, total: questions.length, score: questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0, areaResults };
+    return {
+      correct, total: questions.length,
+      score: questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0,
+      areaResults, sourceResults
+    };
   }, [questions, answers]);
 
   // ─── CONFIG PHASE ────────────────────────────────────────────
@@ -257,8 +371,10 @@ const SimuladoENAMED: React.FC = () => {
         {/* Header with stats */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-display font-bold text-foreground">Simulados ENAMED/REVALIDA</h2>
-            <p className="text-muted-foreground mt-1">Pratique com questões no estilo das provas oficiais</p>
+            <h1 className="text-2xl font-bold font-display flex items-center gap-2">
+              <GraduationCap className="w-7 h-7 text-primary" /> Simulados ENAMED/REVALIDA
+            </h1>
+            <p className="text-muted-foreground mt-1">Pratique com questões oficiais do INEP e geradas por IA</p>
           </div>
           {statsQuery.data && (
             <div className="flex gap-4">
@@ -273,6 +389,37 @@ const SimuladoENAMED: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* Real Questions Banner */}
+        <RealQuestionsBanner />
+
+        {/* Question Source Selection */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2"><Database className="w-5 h-5" /> Fonte das Questões</CardTitle>
+            <CardDescription>Escolha entre questões oficiais do INEP, geradas por IA, ou uma combinação</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {QUESTION_SOURCES.map(src => {
+                const Icon = src.icon;
+                return (
+                  <button
+                    key={src.id}
+                    onClick={() => setConfig(c => ({ ...c, questionSource: src.id as any }))}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${config.questionSource === src.id ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Icon className="w-5 h-5 text-primary" />
+                      <p className="font-bold">{src.name}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{src.description}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Exam Type Selection */}
         <Card>
@@ -310,6 +457,7 @@ const SimuladoENAMED: React.FC = () => {
               {MEDICAL_AREAS.map(area => {
                 const Icon = area.icon;
                 const selected = config.areas.includes(area.id);
+                const realCount = REAL_QUESTIONS.filter(q => q.area === area.realName).length;
                 return (
                   <button
                     key={area.id}
@@ -317,10 +465,15 @@ const SimuladoENAMED: React.FC = () => {
                       ...c,
                       areas: selected ? c.areas.filter(a => a !== area.id) : [...c.areas, area.id]
                     }))}
-                    className={`p-3 rounded-xl border-2 text-left transition-all flex items-center gap-2 ${selected ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
+                    className={`p-3 rounded-xl border-2 text-left transition-all ${selected ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
                   >
-                    <Icon className={`w-5 h-5 ${area.color}`} />
-                    <span className="text-sm font-medium">{area.name}</span>
+                    <div className="flex items-center gap-2">
+                      <Icon className={`w-5 h-5 ${area.color}`} />
+                      <span className="text-sm font-medium">{area.name}</span>
+                    </div>
+                    {realCount > 0 && (
+                      <span className="text-xs text-muted-foreground mt-1 block">{realCount} questões reais</span>
+                    )}
                   </button>
                 );
               })}
@@ -416,8 +569,12 @@ const SimuladoENAMED: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
-        <p className="text-lg font-medium">Gerando questões com IA...</p>
-        <p className="text-sm text-muted-foreground">Criando questões no estilo {config.examType.toUpperCase()} para as áreas selecionadas</p>
+        <p className="text-lg font-medium">
+          {config.questionSource === 'real' ? 'Selecionando questões oficiais INEP...' :
+           config.questionSource === 'ai' ? 'Gerando questões com IA...' :
+           'Combinando questões oficiais + IA...'}
+        </p>
+        <p className="text-sm text-muted-foreground">Preparando simulado {config.examType.toUpperCase()} para as áreas selecionadas</p>
       </div>
     );
   }
@@ -438,6 +595,16 @@ const SimuladoENAMED: React.FC = () => {
             <Badge variant="outline" className="text-sm">
               {currentQ + 1}/{questions.length}
             </Badge>
+            {q.source === 'real' && (
+              <Badge variant="secondary" className="text-xs bg-blue-500/10 text-blue-600">
+                <FileText className="w-3 h-3 mr-1" /> INEP
+              </Badge>
+            )}
+            {q.source === 'ai' && (
+              <Badge variant="secondary" className="text-xs bg-purple-500/10 text-purple-600">
+                <Sparkles className="w-3 h-3 mr-1" /> IA
+              </Badge>
+            )}
             {flagged.has(currentQ) && <Flag className="w-4 h-4 text-yellow-500 fill-yellow-500" />}
           </div>
           {!isReview && <ExamTimer totalSeconds={config.timeLimit * 60} onTimeUp={handleTimeUp} isPaused={false} />}
@@ -457,11 +624,11 @@ const SimuladoENAMED: React.FC = () => {
         {showNav && (
           <div className="p-4 bg-muted/50 rounded-xl border border-border">
             <div className="flex flex-wrap gap-2">
-              {questions.map((_, idx) => (
+              {questions.map((qq, idx) => (
                 <button
                   key={idx}
                   onClick={() => { setCurrentQ(idx); setShowExplanation(false); }}
-                  className={`w-9 h-9 rounded-lg text-xs font-bold transition-all ${
+                  className={`w-9 h-9 rounded-lg text-xs font-bold transition-all relative ${
                     idx === currentQ ? 'bg-primary text-primary-foreground' :
                     isReview ? (answers[idx] === questions[idx].correctIndex ? 'bg-green-500/20 text-green-700' : 'bg-red-500/20 text-red-700') :
                     answers[idx] !== undefined ? 'bg-primary/20 text-primary' :
@@ -470,13 +637,14 @@ const SimuladoENAMED: React.FC = () => {
                   }`}
                 >
                   {idx + 1}
+                  {qq.source === 'real' && <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-blue-500" />}
                 </button>
               ))}
             </div>
             <div className="flex gap-4 mt-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-primary/20" /> Respondida</span>
               <span className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-yellow-500/20" /> Marcada</span>
-              <span className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-muted" /> Não respondida</span>
+              <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500" /> INEP</span>
             </div>
           </div>
         )}
@@ -485,8 +653,13 @@ const SimuladoENAMED: React.FC = () => {
         <Card className="border-2">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="secondary">{MEDICAL_AREAS.find(a => a.id === q.area)?.name || q.area}</Badge>
+                {q.realSource && (
+                  <Badge variant="outline" className="text-xs">
+                    {q.realSource.replace('_', ' ')} — Q{q.realNumber} ({q.realYear})
+                  </Badge>
+                )}
                 {isReview && (
                   <Badge variant={isCorrect ? 'default' : 'destructive'}>
                     {isCorrect ? 'Correta' : 'Incorreta'}
@@ -552,7 +725,6 @@ const SimuladoENAMED: React.FC = () => {
               </div>
             )}
 
-            {/* Show explanation button during exam */}
             {!isReview && answered && !showExplanation && (
               <Button variant="outline" size="sm" onClick={() => setShowExplanation(true)} className="mt-2">
                 Ver Explicação
@@ -604,6 +776,35 @@ const SimuladoENAMED: React.FC = () => {
             </Badge>
           </CardContent>
         </Card>
+
+        {/* Source Breakdown */}
+        {(results.sourceResults.real.total > 0 && results.sourceResults.ai.total > 0) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg"><Database className="w-5 h-5" /> Desempenho por Fonte</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20 text-center">
+                  <FileText className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+                  <p className="text-sm font-medium">Questões Oficiais INEP</p>
+                  <p className="text-2xl font-bold mt-1">
+                    {results.sourceResults.real.total > 0 ? Math.round((results.sourceResults.real.correct / results.sourceResults.real.total) * 100) : 0}%
+                  </p>
+                  <p className="text-xs text-muted-foreground">{results.sourceResults.real.correct}/{results.sourceResults.real.total}</p>
+                </div>
+                <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/20 text-center">
+                  <Sparkles className="w-6 h-6 text-purple-600 mx-auto mb-2" />
+                  <p className="text-sm font-medium">Questões IA</p>
+                  <p className="text-2xl font-bold mt-1">
+                    {results.sourceResults.ai.total > 0 ? Math.round((results.sourceResults.ai.correct / results.sourceResults.ai.total) * 100) : 0}%
+                  </p>
+                  <p className="text-xs text-muted-foreground">{results.sourceResults.ai.correct}/{results.sourceResults.ai.total}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Area Breakdown */}
         <Card>

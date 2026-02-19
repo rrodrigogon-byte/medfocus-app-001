@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import {
   Heart, Brain, Bone, Droplets, Wind, Utensils, Eye, Ear,
   Shield, Zap, Baby, Activity, ArrowLeft, BookOpen, Search,
-  ChevronRight, GraduationCap, Stethoscope, Microscope
+  ChevronRight, GraduationCap, Stethoscope, Microscope,
+  Moon, Sun
 } from 'lucide-react';
 
 // ─── Body Systems Data ─────────────────────────────────────────
@@ -407,6 +408,7 @@ const AnatomyAtlas: React.FC = () => {
   const [selectedSystem, setSelectedSystem] = useState<string | null>(null);
   const [selectedOrgan, setSelectedOrgan] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [atlasDarkMode, setAtlasDarkMode] = useState(true);
   const [filterYear, setFilterYear] = useState<number | null>(null);
 
   const filteredSystems = useMemo(() => {
@@ -588,10 +590,21 @@ const AnatomyAtlas: React.FC = () => {
 
   // ─── Main Atlas View ───────────────────────────────────────
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <div>
-        <h2 className="text-2xl font-display font-bold text-foreground">Atlas Anatômico Interativo</h2>
-        <p className="text-muted-foreground mt-1">Explore os sistemas do corpo humano com conteúdo vinculado às disciplinas de cada ano</p>
+    <div className={`space-y-6 max-w-5xl mx-auto transition-colors duration-300 ${atlasDarkMode ? 'atlas-dark-mode' : ''}`}>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-display font-bold">Atlas Anatômico Interativo</h2>
+          <p className="text-sm opacity-70 mt-1">Explore os sistemas do corpo humano com conteúdo vinculado às disciplinas de cada ano</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setAtlasDarkMode(!atlasDarkMode)}
+          className={`gap-2 ${atlasDarkMode ? 'bg-slate-800 text-amber-300 border-slate-600 hover:bg-slate-700 hover:text-amber-200' : ''}`}
+        >
+          {atlasDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          {atlasDarkMode ? 'Modo Claro' : 'Modo Escuro'}
+        </Button>
       </div>
 
       {/* Search & Filter */}

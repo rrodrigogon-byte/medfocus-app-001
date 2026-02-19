@@ -108,3 +108,12 @@
 - [x] Atlas anatômico interativo com SVGs clicáveis por sistema
 - [x] Vincular atlas anatômico às disciplinas de cada ano
 - [x] Integrar Sidebar e rotas para todas as novas funcionalidades
+- [x] Banco de questões ENAMED 2025 real (90 questões válidas com gabarito oficial INEP)
+- [x] Banco de questões REVALIDA 2024.2 real (100 questões com gabarito oficial INEP)
+- [x] Parser de questões do PDF para formato estruturado JSON
+- [x] Integrar questões reais no componente SimuladoENAMED com estatísticas de acerto
+- [x] Modo escuro dedicado para Atlas Anatômico (melhor visualização de SVGs)
+- [x] Toggle de tema por seção independente do tema global
+- [x] Exportação de relatórios de desempenho em PDF (simulados)
+- [x] Exportação de relatório de progresso do calendário em PDF
+- [x] Relatório PDF com gráficos de desempenho por área médica

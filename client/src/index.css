@@ -264,3 +264,61 @@
 .stagger-children > *:nth-child(8) { animation-delay: 0.40s; }
 .stagger-children > *:nth-child(9) { animation-delay: 0.45s; }
 .stagger-children > *:nth-child(10) { animation-delay: 0.50s; }
+
+/* Atlas Anatômico — Modo Escuro Dedicado */
+.atlas-dark-mode {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  color: #e2e8f0;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  min-height: 60vh;
+}
+
+.atlas-dark-mode .text-foreground,
+.atlas-dark-mode h2,
+.atlas-dark-mode h3,
+.atlas-dark-mode h4,
+.atlas-dark-mode p:not(.text-muted-foreground) {
+  color: #e2e8f0;
+}
+
+.atlas-dark-mode .text-muted-foreground {
+  color: #94a3b8;
+}
+
+.atlas-dark-mode [class*="border-border"] {
+  border-color: #334155;
+}
+
+.atlas-dark-mode [class*="bg-background"] {
+  background-color: #1e293b;
+}
+
+.atlas-dark-mode [class*="bg-muted"] {
+  background-color: #1e293b;
+}
+
+.atlas-dark-mode input,
+.atlas-dark-mode select {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+.atlas-dark-mode [data-slot="card"] {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+.atlas-dark-mode button:not([class*="bg-primary"]):not([class*="bg-slate"]) {
+  border-color: #334155;
+}
+
+.atlas-dark-mode button:hover:not([class*="bg-primary"]) {
+  background-color: #334155;
+}
+
+.atlas-dark-mode svg.human-body-svg {
+  filter: brightness(1.2) saturate(1.1);
+}
