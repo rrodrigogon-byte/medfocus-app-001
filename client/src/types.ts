@@ -110,7 +110,9 @@ export type View =
   | 'calendar'
   | 'reports'
   | 'progress'
-  | 'offline';
+  | 'offline'
+  | 'goals'
+  | 'leaderboard';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {

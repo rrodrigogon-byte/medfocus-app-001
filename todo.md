@@ -127,3 +127,13 @@
 - [x] Modo offline completo para questões reais e flashcards
 - [x] Service Worker para cache de questões e materiais de estudo
 - [x] Sincronização de resultados offline quando reconectar
+- [x] Baixar e parsear provas REVALIDA 2023/1 e 2023/2 do INEP
+- [x] Expandir banco de questões para 287 questões reais (5 provas INEP)
+- [x] Atualizar SimuladoENAMED com novas fontes REVALIDA 2023
+- [x] Sistema de metas semanais (questões, horas Pomodoro, flashcards)
+- [x] Tabela de metas no banco de dados (weekly_goals)
+- [x] Painel de metas no Dashboard de Progresso com alertas
+- [x] Ranking/leaderboard entre alunos por universidade
+- [x] Tabela de leaderboard no banco de dados
+- [x] Componente de Leaderboard com filtro por universidade e período
+- [x] Integrar Leaderboard na Sidebar e rotas

@@ -554,3 +554,58 @@ export const simuladoQuestions = mysqlTable("simulado_questions", {
 
 export type SimuladoQuestion = typeof simuladoQuestions.$inferSelect;
 export type InsertSimuladoQuestion = typeof simuladoQuestions.$inferInsert;
+
+// ─── Weekly Goals ─────────────────────────────────────────────
+export const weeklyGoals = mysqlTable("weekly_goals", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  weekStart: varchar("weekStart", { length: 10 }).notNull(), // YYYY-MM-DD (Monday)
+  goalType: mysqlEnum("goalType", ["questions", "pomodoro_hours", "study_hours", "flashcards", "simulados"]).notNull(),
+  targetValue: int("targetValue").notNull(),
+  currentValue: int("currentValue").default(0).notNull(),
+  completed: boolean("completed").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WeeklyGoal = typeof weeklyGoals.$inferSelect;
+export type InsertWeeklyGoal = typeof weeklyGoals.$inferInsert;
+
+// ─── Leaderboard / XP System ──────────────────────────────────
+export const userXP = mysqlTable("user_xp", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  totalXP: int("totalXP").default(0).notNull(),
+  weeklyXP: int("weeklyXP").default(0).notNull(),
+  monthlyXP: int("monthlyXP").default(0).notNull(),
+  streak: int("streak").default(0).notNull(),
+  longestStreak: int("longestStreak").default(0).notNull(),
+  lastActiveDate: varchar("lastActiveDate", { length: 10 }), // YYYY-MM-DD
+  simuladosCompleted: int("simuladosCompleted").default(0).notNull(),
+  questionsAnswered: int("questionsAnswered").default(0).notNull(),
+  correctAnswers: int("correctAnswers").default(0).notNull(),
+  pomodoroMinutes: int("pomodoroMinutes").default(0).notNull(),
+  flashcardsReviewed: int("flashcardsReviewed").default(0).notNull(),
+  universityId: varchar("universityId", { length: 64 }),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserXP = typeof userXP.$inferSelect;
+export type InsertUserXP = typeof userXP.$inferInsert;
+
+// ─── XP Activity Log ──────────────────────────────────────────
+export const xpActivities = mysqlTable("xp_activities", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  activityType: mysqlEnum("activityType", [
+    "simulado_completed", "question_correct", "question_wrong",
+    "pomodoro_completed", "flashcard_reviewed", "streak_bonus",
+    "goal_completed", "daily_login", "material_reviewed"
+  ]).notNull(),
+  xpEarned: int("xpEarned").notNull(),
+  description: text("description"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type XPActivity = typeof xpActivities.$inferSelect;
+export type InsertXPActivity = typeof xpActivities.$inferInsert;

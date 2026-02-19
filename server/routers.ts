@@ -8,7 +8,7 @@ import { ENV } from "./_core/env";
 import { z } from "zod";
 import Stripe from "stripe";
 import { PLANS } from "./products";
-import { getOrCreateProgress, addXp, getXpHistory, logStudySession, updateUserProfile, createClassroom, getClassroomsByProfessor, getClassroomsByStudent, getClassroomById, joinClassroom, getEnrollments, removeEnrollment, createActivity, getActivitiesByClassroom, updateActivity, submitActivity, gradeSubmission, getSubmissionsByActivity, getStudentSubmissions, getClassroomAnalytics, findGeneratedMaterial, saveGeneratedMaterial, getUserMaterialHistory, getGeneratedMaterialById, rateMaterial, searchLibraryMaterials, saveLibraryMaterial, getLibraryMaterialById, toggleSaveMaterial, getUserSavedMaterialIds, getUserSavedMaterialsFull, getPopularLibraryMaterials, searchPubmedCache, savePubmedArticle, getPubmedArticleByPmid, addMaterialReview, getMaterialReviews, markReviewHelpful, trackStudyActivity, getUserStudyHistoryData, getUserTopSubjects, getUserQuizPerformance, subscribeToSubject, unsubscribeFromSubject, getUserSubscriptions, getUserNotifications, getUnreadNotificationCount, markNotificationRead, markAllNotificationsRead, notifySubscribersOfNewMaterial, saveStudyTemplate, getStudyTemplates, getStudyTemplateById, getUserTemplates, shareTemplate, getSharedTemplateByCode, getSharedTemplateFeed, likeSharedTemplate, createStudyRoom, getStudyRooms, joinStudyRoom, getStudyRoomById, sendRoomMessage, getRoomMessages, createSharedNote, getRoomNotes, createCalendarEvent, getCalendarEvents, updateCalendarEvent, deleteCalendarEvent, createRevisionSuggestions, getRevisionSuggestions, completeRevision, createSimulado, getSimulados, completeSimulado, getSimuladoQuestions, saveSimuladoQuestion, getSimuladoStats } from "./db";
+import { getOrCreateProgress, addXp, getXpHistory, logStudySession, updateUserProfile, createClassroom, getClassroomsByProfessor, getClassroomsByStudent, getClassroomById, joinClassroom, getEnrollments, removeEnrollment, createActivity, getActivitiesByClassroom, updateActivity, submitActivity, gradeSubmission, getSubmissionsByActivity, getStudentSubmissions, getClassroomAnalytics, findGeneratedMaterial, saveGeneratedMaterial, getUserMaterialHistory, getGeneratedMaterialById, rateMaterial, searchLibraryMaterials, saveLibraryMaterial, getLibraryMaterialById, toggleSaveMaterial, getUserSavedMaterialIds, getUserSavedMaterialsFull, getPopularLibraryMaterials, searchPubmedCache, savePubmedArticle, getPubmedArticleByPmid, addMaterialReview, getMaterialReviews, markReviewHelpful, trackStudyActivity, getUserStudyHistoryData, getUserTopSubjects, getUserQuizPerformance, subscribeToSubject, unsubscribeFromSubject, getUserSubscriptions, getUserNotifications, getUnreadNotificationCount, markNotificationRead, markAllNotificationsRead, notifySubscribersOfNewMaterial, saveStudyTemplate, getStudyTemplates, getStudyTemplateById, getUserTemplates, shareTemplate, getSharedTemplateByCode, getSharedTemplateFeed, likeSharedTemplate, createStudyRoom, getStudyRooms, joinStudyRoom, getStudyRoomById, sendRoomMessage, getRoomMessages, createSharedNote, getRoomNotes, createCalendarEvent, getCalendarEvents, updateCalendarEvent, deleteCalendarEvent, createRevisionSuggestions, getRevisionSuggestions, completeRevision, createSimulado, getSimulados, completeSimulado, getSimuladoQuestions, saveSimuladoQuestion, getSimuladoStats, getWeeklyGoals, createWeeklyGoal, updateGoalProgress, incrementGoalProgress, deleteWeeklyGoal, getUserXP, ensureUserXP, addXP, updateStreak, updateXPStats, getLeaderboard, getXPActivities } from "./db";
 
 function getStripe() {
   return new Stripe(ENV.stripeSecretKey, { apiVersion: "2026-01-28.clover" });
@@ -1549,6 +1549,79 @@ Use markdown para formatação.`
     }),
     stats: protectedProcedure.query(async ({ ctx }) => {
       return await getSimuladoStats(ctx.user.id);
+    }),
+  }),
+
+  // ─── Weekly Goals ─────────────────────────────────────────────
+  goals: router({
+    list: protectedProcedure.input(z.object({ weekStart: z.string() })).query(async ({ ctx, input }) => {
+      return await getWeeklyGoals(ctx.user.id, input.weekStart);
+    }),
+    create: protectedProcedure.input(z.object({
+      weekStart: z.string(),
+      goalType: z.enum(['questions', 'pomodoro_hours', 'study_hours', 'flashcards', 'simulados']),
+      targetValue: z.number().min(1),
+    })).mutation(async ({ ctx, input }) => {
+      return await createWeeklyGoal({ userId: ctx.user.id, ...input });
+    }),
+    updateProgress: protectedProcedure.input(z.object({
+      goalId: z.number(),
+      currentValue: z.number(),
+    })).mutation(async ({ ctx, input }) => {
+      await updateGoalProgress(input.goalId, input.currentValue);
+      return { success: true };
+    }),
+    increment: protectedProcedure.input(z.object({
+      weekStart: z.string(),
+      goalType: z.string(),
+      increment: z.number(),
+    })).mutation(async ({ ctx, input }) => {
+      await incrementGoalProgress(ctx.user.id, input.weekStart, input.goalType, input.increment);
+      return { success: true };
+    }),
+    delete: protectedProcedure.input(z.object({ goalId: z.number() })).mutation(async ({ ctx, input }) => {
+      await deleteWeeklyGoal(input.goalId, ctx.user.id);
+      return { success: true };
+    }),
+  }),
+
+  // ─── XP & Leaderboard ──────────────────────────────────────────
+  xp: router({
+    me: protectedProcedure.query(async ({ ctx }) => {
+      const user = ctx.user;
+      const xp = await ensureUserXP(user.id, (user as any).universityId);
+      await updateStreak(user.id);
+      return xp;
+    }),
+    addXP: protectedProcedure.input(z.object({
+      amount: z.number().min(1),
+      activityType: z.enum([
+        'simulado_completed', 'question_correct', 'question_wrong',
+        'pomodoro_completed', 'flashcard_reviewed', 'streak_bonus',
+        'goal_completed', 'daily_login', 'material_reviewed'
+      ]),
+      description: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      await ensureUserXP(ctx.user.id);
+      await addXP(ctx.user.id, input.amount, input.activityType, input.description);
+      return { success: true };
+    }),
+    updateStats: protectedProcedure.input(z.object({
+      field: z.enum(['simuladosCompleted', 'questionsAnswered', 'correctAnswers', 'pomodoroMinutes', 'flashcardsReviewed']),
+      increment: z.number(),
+    })).mutation(async ({ ctx, input }) => {
+      await ensureUserXP(ctx.user.id);
+      await updateXPStats(ctx.user.id, input.field, input.increment);
+      return { success: true };
+    }),
+    leaderboard: protectedProcedure.input(z.object({
+      period: z.enum(['weekly', 'monthly', 'alltime']),
+      universityId: z.string().optional(),
+    })).query(async ({ ctx, input }) => {
+      return await getLeaderboard(input.period, input.universityId);
+    }),
+    activities: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async ({ ctx, input }) => {
+      return await getXPActivities(ctx.user.id, input.limit || 20);
     }),
   }),
 });

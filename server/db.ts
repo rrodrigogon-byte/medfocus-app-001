@@ -1,6 +1,6 @@
 import { eq, and, sql, desc, count, avg } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, userProgress, xpLog, studySessions, classrooms, enrollments, activities, submissions, generatedMaterials, libraryMaterials, userSavedMaterials, materialReviews, pubmedArticles, userStudyHistory, sharedTemplates, studyTemplates, studyRooms, studyRoomParticipants, studyRoomMessages, sharedNotes, calendarEvents, revisionSuggestions, simulados, simuladoQuestions, subjectSubscriptions, materialNotifications } from "../drizzle/schema";
+import { InsertUser, users, userProgress, xpLog, studySessions, classrooms, enrollments, activities, submissions, generatedMaterials, libraryMaterials, userSavedMaterials, materialReviews, pubmedArticles, userStudyHistory, sharedTemplates, studyTemplates, studyRooms, studyRoomParticipants, studyRoomMessages, sharedNotes, calendarEvents, revisionSuggestions, simulados, simuladoQuestions, subjectSubscriptions, materialNotifications, weeklyGoals, userXP, xpActivities } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -1135,4 +1135,185 @@ export async function getSimuladoStats(userId: number) {
   if (!db) return null;
   const completed = await db.select({ cnt: count(), avgScore: avg(simulados.score) }).from(simulados).where(and(eq(simulados.userId, userId), eq(simulados.status, 'completed')));
   return { totalCompleted: Number(completed[0]?.cnt || 0), avgScore: Number(completed[0]?.avgScore || 0) };
+}
+
+// ─── Weekly Goals ─────────────────────────────────────────────
+
+export async function getWeeklyGoals(userId: number, weekStart: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(weeklyGoals).where(and(eq(weeklyGoals.userId, userId), eq(weeklyGoals.weekStart, weekStart)));
+}
+
+export async function createWeeklyGoal(data: { userId: number; weekStart: string; goalType: 'questions' | 'pomodoro_hours' | 'study_hours' | 'flashcards' | 'simulados'; targetValue: number }) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(weeklyGoals).values(data).$returningId();
+  return result;
+}
+
+export async function updateGoalProgress(goalId: number, currentValue: number) {
+  const db = await getDb();
+  if (!db) return;
+  const [goal] = await db.select().from(weeklyGoals).where(eq(weeklyGoals.id, goalId));
+  const completed = currentValue >= (goal?.targetValue || 0);
+  await db.update(weeklyGoals).set({ currentValue, completed }).where(eq(weeklyGoals.id, goalId));
+}
+
+export async function incrementGoalProgress(userId: number, weekStart: string, goalType: string, increment: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(weeklyGoals)
+    .set({ currentValue: sql`current_value + ${increment}` })
+    .where(and(
+      eq(weeklyGoals.userId, userId),
+      eq(weeklyGoals.weekStart, weekStart),
+      eq(weeklyGoals.goalType, goalType as any)
+    ));
+  // Check if completed
+  const goals = await db.select().from(weeklyGoals).where(and(
+    eq(weeklyGoals.userId, userId),
+    eq(weeklyGoals.weekStart, weekStart),
+    eq(weeklyGoals.goalType, goalType as any)
+  ));
+  for (const g of goals) {
+    if (g.currentValue >= g.targetValue && !g.completed) {
+      await db.update(weeklyGoals).set({ completed: true }).where(eq(weeklyGoals.id, g.id));
+    }
+  }
+}
+
+export async function deleteWeeklyGoal(goalId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(weeklyGoals).where(and(eq(weeklyGoals.id, goalId), eq(weeklyGoals.userId, userId)));
+}
+
+// ─── XP & Leaderboard ────────────────────────────────────────
+
+export async function getUserXP(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const [xp] = await db.select().from(userXP).where(eq(userXP.userId, userId));
+  return xp || null;
+}
+
+export async function ensureUserXP(userId: number, universityId?: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const [existing] = await db.select().from(userXP).where(eq(userXP.userId, userId));
+  if (existing) {
+    if (universityId && existing.universityId !== universityId) {
+      await db.update(userXP).set({ universityId }).where(eq(userXP.userId, userId));
+    }
+    return existing;
+  }
+  const [result] = await db.insert(userXP).values({ userId, universityId }).$returningId();
+  return { id: result.id, userId, totalXP: 0, weeklyXP: 0, monthlyXP: 0, streak: 0, longestStreak: 0, lastActiveDate: null, simuladosCompleted: 0, questionsAnswered: 0, correctAnswers: 0, pomodoroMinutes: 0, flashcardsReviewed: 0, universityId };
+}
+
+export async function addXP(userId: number, xpAmount: number, activityType: string, description?: string) {
+  const db = await getDb();
+  if (!db) return;
+  
+  // Update user XP
+  await db.update(userXP).set({
+    totalXP: sql`total_xp + ${xpAmount}`,
+    weeklyXP: sql`weekly_xp + ${xpAmount}`,
+    monthlyXP: sql`monthly_xp + ${xpAmount}`,
+  }).where(eq(userXP.userId, userId));
+  
+  // Log activity
+  await db.insert(xpActivities).values({
+    userId,
+    activityType: activityType as any,
+    xpEarned: xpAmount,
+    description,
+  });
+}
+
+export async function updateStreak(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  const today = new Date().toISOString().split('T')[0];
+  const [xp] = await db.select().from(userXP).where(eq(userXP.userId, userId));
+  if (!xp) return;
+  
+  if (xp.lastActiveDate === today) return; // Already counted today
+  
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  const newStreak = xp.lastActiveDate === yesterday ? xp.streak + 1 : 1;
+  const longestStreak = Math.max(newStreak, xp.longestStreak);
+  
+  await db.update(userXP).set({
+    streak: newStreak,
+    longestStreak,
+    lastActiveDate: today,
+  }).where(eq(userXP.userId, userId));
+  
+  // Streak bonus XP
+  if (newStreak > 1 && newStreak % 7 === 0) {
+    await addXP(userId, 50, 'streak_bonus', `Streak de ${newStreak} dias!`);
+  }
+}
+
+export async function updateXPStats(userId: number, field: 'simuladosCompleted' | 'questionsAnswered' | 'correctAnswers' | 'pomodoroMinutes' | 'flashcardsReviewed', increment: number) {
+  const db = await getDb();
+  if (!db) return;
+  const fieldMap: Record<string, any> = {
+    simuladosCompleted: userXP.simuladosCompleted,
+    questionsAnswered: userXP.questionsAnswered,
+    correctAnswers: userXP.correctAnswers,
+    pomodoroMinutes: userXP.pomodoroMinutes,
+    flashcardsReviewed: userXP.flashcardsReviewed,
+  };
+  await db.update(userXP).set({
+    [field]: sql`${fieldMap[field]} + ${increment}`,
+  }).where(eq(userXP.userId, userId));
+}
+
+export async function getLeaderboard(period: 'weekly' | 'monthly' | 'alltime', universityId?: string, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const xpField = period === 'weekly' ? userXP.weeklyXP : period === 'monthly' ? userXP.monthlyXP : userXP.totalXP;
+  
+  let query = db.select({
+    userId: userXP.userId,
+    xp: xpField,
+    totalXP: userXP.totalXP,
+    streak: userXP.streak,
+    longestStreak: userXP.longestStreak,
+    simuladosCompleted: userXP.simuladosCompleted,
+    questionsAnswered: userXP.questionsAnswered,
+    correctAnswers: userXP.correctAnswers,
+    universityId: userXP.universityId,
+    userName: users.name,
+  }).from(userXP)
+    .innerJoin(users, eq(userXP.userId, users.id))
+    .orderBy(desc(xpField))
+    .limit(limit);
+  
+  if (universityId) {
+    return query.where(eq(userXP.universityId, universityId));
+  }
+  return query;
+}
+
+export async function getXPActivities(userId: number, limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(xpActivities).where(eq(xpActivities.userId, userId)).orderBy(desc(xpActivities.createdAt)).limit(limit);
+}
+
+export async function resetWeeklyXP() {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(userXP).set({ weeklyXP: 0 });
+}
+
+export async function resetMonthlyXP() {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(userXP).set({ monthlyXP: 0 });
 }

@@ -38,6 +38,8 @@ import AcademicCalendar from '../components/medfocus/AcademicCalendar';
 import ReportExporter from '../components/medfocus/ReportExporter';
 import ProgressDashboard from '../components/medfocus/ProgressDashboard';
 import OfflineStudy from '../components/medfocus/OfflineStudy';
+import WeeklyGoals from '../components/medfocus/WeeklyGoals';
+import Leaderboard from '../components/medfocus/Leaderboard';
 import XPToast from '../components/medfocus/XPToast';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
@@ -161,6 +163,8 @@ export default function Home() {
       case 'reports': return <ReportExporter />;
       case 'progress': return <ProgressDashboard />;
       case 'offline': return <OfflineStudy />;
+      case 'goals': return <WeeklyGoals />;
+      case 'leaderboard': return <Leaderboard />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{
@@ -230,7 +234,9 @@ export default function Home() {
                currentView === 'calendar' ? 'Calendário Acadêmico' :
                currentView === 'reports' ? 'Exportar Relatórios' :
                currentView === 'progress' ? 'Dashboard de Progresso' :
-               currentView === 'offline' ? 'Modo Offline' : currentView}
+               currentView === 'offline' ? 'Modo Offline' :
+               currentView === 'goals' ? 'Metas Semanais' :
+               currentView === 'leaderboard' ? 'Ranking' : currentView}
             </h2>
           </div>
           <div className="flex items-center gap-2">
