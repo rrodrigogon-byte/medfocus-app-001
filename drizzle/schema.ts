@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, boolean } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, boolean, double, tinyint } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -702,3 +702,65 @@ export const socialFeedComments = mysqlTable("social_feed_comments", {
   createdAt: timestamp("commentCreatedAt").defaultNow().notNull(),
 });
 export type SocialFeedComment = typeof socialFeedComments.$inferSelect;
+
+
+// ─── Flashcard Decks & Cards (SM-2 Spaced Repetition) ───────────
+export const flashcardDecks = mysqlTable("flashcard_decks", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  title: varchar("deckTitle", { length: 255 }).notNull(),
+  subject: varchar("deckSubject", { length: 100 }).notNull(),
+  description: text("deckDescription"),
+  cardCount: int("cardCount").default(0).notNull(),
+  sourceSummaryId: int("sourceSummaryId"),
+  isPublic: tinyint("deckIsPublic").default(0).notNull(),
+  createdAt: timestamp("deckCreatedAt").defaultNow().notNull(),
+  updatedAt: timestamp("deckUpdatedAt").defaultNow().notNull(),
+});
+export type FlashcardDeck = typeof flashcardDecks.$inferSelect;
+
+export const flashcardCards = mysqlTable("flashcard_cards", {
+  id: int("id").autoincrement().primaryKey(),
+  deckId: int("deckId").notNull(),
+  front: text("cardFront").notNull(),
+  back: text("cardBack").notNull(),
+  difficulty: varchar("cardDifficulty", { length: 20 }).default("medium").notNull(),
+  easeFactor: double("easeFactor").default(2.5).notNull(),
+  interval: int("sm2Interval").default(0).notNull(),
+  repetitions: int("repetitions").default(0).notNull(),
+  nextReviewDate: timestamp("nextReviewDate").defaultNow().notNull(),
+  lastReviewDate: timestamp("lastReviewDate"),
+  createdAt: timestamp("cardCreatedAt").defaultNow().notNull(),
+});
+export type FlashcardCard = typeof flashcardCards.$inferSelect;
+
+// ─── Exam Calendar ──────────────────────────────────────────────
+export const examCalendar = mysqlTable("exam_calendar", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("examUserId").notNull(),
+  title: varchar("examTitle", { length: 255 }).notNull(),
+  examType: varchar("examType", { length: 50 }).notNull(),
+  examDate: timestamp("examDate").notNull(),
+  description: text("examDescription"),
+  subjects: text("examSubjects"),
+  importance: varchar("importance", { length: 20 }).default("high").notNull(),
+  reminderDays: int("reminderDays").default(7).notNull(),
+  isCompleted: tinyint("examIsCompleted").default(0).notNull(),
+  createdAt: timestamp("examCreatedAt").defaultNow().notNull(),
+});
+export type ExamCalendarEntry = typeof examCalendar.$inferSelect;
+
+export const studySuggestions = mysqlTable("study_suggestions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("suggUserId").notNull(),
+  examId: int("examId").notNull(),
+  suggestionType: varchar("suggestionType", { length: 50 }).notNull(),
+  title: varchar("suggestionTitle", { length: 255 }).notNull(),
+  description: text("suggestionDescription"),
+  subject: varchar("suggestionSubject", { length: 100 }),
+  priority: int("priority").default(0).notNull(),
+  isCompleted: tinyint("suggestionCompleted").default(0).notNull(),
+  suggestedDate: timestamp("suggestedDate").notNull(),
+  createdAt: timestamp("suggestionCreatedAt").defaultNow().notNull(),
+});
+export type StudySuggestion = typeof studySuggestions.$inferSelect;

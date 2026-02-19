@@ -117,7 +117,9 @@ export type View =
   | 'battle'
   | 'heatmap'
   | 'smartSummary'
-  | 'socialFeed';
+  | 'socialFeed'
+  | 'flashcardStudy'
+  | 'examCalendar';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {

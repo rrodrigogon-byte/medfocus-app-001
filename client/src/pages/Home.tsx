@@ -45,6 +45,8 @@ import QuestionBattle from '../components/medfocus/QuestionBattle';
 import PerformanceHeatmap from '../components/medfocus/PerformanceHeatmap';
 import SmartSummary from '../components/medfocus/SmartSummary';
 import SocialFeed from '../components/medfocus/SocialFeed';
+import FlashcardStudy from '../components/medfocus/FlashcardStudy';
+import ExamCalendar from '../components/medfocus/ExamCalendar';
 import XPToast from '../components/medfocus/XPToast';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
@@ -175,6 +177,8 @@ export default function Home() {
       case 'heatmap': return <PerformanceHeatmap />;
       case 'smartSummary': return <SmartSummary />;
       case 'socialFeed': return <SocialFeed />;
+      case 'flashcardStudy': return <FlashcardStudy />;
+      case 'examCalendar': return <ExamCalendar />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{
@@ -251,7 +255,9 @@ export default function Home() {
                currentView === 'battle' ? 'Modo Batalha' :
                currentView === 'heatmap' ? 'Mapa de Desempenho' :
                currentView === 'smartSummary' ? 'Resumos Inteligentes' :
-               currentView === 'socialFeed' ? 'Feed Social' : currentView}
+               currentView === 'socialFeed' ? 'Feed Social' :
+               currentView === 'flashcardStudy' ? 'Flashcards SM-2' :
+               currentView === 'examCalendar' ? 'Calendário de Provas' : currentView}
             </h2>
           </div>
           <div className="flex items-center gap-2">

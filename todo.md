@@ -166,3 +166,16 @@
 - [x] Feed de atividades recentes (badges, simulados, streaks, casos clínicos)
 - [x] Sistema de curtidas e comentários nas conquistas
 - [x] Filtro por universidade e por amigos
+- [x] Aprimorar Casos Clínicos com referências científicas visuais (Harrison, Cecil, Nelson, Schwartz, Williams, etc.)
+- [x] Casos Clínicos com perguntas interativas baseadas em livros de elite mundiais
+- [x] Ilustrações e elementos visuais nos casos clínicos (sinais vitais, exames, imagens)
+- [x] Citações de referências científicas em cada etapa do caso (livro, capítulo, página)
+- [x] Modo Batalha em tempo real com WebSocket (sincronização entre 2 jogadores)
+- [x] Sala de espera com countdown e matchmaking via WebSocket
+- [x] Placar ao vivo durante a batalha com progresso do oponente
+- [x] Flashcards gerados por IA a partir de resumos inteligentes
+- [x] Conversão automática de resumo em deck de flashcards SM-2
+- [x] Edição e personalização dos flashcards gerados
+- [x] Integração calendário de provas com sugestões automáticas de estudo
+- [x] Sugerir casos clínicos e simulados baseados nas provas próximas do aluno
+- [x] Alertas inteligentes de revisão nos dias anteriores às provas

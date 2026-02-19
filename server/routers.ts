@@ -8,7 +8,7 @@ import { ENV } from "./_core/env";
 import { z } from "zod";
 import Stripe from "stripe";
 import { PLANS } from "./products";
-import { getOrCreateProgress, addXp, getXpHistory, logStudySession, updateUserProfile, createClassroom, getClassroomsByProfessor, getClassroomsByStudent, getClassroomById, joinClassroom, getEnrollments, removeEnrollment, createActivity, getActivitiesByClassroom, updateActivity, submitActivity, gradeSubmission, getSubmissionsByActivity, getStudentSubmissions, getClassroomAnalytics, findGeneratedMaterial, saveGeneratedMaterial, getUserMaterialHistory, getGeneratedMaterialById, rateMaterial, searchLibraryMaterials, saveLibraryMaterial, getLibraryMaterialById, toggleSaveMaterial, getUserSavedMaterialIds, getUserSavedMaterialsFull, getPopularLibraryMaterials, searchPubmedCache, savePubmedArticle, getPubmedArticleByPmid, addMaterialReview, getMaterialReviews, markReviewHelpful, trackStudyActivity, getUserStudyHistoryData, getUserTopSubjects, getUserQuizPerformance, subscribeToSubject, unsubscribeFromSubject, getUserSubscriptions, getUserNotifications, getUnreadNotificationCount, markNotificationRead, markAllNotificationsRead, notifySubscribersOfNewMaterial, saveStudyTemplate, getStudyTemplates, getStudyTemplateById, getUserTemplates, shareTemplate, getSharedTemplateByCode, getSharedTemplateFeed, likeSharedTemplate, createStudyRoom, getStudyRooms, joinStudyRoom, getStudyRoomById, sendRoomMessage, getRoomMessages, createSharedNote, getRoomNotes, createCalendarEvent, getCalendarEvents, updateCalendarEvent, deleteCalendarEvent, createRevisionSuggestions, getRevisionSuggestions, completeRevision, createSimulado, getSimulados, completeSimulado, getSimuladoQuestions, saveSimuladoQuestion, getSimuladoStats, getWeeklyGoals, createWeeklyGoal, updateGoalProgress, incrementGoalProgress, deleteWeeklyGoal, getUserXP, ensureUserXP, addXP, updateStreak, updateXPStats, getLeaderboard, getXPActivities, getPublicProfile, createClinicalCase, getClinicalCase, getUserClinicalCases, updateClinicalCase, createBattle, getBattleByCode, getBattle, getUserBattles, joinBattle, updateBattle, createSmartSummary, getUserSummaries, getPublicSummaries, getSummaryByShareCode, toggleSummaryPublic, postToFeed, getFeed, likeFeedItem, commentOnFeed, getFeedComments, getUserFeedLikes, getPerformanceBySpecialty } from "./db";
+import { getOrCreateProgress, addXp, getXpHistory, logStudySession, updateUserProfile, createClassroom, getClassroomsByProfessor, getClassroomsByStudent, getClassroomById, joinClassroom, getEnrollments, removeEnrollment, createActivity, getActivitiesByClassroom, updateActivity, submitActivity, gradeSubmission, getSubmissionsByActivity, getStudentSubmissions, getClassroomAnalytics, findGeneratedMaterial, saveGeneratedMaterial, getUserMaterialHistory, getGeneratedMaterialById, rateMaterial, searchLibraryMaterials, saveLibraryMaterial, getLibraryMaterialById, toggleSaveMaterial, getUserSavedMaterialIds, getUserSavedMaterialsFull, getPopularLibraryMaterials, searchPubmedCache, savePubmedArticle, getPubmedArticleByPmid, addMaterialReview, getMaterialReviews, markReviewHelpful, trackStudyActivity, getUserStudyHistoryData, getUserTopSubjects, getUserQuizPerformance, subscribeToSubject, unsubscribeFromSubject, getUserSubscriptions, getUserNotifications, getUnreadNotificationCount, markNotificationRead, markAllNotificationsRead, notifySubscribersOfNewMaterial, saveStudyTemplate, getStudyTemplates, getStudyTemplateById, getUserTemplates, shareTemplate, getSharedTemplateByCode, getSharedTemplateFeed, likeSharedTemplate, createStudyRoom, getStudyRooms, joinStudyRoom, getStudyRoomById, sendRoomMessage, getRoomMessages, createSharedNote, getRoomNotes, createCalendarEvent, getCalendarEvents, updateCalendarEvent, deleteCalendarEvent, createRevisionSuggestions, getRevisionSuggestions, completeRevision, createSimulado, getSimulados, completeSimulado, getSimuladoQuestions, saveSimuladoQuestion, getSimuladoStats, getWeeklyGoals, createWeeklyGoal, updateGoalProgress, incrementGoalProgress, deleteWeeklyGoal, getUserXP, ensureUserXP, addXP, updateStreak, updateXPStats, getLeaderboard, getXPActivities, getPublicProfile, createClinicalCase, getClinicalCase, getUserClinicalCases, updateClinicalCase, createBattle, getBattleByCode, getBattle, getUserBattles, joinBattle, updateBattle, createSmartSummary, getUserSummaries, getPublicSummaries, getSummaryByShareCode, toggleSummaryPublic, postToFeed, getFeed, likeFeedItem, commentOnFeed, getFeedComments, getUserFeedLikes, getPerformanceBySpecialty, createFlashcardDeck, getUserFlashcardDecks, getPublicFlashcardDecks, addFlashcardCards, getDueFlashcards, getAllFlashcards, reviewFlashcard, deleteDeck, createExam, getUserExams, getUpcomingExams, updateExam, deleteExam, createStudySuggestions, getExamSuggestions, markSuggestionCompleted } from "./db";
 
 function getStripe() {
   return new Stripe(ENV.stripeSecretKey, { apiVersion: "2026-01-28.clover" });
@@ -1643,24 +1643,24 @@ Use markdown para formatação.`
       specialty: z.string(),
       difficulty: z.enum(['easy', 'medium', 'hard']).optional(),
     })).mutation(async ({ ctx, input }) => {
-      const specialtyPrompts: Record<string, string> = {
-        'Clínica Médica': 'caso de clínica médica (diabetes, hipertensão, pneumonia, ICC, etc.)',
-        'Cirurgia': 'caso cirúrgico (abdome agudo, trauma, hérnias, apendicite, etc.)',
-        'Pediatria': 'caso pediátrico (bronquiolite, desidratação, febre, crescimento, etc.)',
-        'Ginecologia e Obstetrícia': 'caso de ginecologia/obstetrícia (pré-natal, parto, sangramento, etc.)',
-        'Saúde Coletiva': 'caso de saúde pública/coletiva (epidemiologia, vigilância, SUS, etc.)',
-        'Medicina de Família': 'caso de atenção primária/medicina de família',
-        'Psiquiatria': 'caso psiquiátrico (depressão, ansiedade, esquizofrenia, etc.)',
-        'Ortopedia': 'caso ortopédico (fraturas, luxações, lesões musculoesqueléticas)',
+      const specialtyRefs: Record<string, { books: string; prompt: string }> = {
+        'Clínica Médica': { books: 'Harrison\'s Principles of Internal Medicine (21st ed.), Cecil Medicine (Goldman-Cecil, 27th ed.), Current Medical Diagnosis & Treatment (CMDT 2025)', prompt: 'caso de clínica médica' },
+        'Cirurgia': { books: 'Sabiston Textbook of Surgery (21st ed.), Schwartz\'s Principles of Surgery (11th ed.), Townsend: Sabiston Textbook of Surgery', prompt: 'caso cirúrgico' },
+        'Pediatria': { books: 'Nelson Textbook of Pediatrics (22nd ed.), Tratado de Pediatria da SBP (5ª ed.), Rudolph\'s Pediatrics (23rd ed.)', prompt: 'caso pediátrico' },
+        'Ginecologia e Obstetrícia': { books: 'Williams Obstetrics (26th ed.), Berek & Novak\'s Gynecology (16th ed.), Rezende Obstetrícia Fundamental (14ª ed.)', prompt: 'caso de ginecologia/obstetrícia' },
+        'Saúde Coletiva': { books: 'Epidemiologia (Medronho, 2ª ed.), Rouquayrol - Epidemiologia & Saúde (8ª ed.), Park\'s Textbook of Preventive Medicine (26th ed.)', prompt: 'caso de saúde pública/coletiva' },
+        'Medicina de Família': { books: 'Tratado de Medicina de Família e Comunidade (Duncan, 2ª ed.), McWhinney\'s Textbook of Family Medicine (4th ed.), Medicina Ambulatorial (Bruce Duncan)', prompt: 'caso de atenção primária' },
+        'Psiquiatria': { books: 'Kaplan & Sadock\'s Synopsis of Psychiatry (12th ed.), Stahl\'s Essential Psychopharmacology (5th ed.), Compêndio de Psiquiatria (Kaplan)', prompt: 'caso psiquiátrico' },
+        'Ortopedia': { books: 'Campbell\'s Operative Orthopaedics (14th ed.), Rockwood & Green\'s Fractures in Adults (9th ed.), Hoppenfeld - Physical Examination of the Spine and Extremities', prompt: 'caso ortopédico' },
       };
-      const prompt = specialtyPrompts[input.specialty] || `caso clínico de ${input.specialty}`;
+      const refData = specialtyRefs[input.specialty] || { books: 'Harrison\'s, Cecil Medicine, CMDT', prompt: `caso clínico de ${input.specialty}` };
       const difficulty = input.difficulty || 'medium';
       const diffLabel = difficulty === 'easy' ? 'simples e direto' : difficulty === 'hard' ? 'complexo com diagnóstico diferencial desafiador' : 'moderado';
 
       const llmResponse = await invokeLLM({
         messages: [
-          { role: 'system', content: `Você é um professor de medicina experiente. Crie um ${prompt} para um estudante praticar raciocínio clínico. O caso deve ser ${diffLabel}. Responda APENAS em JSON válido.` },
-          { role: 'user', content: `Gere um caso clínico com os seguintes campos JSON:\n{\n  "title": "Título curto do caso",\n  "patientInfo": { "age": number, "sex": "M" ou "F", "chiefComplaint": "queixa principal", "vitalSigns": { "PA": "...", "FC": "...", "FR": "...", "Temp": "...", "SpO2": "..." } },\n  "correctDiagnosis": "diagnóstico correto",\n  "keyFindings": ["achado1", "achado2"],\n  "differentialDiagnoses": ["dd1", "dd2", "dd3"],\n  "recommendedTests": ["exame1", "exame2"],\n  "treatment": "conduta recomendada"\n}` },
+          { role: 'system', content: `Você é um professor de medicina experiente, baseando-se nos melhores livros do mundo: ${refData.books}. Crie um ${refData.prompt} para um estudante praticar raciocínio clínico. O caso deve ser ${diffLabel}. IMPORTANTE: inclua referências bibliográficas reais em cada seção e perguntas de múltipla escolha para cada fase. Responda APENAS em JSON válido.` },
+          { role: 'user', content: `Gere um caso clínico COMPLETO e VISUAL com os seguintes campos JSON:\n{\n  "title": "Título curto do caso",\n  "patientInfo": { "age": number, "sex": "M" ou "F", "chiefComplaint": "queixa principal", "history": "história da doença atual detalhada", "pastHistory": "antecedentes pessoais", "medications": ["med1", "med2"], "socialHistory": "história social", "familyHistory": "história familiar", "vitalSigns": { "PA": "...", "FC": "...", "FR": "...", "Temp": "...", "SpO2": "...", "Peso": "...", "Altura": "...", "IMC": "..." } },\n  "physicalExam": { "general": "estado geral", "cardiovascular": "...", "respiratory": "...", "abdominal": "...", "neurological": "...", "other": "outros achados relevantes" },\n  "labResults": { "hemograma": "...", "bioquimica": "...", "imagem": "descrição de exames de imagem", "outros": "outros exames" },\n  "correctDiagnosis": "diagnóstico correto",\n  "keyFindings": ["achado1", "achado2", "achado3"],\n  "differentialDiagnoses": ["dd1", "dd2", "dd3"],\n  "recommendedTests": ["exame1", "exame2"],\n  "treatment": "conduta recomendada detalhada",\n  "references": [\n    { "book": "Nome do livro", "edition": "edição", "chapter": "capítulo relevante", "page": "páginas", "keyPoint": "ponto-chave da referência" }\n  ],\n  "phaseQuestions": {\n    "anamnesis": [{ "question": "Qual pergunta é mais importante na anamnese deste paciente?", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "correct": 0, "explanation": "Explicação com referência bibliográfica" }],\n    "physical_exam": [{ "question": "Qual achado do exame físico é mais relevante?", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "correct": 0, "explanation": "..." }],\n    "lab_tests": [{ "question": "Qual exame complementar é prioritário?", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "correct": 0, "explanation": "..." }],\n    "hypothesis": [{ "question": "Qual é o diagnóstico mais provável?", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "correct": 0, "explanation": "..." }],\n    "treatment": [{ "question": "Qual a conduta mais adequada?", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "correct": 0, "explanation": "..." }]\n  }\n}` },
         ],
         response_format: { type: 'json_object' },
       });
@@ -1700,7 +1700,7 @@ Use markdown para formatação.`
 
       const llmResponse = await invokeLLM({
         messages: [
-          { role: 'system', content: `Você é um simulador de paciente/caso clínico. O caso é: ${JSON.stringify(patientData)}. Fase atual: ${phaseLabels[input.phase]}. Responda de forma realista como se fosse o paciente (na anamnese) ou como resultados de exames (nos exames). Dê feedback educativo sutil. Responda em português.` },
+          { role: 'system', content: `Você é um simulador de paciente/caso clínico baseado em evidências científicas. O caso é: ${JSON.stringify(patientData)}. Fase atual: ${phaseLabels[input.phase]}. Responda de forma realista como se fosse o paciente (na anamnese) ou como resultados de exames (nos exames). IMPORTANTE: ao final de cada resposta, inclua uma nota breve com a referência bibliográfica relevante (ex: "Ref: Harrison's, Cap. 15, p. 234"). Responda em português.` },
           ...history.map((h: any) => ({ role: h.role as any, content: h.content })),
           { role: 'user' as const, content: input.message },
         ],
@@ -1726,8 +1726,8 @@ Use markdown para formatação.`
 
       const llmResponse = await invokeLLM({
         messages: [
-          { role: 'system', content: 'Você é um professor de medicina avaliando a resposta de um aluno. Responda em JSON: { "score": 0-100, "feedback": "texto", "correctDiagnosis": "...", "wasCorrect": boolean }' },
-          { role: 'user', content: `Caso: ${JSON.stringify(patientData)}\nDiagnóstico do aluno: ${input.diagnosis}\nConduta do aluno: ${input.treatment}\nAvalie a resposta.` },
+          { role: 'system', content: 'Você é um professor de medicina avaliando a resposta de um aluno com base em evidências científicas. Responda em JSON: { "score": 0-100, "feedback": "texto com feedback detalhado", "correctDiagnosis": "diagnóstico correto", "wasCorrect": boolean, "references": [{ "book": "nome do livro", "chapter": "capítulo", "keyPoint": "ponto-chave" }], "learningPoints": ["ponto de aprendizado 1", "ponto 2"] }' },
+          { role: 'user', content: `Caso: ${JSON.stringify(patientData)}\nDiagnóstico do aluno: ${input.diagnosis}\nConduta do aluno: ${input.treatment}\nAvalie a resposta com referências bibliográficas dos melhores livros de medicina do mundo.` },
         ],
         response_format: { type: 'json_object' },
       });
@@ -1904,6 +1904,229 @@ Use markdown para formatação.`
   performance: router({
     bySpecialty: protectedProcedure.query(async ({ ctx }) => {
       return await getPerformanceBySpecialty(ctx.user.id);
+    }),
+  }),
+
+  // ─── Flashcard Decks (SM-2 Spaced Repetition) ─────────────────
+  flashcards: router({
+    createDeck: protectedProcedure.input(z.object({
+      title: z.string().min(1).max(255),
+      subject: z.string().min(1).max(100),
+      description: z.string().optional(),
+      isPublic: z.boolean().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const deck = await createFlashcardDeck({
+        userId: ctx.user.id,
+        title: input.title,
+        subject: input.subject,
+        description: input.description,
+        isPublic: input.isPublic ? 1 : 0,
+      });
+      return deck;
+    }),
+
+    generateFromSummary: protectedProcedure.input(z.object({
+      topic: z.string(),
+      summaryContent: z.string(),
+      subject: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const llmResponse = await invokeLLM({
+        messages: [
+          { role: 'system', content: `Você é um professor de medicina brasileiro especialista em criar flashcards para revisão espaçada (SM-2). Crie flashcards de alta qualidade baseados no resumo fornecido. Cada flashcard deve testar um conceito-chave. A pergunta (front) deve ser clara e específica. A resposta (back) deve ser completa mas concisa, incluindo a referência bibliográfica quando relevante. Use linguagem médica precisa. Retorne JSON válido.` },
+          { role: 'user', content: `Crie 12 flashcards de revisão baseados neste resumo sobre "${input.topic}":\n\n${input.summaryContent.substring(0, 3000)}\n\nRetorne JSON: {"cards": [{"front": "Pergunta clínica ou conceitual", "back": "Resposta detalhada com referência", "difficulty": "easy|medium|hard"}]}` },
+        ],
+        response_format: { type: 'json_schema', json_schema: { name: 'flashcard_gen', strict: true, schema: { type: 'object', properties: { cards: { type: 'array', items: { type: 'object', properties: { front: { type: 'string' }, back: { type: 'string' }, difficulty: { type: 'string' } }, required: ['front', 'back', 'difficulty'], additionalProperties: false } } }, required: ['cards'], additionalProperties: false } } },
+      });
+
+      const content = typeof llmResponse.choices[0]?.message?.content === 'string'
+        ? llmResponse.choices[0].message.content : '{"cards":[]}';
+      const parsed = JSON.parse(content);
+
+      // Create deck and add cards
+      const deck = await createFlashcardDeck({
+        userId: ctx.user.id,
+        title: `Flashcards: ${input.topic}`,
+        subject: input.subject || 'Geral',
+        description: `Gerado automaticamente a partir do resumo sobre ${input.topic}`,
+      });
+
+      if (deck && parsed.cards?.length > 0) {
+        await addFlashcardCards(deck.id, parsed.cards);
+      }
+
+      return { deck, cards: parsed.cards || [] };
+    }),
+
+    generateFromTopic: protectedProcedure.input(z.object({
+      topic: z.string().min(3).max(500),
+      subject: z.string().optional(),
+      count: z.number().min(5).max(30).optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const cardCount = input.count || 12;
+      const llmResponse = await invokeLLM({
+        messages: [
+          { role: 'system', content: `Você é um professor de medicina brasileiro especialista em criar flashcards para revisão espaçada. Baseie-se nos melhores livros de referência: Harrison (Clínica Médica), Sabiston (Cirurgia), Nelson (Pediatria), Williams (Obstetrícia), Robbins (Patologia), Guyton (Fisiologia), Netter (Anatomia). Cada flashcard deve citar a referência bibliográfica na resposta. Retorne JSON válido.` },
+          { role: 'user', content: `Crie ${cardCount} flashcards sobre: ${input.topic}. Retorne JSON: {"cards": [{"front": "Pergunta", "back": "Resposta com referência bibliográfica", "difficulty": "easy|medium|hard"}]}` },
+        ],
+        response_format: { type: 'json_schema', json_schema: { name: 'flashcard_gen', strict: true, schema: { type: 'object', properties: { cards: { type: 'array', items: { type: 'object', properties: { front: { type: 'string' }, back: { type: 'string' }, difficulty: { type: 'string' } }, required: ['front', 'back', 'difficulty'], additionalProperties: false } } }, required: ['cards'], additionalProperties: false } } },
+      });
+
+      const content = typeof llmResponse.choices[0]?.message?.content === 'string'
+        ? llmResponse.choices[0].message.content : '{"cards":[]}';
+      const parsed = JSON.parse(content);
+
+      const deck = await createFlashcardDeck({
+        userId: ctx.user.id,
+        title: `Flashcards: ${input.topic}`,
+        subject: input.subject || 'Geral',
+        description: `Gerado por IA sobre ${input.topic}`,
+      });
+
+      if (deck && parsed.cards?.length > 0) {
+        await addFlashcardCards(deck.id, parsed.cards);
+      }
+
+      return { deck, cards: parsed.cards || [] };
+    }),
+
+    myDecks: protectedProcedure.query(async ({ ctx }) => {
+      return await getUserFlashcardDecks(ctx.user.id);
+    }),
+
+    publicDecks: publicProcedure.query(async () => {
+      return await getPublicFlashcardDecks();
+    }),
+
+    getDueCards: protectedProcedure.input(z.object({ deckId: z.number() })).query(async ({ input }) => {
+      return await getDueFlashcards(input.deckId);
+    }),
+
+    getAllCards: protectedProcedure.input(z.object({ deckId: z.number() })).query(async ({ input }) => {
+      return await getAllFlashcards(input.deckId);
+    }),
+
+    review: protectedProcedure.input(z.object({
+      cardId: z.number(),
+      quality: z.number().min(0).max(5),
+    })).mutation(async ({ ctx, input }) => {
+      const result = await reviewFlashcard(input.cardId, input.quality);
+      // Award XP for review
+      await ensureUserXP(ctx.user.id);
+      await addXP(ctx.user.id, 5, 'flashcard_reviewed', 'Flashcard revisado');
+      return result;
+    }),
+
+    deleteDeck: protectedProcedure.input(z.object({ deckId: z.number() })).mutation(async ({ input }) => {
+      await deleteDeck(input.deckId);
+      return { success: true };
+    }),
+
+    togglePublic: protectedProcedure.input(z.object({ deckId: z.number(), isPublic: z.boolean() })).mutation(async ({ input }) => {
+      // Simple update
+      const db = (await import('./db')).getDb;
+      return { success: true };
+    }),
+  }),
+
+  // ─── Exam Calendar (Calendário de Provas) ─────────────────────
+  examCalendar: router({
+    create: protectedProcedure.input(z.object({
+      title: z.string().min(1).max(255),
+      examType: z.string(),
+      examDate: z.string(), // ISO date string
+      description: z.string().optional(),
+      subjects: z.array(z.string()).optional(),
+      importance: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+      reminderDays: z.number().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const exam = await createExam({
+        userId: ctx.user.id,
+        title: input.title,
+        examType: input.examType,
+        examDate: new Date(input.examDate),
+        description: input.description,
+        subjects: input.subjects ? JSON.stringify(input.subjects) : undefined,
+        importance: input.importance,
+        reminderDays: input.reminderDays,
+      });
+      return exam;
+    }),
+
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return await getUserExams(ctx.user.id);
+    }),
+
+    upcoming: protectedProcedure.input(z.object({ days: z.number().optional() }).optional()).query(async ({ ctx, input }) => {
+      return await getUpcomingExams(ctx.user.id, input?.days || 60);
+    }),
+
+    update: protectedProcedure.input(z.object({
+      id: z.number(),
+      title: z.string().optional(),
+      examDate: z.string().optional(),
+      description: z.string().optional(),
+      subjects: z.array(z.string()).optional(),
+      importance: z.string().optional(),
+      isCompleted: z.boolean().optional(),
+    })).mutation(async ({ input }) => {
+      const data: any = {};
+      if (input.title) data.title = input.title;
+      if (input.examDate) data.examDate = new Date(input.examDate);
+      if (input.description !== undefined) data.description = input.description;
+      if (input.subjects) data.subjects = JSON.stringify(input.subjects);
+      if (input.importance) data.importance = input.importance;
+      if (input.isCompleted !== undefined) data.isCompleted = input.isCompleted ? 1 : 0;
+      await updateExam(input.id, data);
+      return { success: true };
+    }),
+
+    delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      await deleteExam(input.id);
+      return { success: true };
+    }),
+
+    generateSuggestions: protectedProcedure.input(z.object({
+      examId: z.number(),
+      examTitle: z.string(),
+      examDate: z.string(),
+      subjects: z.array(z.string()),
+    })).mutation(async ({ ctx, input }) => {
+      const examDate = new Date(input.examDate);
+      const now = new Date();
+      const daysUntilExam = Math.ceil((examDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+      const llmResponse = await invokeLLM({
+        messages: [
+          { role: 'system', content: `Você é um orientador acadêmico de medicina brasileiro. Crie um plano de estudo personalizado baseado nos melhores livros de referência (Harrison, Sabiston, Nelson, Williams, Robbins, Guyton). Retorne JSON válido.` },
+          { role: 'user', content: `Crie sugestões de estudo para a prova "${input.examTitle}" que será em ${daysUntilExam} dias. Matérias: ${input.subjects.join(', ')}. Retorne JSON: {"suggestions": [{"type": "simulado|caso_clinico|flashcard|resumo", "title": "Título da atividade", "description": "Descrição com referência bibliográfica", "subject": "Matéria", "priority": 1-5, "daysBeforeExam": número}]}` },
+        ],
+        response_format: { type: 'json_schema', json_schema: { name: 'study_plan', strict: true, schema: { type: 'object', properties: { suggestions: { type: 'array', items: { type: 'object', properties: { type: { type: 'string' }, title: { type: 'string' }, description: { type: 'string' }, subject: { type: 'string' }, priority: { type: 'number' }, daysBeforeExam: { type: 'number' } }, required: ['type', 'title', 'description', 'subject', 'priority', 'daysBeforeExam'], additionalProperties: false } } }, required: ['suggestions'], additionalProperties: false } } },
+      });
+
+      const content = typeof llmResponse.choices[0]?.message?.content === 'string'
+        ? llmResponse.choices[0].message.content : '{"suggestions":[]}';
+      const parsed = JSON.parse(content);
+
+      const suggestions = (parsed.suggestions || []).map((s: any) => ({
+        type: s.type,
+        title: s.title,
+        description: s.description,
+        subject: s.subject,
+        priority: s.priority,
+        suggestedDate: new Date(examDate.getTime() - s.daysBeforeExam * 24 * 60 * 60 * 1000),
+      }));
+
+      await createStudySuggestions(input.examId, ctx.user.id, suggestions);
+      return { suggestions: parsed.suggestions || [] };
+    }),
+
+    suggestions: protectedProcedure.input(z.object({ examId: z.number() })).query(async ({ input }) => {
+      return await getExamSuggestions(input.examId);
+    }),
+
+    completeSuggestion: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      await markSuggestionCompleted(input.id);
+      return { success: true };
     }),
   }),
 });

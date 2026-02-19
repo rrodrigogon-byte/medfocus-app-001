@@ -1,6 +1,6 @@
-import { eq, and, sql, desc, count, avg } from "drizzle-orm";
+import { eq, and, sql, desc, count, avg, gte, lte, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, userProgress, xpLog, studySessions, classrooms, enrollments, activities, submissions, generatedMaterials, libraryMaterials, userSavedMaterials, materialReviews, pubmedArticles, userStudyHistory, sharedTemplates, studyTemplates, studyRooms, studyRoomParticipants, studyRoomMessages, sharedNotes, calendarEvents, revisionSuggestions, simulados, simuladoQuestions, subjectSubscriptions, materialNotifications, weeklyGoals, userXP, xpActivities, clinicalCases, questionBattles, smartSummaries, socialFeed, socialFeedLikes, socialFeedComments } from "../drizzle/schema";
+import { InsertUser, users, userProgress, xpLog, studySessions, classrooms, enrollments, activities, submissions, generatedMaterials, libraryMaterials, userSavedMaterials, materialReviews, pubmedArticles, userStudyHistory, sharedTemplates, studyTemplates, studyRooms, studyRoomParticipants, studyRoomMessages, sharedNotes, calendarEvents, revisionSuggestions, simulados, simuladoQuestions, subjectSubscriptions, materialNotifications, weeklyGoals, userXP, xpActivities, clinicalCases, questionBattles, smartSummaries, socialFeed, socialFeedLikes, socialFeedComments, flashcardDecks, flashcardCards, examCalendar, studySuggestions } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -1575,4 +1575,146 @@ export async function getPerformanceBySpecialty(userId: number) {
     correct: sql<number>`SUM(CASE WHEN ${simuladoQuestions.timesCorrect} > 0 THEN 1 ELSE 0 END)`,
   }).from(simuladoQuestions).groupBy(simuladoQuestions.area);
   return results;
+}
+
+
+// ─── Flashcard Deck & Card Queries (SM-2) ───────────────────────
+
+export async function createFlashcardDeck(data: { userId: number; title: string; subject: string; description?: string; sourceSummaryId?: number; isPublic?: number }) {
+  const db = await getDb(); if (!db) return null;
+  await db.insert(flashcardDecks).values({ ...data, isPublic: data.isPublic ?? 0 });
+  const result = await db.select().from(flashcardDecks).where(and(eq(flashcardDecks.userId, data.userId), eq(flashcardDecks.title, data.title))).orderBy(desc(flashcardDecks.createdAt)).limit(1);
+  return result[0] || null;
+}
+
+export async function getUserFlashcardDecks(userId: number) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(flashcardDecks).where(eq(flashcardDecks.userId, userId)).orderBy(desc(flashcardDecks.createdAt));
+}
+
+export async function getPublicFlashcardDecks(limit = 20) {
+  const db = await getDb(); if (!db) return [];
+  const decks = await db.select().from(flashcardDecks).where(eq(flashcardDecks.isPublic, 1)).orderBy(desc(flashcardDecks.createdAt)).limit(limit);
+  if (decks.length === 0) return [];
+  const userIds = Array.from(new Set(decks.map(d => d.userId)));
+  const userList = await db.select({ id: users.id, name: users.name }).from(users).where(sql`${users.id} IN (${sql.join(userIds.map(id => sql`${id}`), sql`, `)})`);
+  return decks.map(d => ({ ...d, userName: userList.find(u => u.id === d.userId)?.name || 'Anônimo' }));
+}
+
+export async function addFlashcardCards(deckId: number, cards: { front: string; back: string; difficulty?: string }[]) {
+  const db = await getDb(); if (!db) return;
+  for (const card of cards) {
+    await db.insert(flashcardCards).values({ deckId, front: card.front, back: card.back, difficulty: card.difficulty || 'medium' });
+  }
+  await db.update(flashcardDecks).set({ cardCount: cards.length }).where(eq(flashcardDecks.id, deckId));
+}
+
+export async function getDueFlashcards(deckId: number, limit = 20) {
+  const db = await getDb(); if (!db) return [];
+  const now = new Date();
+  return db.select().from(flashcardCards).where(and(eq(flashcardCards.deckId, deckId), lte(flashcardCards.nextReviewDate, now))).orderBy(asc(flashcardCards.nextReviewDate)).limit(limit);
+}
+
+export async function getAllFlashcards(deckId: number) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(flashcardCards).where(eq(flashcardCards.deckId, deckId)).orderBy(asc(flashcardCards.id));
+}
+
+export async function reviewFlashcard(cardId: number, quality: number) {
+  // SM-2 algorithm: quality 0-5 (0=blackout, 5=perfect)
+  const db = await getDb(); if (!db) return null;
+  const card = await db.select().from(flashcardCards).where(eq(flashcardCards.id, cardId)).limit(1);
+  if (card.length === 0) return null;
+  const c = card[0];
+
+  let ef = c.easeFactor;
+  let reps = c.repetitions;
+  let interval = c.interval;
+
+  if (quality < 3) {
+    // Reset
+    reps = 0;
+    interval = 0;
+  } else {
+    if (reps === 0) {
+      interval = 1;
+    } else if (reps === 1) {
+      interval = 6;
+    } else {
+      interval = Math.round(interval * ef);
+    }
+    reps += 1;
+  }
+
+  ef = ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+  if (ef < 1.3) ef = 1.3;
+
+  const nextReview = new Date();
+  nextReview.setDate(nextReview.getDate() + interval);
+
+  await db.update(flashcardCards).set({
+    easeFactor: ef,
+    interval,
+    repetitions: reps,
+    nextReviewDate: nextReview,
+    lastReviewDate: new Date(),
+  }).where(eq(flashcardCards.id, cardId));
+
+  return { easeFactor: ef, interval, repetitions: reps, nextReviewDate: nextReview };
+}
+
+export async function deleteDeck(deckId: number) {
+  const db = await getDb(); if (!db) return;
+  await db.delete(flashcardCards).where(eq(flashcardCards.deckId, deckId));
+  await db.delete(flashcardDecks).where(eq(flashcardDecks.id, deckId));
+}
+
+// ─── Exam Calendar Queries ──────────────────────────────────────
+
+export async function createExam(data: { userId: number; title: string; examType: string; examDate: Date; description?: string; subjects?: string; importance?: string; reminderDays?: number }) {
+  const db = await getDb(); if (!db) return null;
+  await db.insert(examCalendar).values({ ...data, importance: data.importance || 'high', reminderDays: data.reminderDays || 7 });
+  const result = await db.select().from(examCalendar).where(eq(examCalendar.userId, data.userId)).orderBy(desc(examCalendar.createdAt)).limit(1);
+  return result[0] || null;
+}
+
+export async function getUserExams(userId: number) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(examCalendar).where(eq(examCalendar.userId, userId)).orderBy(asc(examCalendar.examDate));
+}
+
+export async function getUpcomingExams(userId: number, days = 30) {
+  const db = await getDb(); if (!db) return [];
+  const now = new Date();
+  const future = new Date();
+  future.setDate(future.getDate() + days);
+  return db.select().from(examCalendar).where(and(eq(examCalendar.userId, userId), gte(examCalendar.examDate, now), lte(examCalendar.examDate, future), eq(examCalendar.isCompleted, 0))).orderBy(asc(examCalendar.examDate));
+}
+
+export async function updateExam(id: number, data: Partial<{ title: string; examDate: Date; description: string; subjects: string; importance: string; isCompleted: number }>) {
+  const db = await getDb(); if (!db) return;
+  await db.update(examCalendar).set(data as any).where(eq(examCalendar.id, id));
+}
+
+export async function deleteExam(id: number) {
+  const db = await getDb(); if (!db) return;
+  await db.delete(studySuggestions).where(eq(studySuggestions.examId, id));
+  await db.delete(examCalendar).where(eq(examCalendar.id, id));
+}
+
+export async function createStudySuggestions(examId: number, userId: number, suggestions: { type: string; title: string; description: string; subject?: string; priority: number; suggestedDate: Date }[]) {
+  const db = await getDb(); if (!db) return;
+  for (const s of suggestions) {
+    await db.insert(studySuggestions).values({ userId, examId, suggestionType: s.type, title: s.title, description: s.description, subject: s.subject, priority: s.priority, suggestedDate: s.suggestedDate });
+  }
+}
+
+export async function getExamSuggestions(examId: number) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(studySuggestions).where(eq(studySuggestions.examId, examId)).orderBy(asc(studySuggestions.suggestedDate));
+}
+
+export async function markSuggestionCompleted(id: number) {
+  const db = await getDb(); if (!db) return;
+  await db.update(studySuggestions).set({ isCompleted: 1 }).where(eq(studySuggestions.id, id));
 }
