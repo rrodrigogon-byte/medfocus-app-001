@@ -117,3 +117,13 @@
 - [x] Exportação de relatórios de desempenho em PDF (simulados)
 - [x] Exportação de relatório de progresso do calendário em PDF
 - [x] Relatório PDF com gráficos de desempenho por área médica
+- [x] Baixar e parsear prova ENAMED 2024 (questões reais com gabarito oficial INEP) — ENAMED 2025 foi a 1ª edição, não existe 2024
+- [x] Baixar e parsear prova REVALIDA 2024.1 (questões reais com gabarito oficial INEP)
+- [x] Expandir banco de questões para 172 questões reais (ENAMED 2025 + REVALIDA 2024/1 + REVALIDA 2024/2)
+- [x] Filtro por dificuldade (fácil/médio/difícil) nas questões de simulados
+- [x] Taxa de acerto da comunidade por questão (estatísticas colaborativas)
+- [x] Dashboard de progresso unificado com métricas consolidadas
+- [x] Gráfico de evolução temporal (simulados, flashcards, quizzes, SM-2)
+- [x] Modo offline completo para questões reais e flashcards
+- [x] Service Worker para cache de questões e materiais de estudo
+- [x] Sincronização de resultados offline quando reconectar

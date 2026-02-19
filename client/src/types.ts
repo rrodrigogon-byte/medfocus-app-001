@@ -108,7 +108,9 @@ export type View =
   | 'atlas'
   | 'studyRooms'
   | 'calendar'
-  | 'reports';
+  | 'reports'
+  | 'progress'
+  | 'offline';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {

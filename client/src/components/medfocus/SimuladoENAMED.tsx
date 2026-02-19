@@ -92,7 +92,7 @@ function getRealQuestionsByArea(areaIds: string[], count: number, examType?: str
     const enamed = filtered.filter(q => q.source === 'ENAMED_2025');
     if (enamed.length >= count * 0.5) filtered = enamed;
   } else if (examType === 'revalida') {
-    const revalida = filtered.filter(q => q.source === 'REVALIDA_2024');
+    const revalida = filtered.filter(q => q.source === 'REVALIDA_2024_1' || q.source === 'REVALIDA_2024_2');
     if (revalida.length >= count * 0.5) filtered = revalida;
   }
   
@@ -180,15 +180,14 @@ function RealQuestionsBanner() {
               <Badge variant="secondary" className="text-xs">Domínio Público</Badge>
             </h3>
             <p className="text-xs text-muted-foreground mt-1">
-              {QUESTION_STATS.total} questões reais extraídas das provas oficiais do ENAMED 2025 e REVALIDA 2024.2 com gabarito definitivo do INEP.
+              {QUESTION_STATS.total} questões reais extraídas das provas oficiais do ENAMED 2025, REVALIDA 2024/1 e REVALIDA 2024/2 com gabarito definitivo do INEP.
             </p>
             <div className="flex flex-wrap gap-3 mt-2">
-              <span className="text-xs bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded-full">
-                ENAMED 2025: {QUESTION_STATS.bySource.ENAMED_2025} questões
-              </span>
-              <span className="text-xs bg-green-500/10 text-green-600 px-2 py-0.5 rounded-full">
-                REVALIDA 2024: {QUESTION_STATS.bySource.REVALIDA_2024} questões
-              </span>
+              {Object.entries(QUESTION_STATS.bySource).map(([src, count]) => (
+                <span key={src} className="text-xs bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded-full">
+                  {src.replace(/_/g, ' ')}: {count as number} questões
+                </span>
+              ))}
             </div>
             <div className="flex flex-wrap gap-2 mt-2">
               {Object.entries(QUESTION_STATS.byArea).map(([area, count]) => (
