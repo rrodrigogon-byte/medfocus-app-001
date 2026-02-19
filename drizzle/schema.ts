@@ -609,3 +609,96 @@ export const xpActivities = mysqlTable("xp_activities", {
 
 export type XPActivity = typeof xpActivities.$inferSelect;
 export type InsertXPActivity = typeof xpActivities.$inferInsert;
+
+// ─── Clinical Cases (Casos Clínicos Interativos) ──────────────
+export const clinicalCases = mysqlTable("clinical_cases", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  specialty: varchar("specialty", { length: 100 }).notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
+  difficulty: mysqlEnum("caseDifficulty", ["easy", "medium", "hard"]).notNull().default("medium"),
+  patientInfo: text("patientInfo").notNull(),
+  conversationHistory: json("conversationHistory"),
+  currentPhase: mysqlEnum("currentPhase", ["anamnesis", "physical_exam", "lab_tests", "hypothesis", "treatment", "completed"]).notNull().default("anamnesis"),
+  finalDiagnosis: varchar("finalDiagnosis", { length: 500 }),
+  score: int("score"),
+  xpEarned: int("xpEarned"),
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type ClinicalCase = typeof clinicalCases.$inferSelect;
+export type InsertClinicalCase = typeof clinicalCases.$inferInsert;
+
+// ─── Question Battles (Modo Batalha) ──────────────────────────
+export const questionBattles = mysqlTable("question_battles", {
+  id: int("id").autoincrement().primaryKey(),
+  challengerId: int("challengerId").notNull(),
+  opponentId: int("opponentId"),
+  inviteCode: varchar("inviteCode", { length: 20 }).notNull(),
+  status: mysqlEnum("battleStatus", ["waiting", "active", "completed", "expired"]).notNull().default("waiting"),
+  specialty: varchar("battleSpecialty", { length: 100 }),
+  totalQuestions: int("totalQuestions").notNull().default(10),
+  challengerScore: int("challengerScore").default(0),
+  opponentScore: int("opponentScore").default(0),
+  currentQuestionIndex: int("currentQuestionIndex").default(0),
+  questionIds: json("questionIds"),
+  challengerAnswers: json("challengerAnswers"),
+  opponentAnswers: json("opponentAnswers"),
+  winnerId: int("winnerId"),
+  completedAt: timestamp("battleCompletedAt"),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("battleCreatedAt").defaultNow().notNull(),
+});
+export type QuestionBattle = typeof questionBattles.$inferSelect;
+export type InsertQuestionBattle = typeof questionBattles.$inferInsert;
+
+// ─── Smart Summaries (Resumos Inteligentes) ───────────────────
+export const smartSummaries = mysqlTable("smart_summaries", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  topic: varchar("topic", { length: 500 }).notNull(),
+  specialty: varchar("summarySpecialty", { length: 100 }),
+  content: text("summaryContent").notNull(),
+  mnemonics: json("mnemonics"),
+  isPublic: boolean("isPublic").default(false),
+  shareCode: varchar("shareCode", { length: 20 }),
+  likes: int("summaryLikes").default(0),
+  createdAt: timestamp("summaryCreatedAt").defaultNow().notNull(),
+});
+export type SmartSummary = typeof smartSummaries.$inferSelect;
+export type InsertSmartSummary = typeof smartSummaries.$inferInsert;
+
+// ─── Social Feed (Feed de Conquistas) ─────────────────────────
+export const socialFeed = mysqlTable("social_feed", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  eventType: mysqlEnum("feedEventType", [
+    "badge_earned", "simulado_completed", "streak_milestone",
+    "clinical_case_solved", "battle_won", "level_up",
+    "goal_completed", "summary_shared"
+  ]).notNull(),
+  title: varchar("feedTitle", { length: 300 }).notNull(),
+  description: text("feedDescription"),
+  metadata: json("feedMetadata"),
+  likes: int("feedLikes").default(0),
+  createdAt: timestamp("feedCreatedAt").defaultNow().notNull(),
+});
+export type SocialFeedItem = typeof socialFeed.$inferSelect;
+export type InsertSocialFeedItem = typeof socialFeed.$inferInsert;
+
+export const socialFeedLikes = mysqlTable("social_feed_likes", {
+  id: int("id").autoincrement().primaryKey(),
+  feedItemId: int("feedItemId").notNull(),
+  userId: int("userId").notNull(),
+  createdAt: timestamp("likeCreatedAt").defaultNow().notNull(),
+});
+export type SocialFeedLike = typeof socialFeedLikes.$inferSelect;
+
+export const socialFeedComments = mysqlTable("social_feed_comments", {
+  id: int("id").autoincrement().primaryKey(),
+  feedItemId: int("commentFeedItemId").notNull(),
+  userId: int("commentUserId").notNull(),
+  content: text("commentContent").notNull(),
+  createdAt: timestamp("commentCreatedAt").defaultNow().notNull(),
+});
+export type SocialFeedComment = typeof socialFeedComments.$inferSelect;

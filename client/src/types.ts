@@ -112,7 +112,12 @@ export type View =
   | 'progress'
   | 'offline'
   | 'goals'
-  | 'leaderboard';
+  | 'leaderboard'
+  | 'clinicalCases'
+  | 'battle'
+  | 'heatmap'
+  | 'smartSummary'
+  | 'socialFeed';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {

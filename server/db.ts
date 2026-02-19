@@ -1,6 +1,6 @@
 import { eq, and, sql, desc, count, avg } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, userProgress, xpLog, studySessions, classrooms, enrollments, activities, submissions, generatedMaterials, libraryMaterials, userSavedMaterials, materialReviews, pubmedArticles, userStudyHistory, sharedTemplates, studyTemplates, studyRooms, studyRoomParticipants, studyRoomMessages, sharedNotes, calendarEvents, revisionSuggestions, simulados, simuladoQuestions, subjectSubscriptions, materialNotifications, weeklyGoals, userXP, xpActivities } from "../drizzle/schema";
+import { InsertUser, users, userProgress, xpLog, studySessions, classrooms, enrollments, activities, submissions, generatedMaterials, libraryMaterials, userSavedMaterials, materialReviews, pubmedArticles, userStudyHistory, sharedTemplates, studyTemplates, studyRooms, studyRoomParticipants, studyRoomMessages, sharedNotes, calendarEvents, revisionSuggestions, simulados, simuladoQuestions, subjectSubscriptions, materialNotifications, weeklyGoals, userXP, xpActivities, clinicalCases, questionBattles, smartSummaries, socialFeed, socialFeedLikes, socialFeedComments } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -1398,4 +1398,181 @@ export async function getPublicProfile(userId: number) {
     recentSimulados,
     goalsCompleted: Number(goalsCompleted[0]?.cnt || 0),
   };
+}
+
+
+// ─── Clinical Cases ─────────────────────────────────────────────
+export async function createClinicalCase(userId: number, data: { specialty: string; title: string; difficulty: string; patientInfo: string }) {
+  const db = await getDb(); if (!db) return null;
+  const [result] = await db.insert(clinicalCases).values({ userId, specialty: data.specialty, title: data.title, difficulty: data.difficulty as any, patientInfo: data.patientInfo, conversationHistory: JSON.stringify([]) });
+  return result.insertId;
+}
+
+export async function getClinicalCase(id: number) {
+  const db = await getDb(); if (!db) return null;
+  const rows = await db.select().from(clinicalCases).where(eq(clinicalCases.id, id));
+  return rows[0] || null;
+}
+
+export async function getUserClinicalCases(userId: number, limit = 20) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(clinicalCases).where(eq(clinicalCases.userId, userId)).orderBy(desc(clinicalCases.createdAt)).limit(limit);
+}
+
+export async function updateClinicalCase(id: number, data: Partial<{ conversationHistory: string; currentPhase: string; finalDiagnosis: string; score: number; xpEarned: number; completedAt: Date }>) {
+  const db = await getDb(); if (!db) return;
+  await db.update(clinicalCases).set(data as any).where(eq(clinicalCases.id, id));
+}
+
+// ─── Question Battles ───────────────────────────────────────────
+export async function createBattle(challengerId: number, data: { inviteCode: string; specialty?: string; totalQuestions: number; questionIds: number[]; expiresAt: Date }) {
+  const db = await getDb(); if (!db) return null;
+  const [result] = await db.insert(questionBattles).values({
+    challengerId, inviteCode: data.inviteCode, specialty: data.specialty || null,
+    totalQuestions: data.totalQuestions, questionIds: JSON.stringify(data.questionIds),
+    challengerAnswers: JSON.stringify({}), opponentAnswers: JSON.stringify({}),
+    expiresAt: data.expiresAt,
+  } as any);
+  return result.insertId;
+}
+
+export async function getBattleByCode(code: string) {
+  const db = await getDb(); if (!db) return null;
+  const rows = await db.select().from(questionBattles).where(eq(questionBattles.inviteCode, code));
+  return rows[0] || null;
+}
+
+export async function getBattle(id: number) {
+  const db = await getDb(); if (!db) return null;
+  const rows = await db.select().from(questionBattles).where(eq(questionBattles.id, id));
+  return rows[0] || null;
+}
+
+export async function getUserBattles(userId: number, limit = 20) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(questionBattles)
+    .where(sql`${questionBattles.challengerId} = ${userId} OR ${questionBattles.opponentId} = ${userId}`)
+    .orderBy(desc(questionBattles.createdAt)).limit(limit);
+}
+
+export async function joinBattle(battleId: number, opponentId: number) {
+  const db = await getDb(); if (!db) return;
+  await db.update(questionBattles).set({ opponentId, status: "active" as any }).where(eq(questionBattles.id, battleId));
+}
+
+export async function updateBattle(id: number, data: Partial<{ challengerScore: number; opponentScore: number; challengerAnswers: string; opponentAnswers: string; currentQuestionIndex: number; status: string; winnerId: number; completedAt: Date }>) {
+  const db = await getDb(); if (!db) return;
+  await db.update(questionBattles).set(data as any).where(eq(questionBattles.id, id));
+}
+
+// ─── Smart Summaries ────────────────────────────────────────────
+export async function createSmartSummary(userId: number, data: { topic: string; specialty?: string; content: string; mnemonics?: any[]; isPublic?: boolean; shareCode?: string }) {
+  const db = await getDb(); if (!db) return null;
+  const [result] = await db.insert(smartSummaries).values({
+    userId, topic: data.topic, specialty: data.specialty || null,
+    content: data.content, mnemonics: data.mnemonics ? JSON.stringify(data.mnemonics) : null,
+    isPublic: data.isPublic || false, shareCode: data.shareCode || null,
+  } as any);
+  return result.insertId;
+}
+
+export async function getUserSummaries(userId: number, limit = 30) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(smartSummaries).where(eq(smartSummaries.userId, userId)).orderBy(desc(smartSummaries.createdAt)).limit(limit);
+}
+
+export async function getPublicSummaries(limit = 30) {
+  const db = await getDb(); if (!db) return [];
+  return db.select({ summary: smartSummaries, user: { name: users.name, id: users.id } })
+    .from(smartSummaries)
+    .leftJoin(users, eq(smartSummaries.userId, users.id))
+    .where(eq(smartSummaries.isPublic, true))
+    .orderBy(desc(smartSummaries.createdAt)).limit(limit);
+}
+
+export async function getSummaryByShareCode(code: string) {
+  const db = await getDb(); if (!db) return null;
+  const rows = await db.select({ summary: smartSummaries, user: { name: users.name } })
+    .from(smartSummaries)
+    .leftJoin(users, eq(smartSummaries.userId, users.id))
+    .where(eq(smartSummaries.shareCode, code));
+  return rows[0] || null;
+}
+
+export async function toggleSummaryPublic(id: number, isPublic: boolean) {
+  const db = await getDb(); if (!db) return;
+  await db.update(smartSummaries).set({ isPublic } as any).where(eq(smartSummaries.id, id));
+}
+
+// ─── Social Feed ────────────────────────────────────────────────
+export async function postToFeed(userId: number, data: { eventType: string; title: string; description?: string; metadata?: any }) {
+  const db = await getDb(); if (!db) return null;
+  const [result] = await db.insert(socialFeed).values({
+    userId, eventType: data.eventType as any, title: data.title,
+    description: data.description || null,
+    metadata: data.metadata ? JSON.stringify(data.metadata) : null,
+  } as any);
+  return result.insertId;
+}
+
+export async function getFeed(limit = 50, universityId?: string) {
+  const db = await getDb(); if (!db) return [];
+  let query = db.select({
+    feed: socialFeed,
+    user: { name: users.name, id: users.id, universityId: users.universityId },
+  })
+    .from(socialFeed)
+    .leftJoin(users, eq(socialFeed.userId, users.id))
+    .orderBy(desc(socialFeed.createdAt))
+    .limit(limit);
+  return query;
+}
+
+export async function likeFeedItem(feedItemId: number, userId: number) {
+  const db = await getDb(); if (!db) return;
+  // Check if already liked
+  const existing = await db.select().from(socialFeedLikes)
+    .where(and(eq(socialFeedLikes.feedItemId, feedItemId), eq(socialFeedLikes.userId, userId)));
+  if (existing.length > 0) {
+    // Unlike
+    await db.delete(socialFeedLikes).where(and(eq(socialFeedLikes.feedItemId, feedItemId), eq(socialFeedLikes.userId, userId)));
+    await db.update(socialFeed).set({ likes: sql`${socialFeed.likes} - 1` } as any).where(eq(socialFeed.id, feedItemId));
+    return { liked: false };
+  }
+  await db.insert(socialFeedLikes).values({ feedItemId, userId } as any);
+  await db.update(socialFeed).set({ likes: sql`${socialFeed.likes} + 1` } as any).where(eq(socialFeed.id, feedItemId));
+  return { liked: true };
+}
+
+export async function commentOnFeed(feedItemId: number, userId: number, content: string) {
+  const db = await getDb(); if (!db) return null;
+  const [result] = await db.insert(socialFeedComments).values({ feedItemId, userId, content } as any);
+  return result.insertId;
+}
+
+export async function getFeedComments(feedItemId: number) {
+  const db = await getDb(); if (!db) return [];
+  return db.select({ comment: socialFeedComments, user: { name: users.name, id: users.id } })
+    .from(socialFeedComments)
+    .leftJoin(users, eq(socialFeedComments.userId, users.id))
+    .where(eq(socialFeedComments.feedItemId, feedItemId))
+    .orderBy(desc(socialFeedComments.createdAt));
+}
+
+export async function getUserFeedLikes(userId: number) {
+  const db = await getDb(); if (!db) return [];
+  const rows = await db.select({ feedItemId: socialFeedLikes.feedItemId }).from(socialFeedLikes).where(eq(socialFeedLikes.userId, userId));
+  return rows.map(r => r.feedItemId);
+}
+
+// ─── Performance Heatmap Data ───────────────────────────────────
+export async function getPerformanceBySpecialty(userId: number) {
+  const db = await getDb(); if (!db) return [];
+  // Get simulado results grouped by area
+  const results = await db.select({
+    area: simuladoQuestions.area,
+    total: count(),
+    correct: sql<number>`SUM(CASE WHEN ${simuladoQuestions.timesCorrect} > 0 THEN 1 ELSE 0 END)`,
+  }).from(simuladoQuestions).groupBy(simuladoQuestions.area);
+  return results;
 }

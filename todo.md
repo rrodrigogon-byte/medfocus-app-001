@@ -147,3 +147,22 @@
 - [x] Página de perfil compartilhável via link (/perfil/:userId)
 - [x] Histórico de simulados no perfil
 - [x] Rota pública tRPC para visualizar perfil de outros alunos (profile.public)
+- [x] Casos Clínicos Interativos com IA — simulação de diagnóstico passo a passo (anamnese → exame físico → exames → hipótese → conduta)
+- [x] Banco de casos clínicos por especialidade com feedback inteligente da IA
+- [x] Sistema de pontuação e XP por caso clínico resolvido
+- [x] Modo Batalha de Questões — duelo 1v1 entre alunos com questões aleatórias
+- [x] Tabela de batalhas no banco de dados (question_battles)
+- [x] Sistema de matchmaking e convite por link
+- [x] Ranking de vitórias e taxa de acerto em batalhas
+- [x] Mapa de Calor de Desempenho — radar visual por especialidade médica
+- [x] Gráfico radar interativo com desempenho por área (Clínica, Cirurgia, Pediatria, GO, etc.)
+- [x] Identificação automática de pontos fracos e sugestão de estudo
+- [x] Comparação com média da comunidade
+- [x] Gerador de Resumos Inteligentes por IA — resumo de qualquer tema médico sob demanda
+- [x] Input de tema + geração de resumo estruturado com tópicos, tabelas e mnemônicos
+- [x] Salvar resumos na biblioteca pessoal do aluno
+- [x] Compartilhar resumos com outros alunos
+- [x] Feed Social de Conquistas — timeline de atividades dos colegas
+- [x] Feed de atividades recentes (badges, simulados, streaks, casos clínicos)
+- [x] Sistema de curtidas e comentários nas conquistas
+- [x] Filtro por universidade e por amigos

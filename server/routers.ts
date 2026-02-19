@@ -8,7 +8,7 @@ import { ENV } from "./_core/env";
 import { z } from "zod";
 import Stripe from "stripe";
 import { PLANS } from "./products";
-import { getOrCreateProgress, addXp, getXpHistory, logStudySession, updateUserProfile, createClassroom, getClassroomsByProfessor, getClassroomsByStudent, getClassroomById, joinClassroom, getEnrollments, removeEnrollment, createActivity, getActivitiesByClassroom, updateActivity, submitActivity, gradeSubmission, getSubmissionsByActivity, getStudentSubmissions, getClassroomAnalytics, findGeneratedMaterial, saveGeneratedMaterial, getUserMaterialHistory, getGeneratedMaterialById, rateMaterial, searchLibraryMaterials, saveLibraryMaterial, getLibraryMaterialById, toggleSaveMaterial, getUserSavedMaterialIds, getUserSavedMaterialsFull, getPopularLibraryMaterials, searchPubmedCache, savePubmedArticle, getPubmedArticleByPmid, addMaterialReview, getMaterialReviews, markReviewHelpful, trackStudyActivity, getUserStudyHistoryData, getUserTopSubjects, getUserQuizPerformance, subscribeToSubject, unsubscribeFromSubject, getUserSubscriptions, getUserNotifications, getUnreadNotificationCount, markNotificationRead, markAllNotificationsRead, notifySubscribersOfNewMaterial, saveStudyTemplate, getStudyTemplates, getStudyTemplateById, getUserTemplates, shareTemplate, getSharedTemplateByCode, getSharedTemplateFeed, likeSharedTemplate, createStudyRoom, getStudyRooms, joinStudyRoom, getStudyRoomById, sendRoomMessage, getRoomMessages, createSharedNote, getRoomNotes, createCalendarEvent, getCalendarEvents, updateCalendarEvent, deleteCalendarEvent, createRevisionSuggestions, getRevisionSuggestions, completeRevision, createSimulado, getSimulados, completeSimulado, getSimuladoQuestions, saveSimuladoQuestion, getSimuladoStats, getWeeklyGoals, createWeeklyGoal, updateGoalProgress, incrementGoalProgress, deleteWeeklyGoal, getUserXP, ensureUserXP, addXP, updateStreak, updateXPStats, getLeaderboard, getXPActivities, getPublicProfile } from "./db";
+import { getOrCreateProgress, addXp, getXpHistory, logStudySession, updateUserProfile, createClassroom, getClassroomsByProfessor, getClassroomsByStudent, getClassroomById, joinClassroom, getEnrollments, removeEnrollment, createActivity, getActivitiesByClassroom, updateActivity, submitActivity, gradeSubmission, getSubmissionsByActivity, getStudentSubmissions, getClassroomAnalytics, findGeneratedMaterial, saveGeneratedMaterial, getUserMaterialHistory, getGeneratedMaterialById, rateMaterial, searchLibraryMaterials, saveLibraryMaterial, getLibraryMaterialById, toggleSaveMaterial, getUserSavedMaterialIds, getUserSavedMaterialsFull, getPopularLibraryMaterials, searchPubmedCache, savePubmedArticle, getPubmedArticleByPmid, addMaterialReview, getMaterialReviews, markReviewHelpful, trackStudyActivity, getUserStudyHistoryData, getUserTopSubjects, getUserQuizPerformance, subscribeToSubject, unsubscribeFromSubject, getUserSubscriptions, getUserNotifications, getUnreadNotificationCount, markNotificationRead, markAllNotificationsRead, notifySubscribersOfNewMaterial, saveStudyTemplate, getStudyTemplates, getStudyTemplateById, getUserTemplates, shareTemplate, getSharedTemplateByCode, getSharedTemplateFeed, likeSharedTemplate, createStudyRoom, getStudyRooms, joinStudyRoom, getStudyRoomById, sendRoomMessage, getRoomMessages, createSharedNote, getRoomNotes, createCalendarEvent, getCalendarEvents, updateCalendarEvent, deleteCalendarEvent, createRevisionSuggestions, getRevisionSuggestions, completeRevision, createSimulado, getSimulados, completeSimulado, getSimuladoQuestions, saveSimuladoQuestion, getSimuladoStats, getWeeklyGoals, createWeeklyGoal, updateGoalProgress, incrementGoalProgress, deleteWeeklyGoal, getUserXP, ensureUserXP, addXP, updateStreak, updateXPStats, getLeaderboard, getXPActivities, getPublicProfile, createClinicalCase, getClinicalCase, getUserClinicalCases, updateClinicalCase, createBattle, getBattleByCode, getBattle, getUserBattles, joinBattle, updateBattle, createSmartSummary, getUserSummaries, getPublicSummaries, getSummaryByShareCode, toggleSummaryPublic, postToFeed, getFeed, likeFeedItem, commentOnFeed, getFeedComments, getUserFeedLikes, getPerformanceBySpecialty } from "./db";
 
 function getStripe() {
   return new Stripe(ENV.stripeSecretKey, { apiVersion: "2026-01-28.clover" });
@@ -1634,6 +1634,276 @@ Use markdown para formatação.`
     }),
     activities: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async ({ ctx, input }) => {
       return await getXPActivities(ctx.user.id, input.limit || 20);
+    }),
+  }),
+
+  // ─── Clinical Cases (Casos Clínicos Interativos) ────────────
+  clinicalCase: router({
+    start: protectedProcedure.input(z.object({
+      specialty: z.string(),
+      difficulty: z.enum(['easy', 'medium', 'hard']).optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const specialtyPrompts: Record<string, string> = {
+        'Clínica Médica': 'caso de clínica médica (diabetes, hipertensão, pneumonia, ICC, etc.)',
+        'Cirurgia': 'caso cirúrgico (abdome agudo, trauma, hérnias, apendicite, etc.)',
+        'Pediatria': 'caso pediátrico (bronquiolite, desidratação, febre, crescimento, etc.)',
+        'Ginecologia e Obstetrícia': 'caso de ginecologia/obstetrícia (pré-natal, parto, sangramento, etc.)',
+        'Saúde Coletiva': 'caso de saúde pública/coletiva (epidemiologia, vigilância, SUS, etc.)',
+        'Medicina de Família': 'caso de atenção primária/medicina de família',
+        'Psiquiatria': 'caso psiquiátrico (depressão, ansiedade, esquizofrenia, etc.)',
+        'Ortopedia': 'caso ortopédico (fraturas, luxações, lesões musculoesqueléticas)',
+      };
+      const prompt = specialtyPrompts[input.specialty] || `caso clínico de ${input.specialty}`;
+      const difficulty = input.difficulty || 'medium';
+      const diffLabel = difficulty === 'easy' ? 'simples e direto' : difficulty === 'hard' ? 'complexo com diagnóstico diferencial desafiador' : 'moderado';
+
+      const llmResponse = await invokeLLM({
+        messages: [
+          { role: 'system', content: `Você é um professor de medicina experiente. Crie um ${prompt} para um estudante praticar raciocínio clínico. O caso deve ser ${diffLabel}. Responda APENAS em JSON válido.` },
+          { role: 'user', content: `Gere um caso clínico com os seguintes campos JSON:\n{\n  "title": "Título curto do caso",\n  "patientInfo": { "age": number, "sex": "M" ou "F", "chiefComplaint": "queixa principal", "vitalSigns": { "PA": "...", "FC": "...", "FR": "...", "Temp": "...", "SpO2": "..." } },\n  "correctDiagnosis": "diagnóstico correto",\n  "keyFindings": ["achado1", "achado2"],\n  "differentialDiagnoses": ["dd1", "dd2", "dd3"],\n  "recommendedTests": ["exame1", "exame2"],\n  "treatment": "conduta recomendada"\n}` },
+        ],
+        response_format: { type: 'json_object' },
+      });
+
+      const content = typeof llmResponse.choices[0]?.message?.content === 'string'
+        ? llmResponse.choices[0].message.content : '';
+      let caseData;
+      try { caseData = JSON.parse(content); } catch { caseData = { title: 'Caso Clínico', patientInfo: { age: 45, sex: 'M', chiefComplaint: 'Dor torácica', vitalSigns: {} }, correctDiagnosis: 'A definir', keyFindings: [], differentialDiagnoses: [], recommendedTests: [], treatment: '' }; }
+
+      const caseId = await createClinicalCase(ctx.user.id, {
+        specialty: input.specialty,
+        title: caseData.title || 'Caso Clínico',
+        difficulty,
+        patientInfo: JSON.stringify(caseData),
+      });
+
+      return { caseId, caseData };
+    }),
+
+    interact: protectedProcedure.input(z.object({
+      caseId: z.number(),
+      message: z.string(),
+      phase: z.enum(['anamnesis', 'physical_exam', 'lab_tests', 'hypothesis', 'treatment']),
+    })).mutation(async ({ ctx, input }) => {
+      const caseRow = await getClinicalCase(input.caseId);
+      if (!caseRow) throw new TRPCError({ code: 'NOT_FOUND' });
+      const patientData = typeof caseRow.patientInfo === 'string' ? JSON.parse(caseRow.patientInfo) : caseRow.patientInfo;
+      const history = Array.isArray(caseRow.conversationHistory) ? caseRow.conversationHistory as any[] : [];
+
+      const phaseLabels: Record<string, string> = {
+        anamnesis: 'Anamnese — o aluno está fazendo perguntas ao paciente',
+        physical_exam: 'Exame Físico — o aluno está examinando o paciente',
+        lab_tests: 'Exames Complementares — o aluno está solicitando exames',
+        hypothesis: 'Hipótese Diagnóstica — o aluno está formulando diagnósticos',
+        treatment: 'Conduta/Tratamento — o aluno está propondo tratamento',
+      };
+
+      const llmResponse = await invokeLLM({
+        messages: [
+          { role: 'system', content: `Você é um simulador de paciente/caso clínico. O caso é: ${JSON.stringify(patientData)}. Fase atual: ${phaseLabels[input.phase]}. Responda de forma realista como se fosse o paciente (na anamnese) ou como resultados de exames (nos exames). Dê feedback educativo sutil. Responda em português.` },
+          ...history.map((h: any) => ({ role: h.role as any, content: h.content })),
+          { role: 'user' as const, content: input.message },
+        ],
+      });
+
+      const aiResponse = typeof llmResponse.choices[0]?.message?.content === 'string'
+        ? llmResponse.choices[0].message.content : 'Resposta não disponível.';
+
+      const newHistory = [...history, { role: 'user', content: input.message, phase: input.phase }, { role: 'assistant', content: aiResponse, phase: input.phase }];
+      await updateClinicalCase(input.caseId, { conversationHistory: JSON.stringify(newHistory), currentPhase: input.phase });
+
+      return { response: aiResponse, phase: input.phase };
+    }),
+
+    complete: protectedProcedure.input(z.object({
+      caseId: z.number(),
+      diagnosis: z.string(),
+      treatment: z.string(),
+    })).mutation(async ({ ctx, input }) => {
+      const caseRow = await getClinicalCase(input.caseId);
+      if (!caseRow) throw new TRPCError({ code: 'NOT_FOUND' });
+      const patientData = typeof caseRow.patientInfo === 'string' ? JSON.parse(caseRow.patientInfo) : caseRow.patientInfo;
+
+      const llmResponse = await invokeLLM({
+        messages: [
+          { role: 'system', content: 'Você é um professor de medicina avaliando a resposta de um aluno. Responda em JSON: { "score": 0-100, "feedback": "texto", "correctDiagnosis": "...", "wasCorrect": boolean }' },
+          { role: 'user', content: `Caso: ${JSON.stringify(patientData)}\nDiagnóstico do aluno: ${input.diagnosis}\nConduta do aluno: ${input.treatment}\nAvalie a resposta.` },
+        ],
+        response_format: { type: 'json_object' },
+      });
+
+      const content = typeof llmResponse.choices[0]?.message?.content === 'string' ? llmResponse.choices[0].message.content : '{}';
+      let evaluation;
+      try { evaluation = JSON.parse(content); } catch { evaluation = { score: 50, feedback: 'Avaliação não disponível', wasCorrect: false }; }
+
+      const xpEarned = Math.round((evaluation.score || 50) * 1.5);
+      await updateClinicalCase(input.caseId, { finalDiagnosis: input.diagnosis, score: evaluation.score, xpEarned, completedAt: new Date(), currentPhase: 'completed' });
+      await ensureUserXP(ctx.user.id);
+      await addXP(ctx.user.id, xpEarned, 'simulado_completed', `Caso clínico: ${caseRow.title}`);
+      await postToFeed(ctx.user.id, { eventType: 'clinical_case_solved', title: `Resolveu caso clínico: ${caseRow.title}`, description: `Nota: ${evaluation.score}/100 — ${caseRow.specialty}`, metadata: { score: evaluation.score, specialty: caseRow.specialty } });
+
+      return { evaluation, xpEarned };
+    }),
+
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return await getUserClinicalCases(ctx.user.id);
+    }),
+
+    get: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ ctx, input }) => {
+      return await getClinicalCase(input.id);
+    }),
+  }),
+
+  // ─── Question Battles (Modo Batalha) ────────────────────────
+  battle: router({
+    create: protectedProcedure.input(z.object({
+      specialty: z.string().optional(),
+      totalQuestions: z.number().min(5).max(20).optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const totalQ = input.totalQuestions || 10;
+      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const questionIds = Array.from({ length: totalQ }, (_, i) => Math.floor(Math.random() * 463) + 1);
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const battleId = await createBattle(ctx.user.id, { inviteCode: code, specialty: input.specialty, totalQuestions: totalQ, questionIds, expiresAt });
+      return { battleId, inviteCode: code };
+    }),
+
+    join: protectedProcedure.input(z.object({ code: z.string() })).mutation(async ({ ctx, input }) => {
+      const battle = await getBattleByCode(input.code.toUpperCase());
+      if (!battle) throw new TRPCError({ code: 'NOT_FOUND', message: 'Batalha não encontrada' });
+      if (battle.status !== 'waiting') throw new TRPCError({ code: 'BAD_REQUEST', message: 'Batalha já iniciada ou expirada' });
+      if (battle.challengerId === ctx.user.id) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Você não pode entrar na própria batalha' });
+      await joinBattle(battle.id, ctx.user.id);
+      return { battleId: battle.id };
+    }),
+
+    answer: protectedProcedure.input(z.object({
+      battleId: z.number(),
+      questionIndex: z.number(),
+      answerIndex: z.number(),
+      isCorrect: z.boolean(),
+    })).mutation(async ({ ctx, input }) => {
+      const battle = await getBattle(input.battleId);
+      if (!battle) throw new TRPCError({ code: 'NOT_FOUND' });
+      const isChallenger = battle.challengerId === ctx.user.id;
+      const answersField = isChallenger ? 'challengerAnswers' : 'opponentAnswers';
+      const scoreField = isChallenger ? 'challengerScore' : 'opponentScore';
+      const currentAnswers = typeof battle[answersField] === 'string' ? JSON.parse(battle[answersField] as string) : (battle[answersField] || {});
+      currentAnswers[input.questionIndex] = input.answerIndex;
+      const currentScore = (isChallenger ? battle.challengerScore : battle.opponentScore) || 0;
+      const newScore = input.isCorrect ? currentScore + 1 : currentScore;
+
+      const updateData: any = { [answersField]: JSON.stringify(currentAnswers), [scoreField]: newScore };
+
+      // Check if battle is complete
+      const otherAnswers = typeof battle[isChallenger ? 'opponentAnswers' : 'challengerAnswers'] === 'string'
+        ? JSON.parse(battle[isChallenger ? 'opponentAnswers' : 'challengerAnswers'] as string)
+        : (battle[isChallenger ? 'opponentAnswers' : 'challengerAnswers'] || {});
+      const myTotal = Object.keys(currentAnswers).length;
+      const otherTotal = Object.keys(otherAnswers).length;
+      if (myTotal >= battle.totalQuestions && otherTotal >= battle.totalQuestions) {
+        const cScore = isChallenger ? newScore : (battle.challengerScore || 0);
+        const oScore = isChallenger ? (battle.opponentScore || 0) : newScore;
+        updateData.status = 'completed';
+        updateData.completedAt = new Date();
+        updateData.winnerId = cScore > oScore ? battle.challengerId : oScore > cScore ? battle.opponentId : null;
+      }
+
+      await updateBattle(input.battleId, updateData);
+      return { score: newScore, totalAnswered: myTotal };
+    }),
+
+    get: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ ctx, input }) => {
+      const battle = await getBattle(input.id);
+      if (!battle) throw new TRPCError({ code: 'NOT_FOUND' });
+      return battle;
+    }),
+
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return await getUserBattles(ctx.user.id);
+    }),
+  }),
+
+  // ─── Smart Summaries (Resumos Inteligentes) ─────────────────
+  summary: router({
+    generate: protectedProcedure.input(z.object({
+      topic: z.string().min(3).max(500),
+      specialty: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const llmResponse = await invokeLLM({
+        messages: [
+          { role: 'system', content: 'Você é um professor de medicina expert em criar resumos didáticos. Crie um resumo completo e estruturado em Markdown. Inclua: ## Definição, ## Epidemiologia, ## Fisiopatologia, ## Quadro Clínico, ## Diagnóstico, ## Tratamento, ## Mnemônicos (crie mnemônicos criativos em português para memorização). Use tabelas quando apropriado. Seja detalhado mas conciso. Responda em português brasileiro.' },
+          { role: 'user', content: `Crie um resumo completo sobre: ${input.topic}${input.specialty ? ` (área: ${input.specialty})` : ''}` },
+        ],
+      });
+
+      const content = typeof llmResponse.choices[0]?.message?.content === 'string'
+        ? llmResponse.choices[0].message.content : 'Resumo não disponível.';
+
+      // Extract mnemonics
+      const mnemonicRegex = /mnemônico[s]?[:\s]*([^\n]+)/gi;
+      const mnemonics: string[] = [];
+      let match;
+      while ((match = mnemonicRegex.exec(content)) !== null) { mnemonics.push(match[1].trim()); }
+
+      const shareCode = Math.random().toString(36).substring(2, 10);
+      const summaryId = await createSmartSummary(ctx.user.id, {
+        topic: input.topic, specialty: input.specialty,
+        content, mnemonics, shareCode,
+      });
+
+      return { summaryId, content, mnemonics, shareCode };
+    }),
+
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return await getUserSummaries(ctx.user.id);
+    }),
+
+    public: publicProcedure.query(async () => {
+      return await getPublicSummaries();
+    }),
+
+    getByCode: publicProcedure.input(z.object({ code: z.string() })).query(async ({ input }) => {
+      return await getSummaryByShareCode(input.code);
+    }),
+
+    togglePublic: protectedProcedure.input(z.object({ id: z.number(), isPublic: z.boolean() })).mutation(async ({ ctx, input }) => {
+      await toggleSummaryPublic(input.id, input.isPublic);
+      return { success: true };
+    }),
+  }),
+
+  // ─── Social Feed (Feed de Conquistas) ───────────────────────
+  feed: router({
+    list: protectedProcedure.input(z.object({
+      universityId: z.string().optional(),
+    }).optional()).query(async ({ ctx, input }) => {
+      const items = await getFeed(50, input?.universityId);
+      const userLikes = await getUserFeedLikes(ctx.user.id);
+      return items.map(item => ({ ...item, isLiked: userLikes.includes(item.feed.id) }));
+    }),
+
+    like: protectedProcedure.input(z.object({ feedItemId: z.number() })).mutation(async ({ ctx, input }) => {
+      return await likeFeedItem(input.feedItemId, ctx.user.id);
+    }),
+
+    comment: protectedProcedure.input(z.object({
+      feedItemId: z.number(),
+      content: z.string().min(1).max(500),
+    })).mutation(async ({ ctx, input }) => {
+      await commentOnFeed(input.feedItemId, ctx.user.id, input.content);
+      return { success: true };
+    }),
+
+    comments: protectedProcedure.input(z.object({ feedItemId: z.number() })).query(async ({ input }) => {
+      return await getFeedComments(input.feedItemId);
+    }),
+  }),
+
+  // ─── Performance Heatmap ────────────────────────────────────
+  performance: router({
+    bySpecialty: protectedProcedure.query(async ({ ctx }) => {
+      return await getPerformanceBySpecialty(ctx.user.id);
     }),
   }),
 });
