@@ -3,7 +3,8 @@
  * Definir metas (questões, pomodoro, flashcards, simulados)
  * Acompanhar progresso com barras visuais e alertas de cumprimento
  */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useNotifications } from '../../hooks/useNotifications';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -69,11 +70,49 @@ export default function WeeklyGoals() {
     },
   });
 
+  const { sendGoalAlert, settings: notifSettings, permission: notifPermission } = useNotifications();
+  const alertSentRef = useRef<string>(''); // track which week we already alerted
+
   const goals = goalsQuery.data || [];
   const completedCount = goals.filter(g => g.completed).length;
   const totalCount = goals.length;
   const overallProgress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   const isCurrentWeek = currentWeekOffset === 0;
+
+  // ─── Mid-week goal alert (Wednesday check) ────────────────
+  useEffect(() => {
+    if (!isCurrentWeek || goals.length === 0) return;
+    if (notifPermission !== 'granted' || !notifSettings.goalAlertEnabled) return;
+
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0=Sun, 3=Wed
+    // Only fire on Wednesday (3) or later in the week
+    if (dayOfWeek < 3) return;
+
+    // Prevent duplicate alerts for the same week
+    const alertKey = `goal_alert_${weekStart}`;
+    if (alertSentRef.current === alertKey) return;
+
+    const belowThreshold = goals.filter(g => {
+      if (g.completed) return false;
+      const pct = g.targetValue > 0 ? Math.round((g.currentValue / g.targetValue) * 100) : 0;
+      return pct < 50;
+    });
+
+    if (belowThreshold.length > 0) {
+      alertSentRef.current = alertKey;
+      // Also persist in localStorage to avoid re-alerting on page refresh
+      const storageKey = `medfocus_${alertKey}`;
+      if (localStorage.getItem(storageKey)) return;
+      localStorage.setItem(storageKey, 'sent');
+
+      belowThreshold.forEach(g => {
+        const goalType = GOAL_TYPES.find(gt => gt.id === g.goalType);
+        const pct = g.targetValue > 0 ? Math.round((g.currentValue / g.targetValue) * 100) : 0;
+        sendGoalAlert(goalType?.name || g.goalType, pct, g.targetValue);
+      });
+    }
+  }, [goals, isCurrentWeek, weekStart, notifPermission, notifSettings.goalAlertEnabled, sendGoalAlert]);
 
   const handleCreateGoal = () => {
     if (!selectedGoalType || targetValue <= 0) return;
@@ -99,6 +138,25 @@ export default function WeeklyGoals() {
           </Button>
         )}
       </div>
+
+      {/* Mid-week Warning Banner */}
+      {isCurrentWeek && new Date().getDay() >= 3 && goals.some(g => !g.completed && g.targetValue > 0 && Math.round((g.currentValue / g.targetValue) * 100) < 50) && (
+        <Card className="border-amber-500/30 bg-amber-500/5">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
+                <AlertCircle className="w-5 h-5 text-amber-500" />
+              </div>
+              <div>
+                <p className="font-bold text-sm text-amber-700 dark:text-amber-400">Metas em risco!</p>
+                <p className="text-xs text-amber-600/80 dark:text-amber-400/70">
+                  Já estamos na metade da semana e algumas metas estão abaixo de 50%. Foque nos estudos para recuperar!
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Week Navigator */}
       <Card>

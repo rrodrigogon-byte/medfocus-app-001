@@ -221,6 +221,33 @@ const NotificationSettingsPanel: React.FC = () => {
             </div>
           </div>
 
+          {/* Goal Alert */}
+          <div className="bg-card border border-border rounded-xl p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-rose-500/10 rounded-lg flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-foreground text-sm">Alerta de Metas Semanais</h4>
+                  <p className="text-xs text-muted-foreground">Aviso na quarta-feira quando estiver abaixo de 50% da meta</p>
+                </div>
+              </div>
+              <button
+                onClick={() => updateSettings({ goalAlertEnabled: !settings.goalAlertEnabled })}
+                className={`relative w-11 h-6 rounded-full transition-colors ${
+                  settings.goalAlertEnabled ? 'bg-primary' : 'bg-muted-foreground/30'
+                }`}
+              >
+                <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                  settings.goalAlertEnabled ? 'translate-x-[22px]' : 'translate-x-0.5'
+                }`} />
+              </button>
+            </div>
+          </div>
+
           {/* PWA Install Hint */}
           <div className="bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-xl p-6">
             <div className="flex items-start gap-4">

@@ -6,7 +6,7 @@
 
 export interface RealQuestion {
   id: string;
-  source: 'ENAMED_2025' | 'REVALIDA_2024_2' | 'REVALIDA_2024_1' | 'REVALIDA_2023_2' | 'REVALIDA_2023_1';
+  source: 'ENAMED_2025' | 'REVALIDA_2024_2' | 'REVALIDA_2024_1' | 'REVALIDA_2023_2' | 'REVALIDA_2023_1' | 'REVALIDA_2022_2' | 'REVALIDA_2022_1';
   number: number;
   year: number;
   text: string;
@@ -16,7 +16,9 @@ export interface RealQuestion {
   difficulty: 'easy' | 'medium' | 'hard';
 }
 
-export const REAL_QUESTIONS: RealQuestion[] = [
+import { revalida2022Questions } from './revalida2022Questions';
+
+const _EXISTING_QUESTIONS: RealQuestion[] = [
   {
     "id": "ENAMED_2025_Q1",
     "source": "ENAMED_2025",
@@ -8006,6 +8008,8 @@ export const REAL_QUESTIONS: RealQuestion[] = [
     "difficulty": "medium"
   }
 ];
+
+export const REAL_QUESTIONS: RealQuestion[] = [..._EXISTING_QUESTIONS, ...revalida2022Questions];
 
 export const QUESTION_AREAS = Array.from(new Set(REAL_QUESTIONS.map(q => q.area)));
 

@@ -137,3 +137,13 @@
 - [x] Tabela de leaderboard no banco de dados
 - [x] Componente de Leaderboard com filtro por universidade e período
 - [x] Integrar Leaderboard na Sidebar e rotas
+- [x] Baixar e parsear provas REVALIDA 2022/1 e 2022/2 do INEP
+- [x] Expandir banco de questões para 463 questões reais totais (287 + 176 REVALIDA 2022)
+- [x] Atualizar SimuladoENAMED com novas fontes REVALIDA 2022
+- [x] Notificações push de metas semanais (alerta quarta-feira se <50%)
+- [x] Lógica de verificação de progresso de metas no frontend (WeeklyGoals useEffect)
+- [x] Integrar notificações com sistema de notificações existente (useNotifications hook)
+- [x] Perfil público do aluno com badges, nível e estatísticas
+- [x] Página de perfil compartilhável via link (/perfil/:userId)
+- [x] Histórico de simulados no perfil
+- [x] Rota pública tRPC para visualizar perfil de outros alunos (profile.public)

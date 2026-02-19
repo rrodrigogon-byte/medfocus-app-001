@@ -11,6 +11,7 @@ export interface NotificationSettings {
   reminderMinute: number; // 0-59
   streakReminder: boolean;
   breakReminder: boolean;
+  goalAlertEnabled: boolean; // Alert when below 50% of weekly goal on Wednesday
 }
 
 const STORAGE_KEY = 'medfocus_notification_settings';
@@ -22,6 +23,7 @@ const DEFAULT_SETTINGS: NotificationSettings = {
   reminderMinute: 0,
   streakReminder: true,
   breakReminder: true,
+  goalAlertEnabled: true,
 };
 
 export function useNotifications() {
@@ -147,6 +149,15 @@ export function useNotifications() {
     );
   }, [settings.breakReminder, permission, showLocalNotification]);
 
+  // Goal alert — fires when user is below 50% of weekly goal mid-week
+  const sendGoalAlert = useCallback((goalName: string, currentPct: number, targetValue: number) => {
+    if (!settings.goalAlertEnabled || permission !== 'granted') return;
+    showLocalNotification(
+      `MedFocus — Meta "${goalName}" em risco!`,
+      `Você está em ${currentPct}% da meta semanal (alvo: ${targetValue}). Ainda dá tempo de recuperar — foque nos estudos hoje!`
+    );
+  }, [settings.goalAlertEnabled, permission, showLocalNotification]);
+
   return {
     permission,
     settings,
@@ -155,6 +166,7 @@ export function useNotifications() {
     showLocalNotification,
     sendStreakReminder,
     sendBreakReminder,
+    sendGoalAlert,
     isSupported: 'Notification' in window,
   };
 }

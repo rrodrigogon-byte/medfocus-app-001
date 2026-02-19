@@ -180,7 +180,7 @@ function RealQuestionsBanner() {
               <Badge variant="secondary" className="text-xs">Domínio Público</Badge>
             </h3>
             <p className="text-xs text-muted-foreground mt-1">
-              {QUESTION_STATS.total} questões reais extraídas das provas oficiais do ENAMED 2025, REVALIDA 2024/1, 2024/2, 2023/1 e 2023/2 com gabarito definitivo do INEP.
+              {QUESTION_STATS.total} questões reais extraídas das provas oficiais do ENAMED 2025, REVALIDA 2024/1, 2024/2, 2023/1, 2023/2, 2022/1 e 2022/2 com gabarito definitivo do INEP.
             </p>
             <div className="flex flex-wrap gap-3 mt-2">
               {Object.entries(QUESTION_STATS.bySource).map(([src, count]) => (

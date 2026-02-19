@@ -245,6 +245,21 @@ export default function Home() {
                 Premium
               </span>
             )}
+            {isAuthenticated && authUser?.id && (
+              <button
+                onClick={() => {
+                  const url = `${window.location.origin}/perfil/${authUser.id}`;
+                  navigator.clipboard.writeText(url).then(() => {
+                    import('sonner').then(m => m.toast.success('Link do perfil copiado!'));
+                  });
+                }}
+                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                aria-label="Compartilhar perfil"
+                title="Compartilhar meu perfil"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+              </button>
+            )}
             <button onClick={toggleTheme}
               className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               aria-label="Alternar tema">

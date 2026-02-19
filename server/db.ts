@@ -1317,3 +1317,85 @@ export async function resetMonthlyXP() {
   if (!db) return;
   await db.update(userXP).set({ monthlyXP: 0 });
 }
+
+// ─── Public Profile ──────────────────────────────────────────
+
+export async function getPublicProfile(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  // Get user info
+  const [user] = await db.select({
+    id: users.id,
+    name: users.name,
+    universityId: users.universityId,
+    currentYear: users.currentYear,
+    plan: users.plan,
+    createdAt: users.createdAt,
+  }).from(users).where(eq(users.id, userId));
+  if (!user) return null;
+
+  // Get XP stats
+  const [xp] = await db.select().from(userXP).where(eq(userXP.userId, userId));
+
+  // Get gamification progress (badges)
+  const [progress] = await db.select().from(userProgress).where(eq(userProgress.userId, userId));
+
+  // Get simulado stats
+  const simStats = await db.select({
+    cnt: count(),
+    avgScore: avg(simulados.score),
+  }).from(simulados).where(and(eq(simulados.userId, userId), eq(simulados.status, 'completed')));
+
+  // Get recent simulados (last 10)
+  const recentSimulados = await db.select({
+    id: simulados.id,
+    title: simulados.title,
+    examType: simulados.examType,
+    totalQuestions: simulados.totalQuestions,
+    score: simulados.score,
+    correctAnswers: simulados.correctAnswers,
+    completedAt: simulados.completedAt,
+  }).from(simulados)
+    .where(and(eq(simulados.userId, userId), eq(simulados.status, 'completed')))
+    .orderBy(desc(simulados.completedAt))
+    .limit(10);
+
+  // Get completed weekly goals count
+  const goalsCompleted = await db.select({ cnt: count() }).from(weeklyGoals).where(and(eq(weeklyGoals.userId, userId), eq(weeklyGoals.completed, true)));
+
+  return {
+    user: {
+      id: user.id,
+      name: user.name || 'Estudante',
+      universityId: user.universityId,
+      currentYear: user.currentYear,
+      plan: user.plan,
+      memberSince: user.createdAt,
+    },
+    xp: xp ? {
+      totalXP: xp.totalXP,
+      weeklyXP: xp.weeklyXP,
+      streak: xp.streak,
+      longestStreak: xp.longestStreak,
+      simuladosCompleted: xp.simuladosCompleted,
+      questionsAnswered: xp.questionsAnswered,
+      correctAnswers: xp.correctAnswers,
+      pomodoroMinutes: xp.pomodoroMinutes,
+      flashcardsReviewed: xp.flashcardsReviewed,
+    } : null,
+    gamification: progress ? {
+      level: progress.level,
+      totalXp: progress.totalXp,
+      currentStreak: progress.currentStreak,
+      longestStreak: progress.longestStreak,
+      badges: progress.badges, // JSON string
+    } : null,
+    simuladoStats: {
+      totalCompleted: Number(simStats[0]?.cnt || 0),
+      avgScore: Math.round(Number(simStats[0]?.avgScore || 0)),
+    },
+    recentSimulados,
+    goalsCompleted: Number(goalsCompleted[0]?.cnt || 0),
+  };
+}
