@@ -5,12 +5,21 @@
   "license": "MIT",
   "scripts": {
     "dev": "NODE_ENV=development tsx watch server/_core/index.ts",
+    "dev:client": "vite",
+    "dev:full": "concurrently \"pnpm run dev\" \"pnpm run dev:client\"",
     "build": "vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
-    "db:push": "drizzle-kit generate && drizzle-kit migrate"
+    "test:watch": "vitest",
+    "db:push": "drizzle-kit generate && drizzle-kit migrate",
+    "db:generate": "drizzle-kit generate",
+    "db:studio": "drizzle-kit studio",
+    "setup": "bash scripts/setup-local.sh",
+    "mock:data": "node scripts/generate-mock-data.js",
+    "clean": "rm -rf dist build node_modules/.vite cache",
+    "reset": "pnpm run clean && pnpm install"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
