@@ -1,0 +1,646 @@
+openapi: 3.0.3
+info:
+  title: MedFocus Partner API
+  version: 1.0.0
+  description: |
+    # MedFocus Partner API
+    
+    API para integração de laboratórios farmacêuticos com a plataforma MedFocus PhD.
+    
+    ## Objetivo
+    Permitir que laboratórios nacionais e internacionais compartilhem:
+    - Estudos clínicos fase IV e real-world evidence
+    - Programas de acesso e desconto para pacientes
+    - Conteúdo educacional baseado em ciência
+    - Alertas de segurança e farmacovigilância
+    
+    ## Autenticação
+    Todas as requisições requerem API Key via header:
+    ```
+    X-API-Key: your-api-key-here
+    ```
+    
+    ## Rate Limiting
+    - 1000 requests/hour para parceiros Bronze
+    - 5000 requests/hour para parceiros Silver
+    - 10000 requests/hour para parceiros Gold
+    - Unlimited para parceiros Platinum
+    
+    ## Vantagens para o Laboratório
+    - **Alcance Direto**: Acesso ao futuro prescritor (estudantes de medicina)
+    - **Canal Ético**: Baseado em evidência científica, não propaganda
+    - **Métricas Transparentes**: Dashboard com insights de engajamento
+    - **Custo-Benefício**: Mais eficiente que propagandistas físicos
+    
+  contact:
+    name: MedFocus Partner Support
+    email: partners@medfocus.com
+    url: https://partners.medfocus.com
+  
+  license:
+    name: Proprietary
+    url: https://medfocus.com/partner-terms
+
+servers:
+  - url: https://api.medfocus.com/v1
+    description: Production server
+  - url: https://api-sandbox.medfocus.com/v1
+    description: Sandbox server (for testing)
+
+security:
+  - ApiKeyAuth: []
+
+tags:
+  - name: Clinical Updates
+    description: Envio de estudos clínicos e publicações
+  - name: Patient Support
+    description: Programas de apoio ao paciente
+  - name: Educational Content
+    description: Conteúdo educacional para estudantes
+  - name: Safety Alerts
+    description: Alertas de segurança e farmacovigilância
+  - name: Analytics
+    description: Métricas e relatórios de engajamento
+
+paths:
+  /industry/clinical-updates:
+    post:
+      summary: Enviar novo estudo clínico
+      description: |
+        Laboratórios enviam estudos fase IV, real-world evidence, ou papers de revisão.
+        
+        **Fluxo**:
+        1. Lab envia payload com metadados + PDF
+        2. Sistema valida formato e conteúdo
+        3. IA faz análise preliminar (Gemini)
+        4. PhD reviewer valida (fila de prioridade)
+        5. Após aprovação, conteúdo vai para app
+        6. Notificação via Pub/Sub para estudantes que "seguem" a molécula
+        
+      tags:
+        - Clinical Updates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClinicalUpdate'
+            examples:
+              phase4_study:
+                summary: Estudo Fase IV
+                value:
+                  lab_id: "EUROFARMA_001"
+                  molecule: "Dapagliflozina"
+                  study_type: "phase_4"
+                  study_title: "Eficácia da Dapagliflozina em População Brasileira - Estudo Real World"
+                  summary: "Estudo observacional com 5000 pacientes brasileiros demonstrou redução de 42% em hospitalizações por IC."
+                  full_pdf_url: "https://storage.gcp.eurofarma.com/studies/dapa-brazil-2024.pdf"
+                  target_audience: ["Cardiologists", "Internal Medicine"]
+                  publication_date: "2024-11-15"
+                  trial_registry: "ClinicalTrials.gov NCT05123456"
+                  primary_outcome: "Redução de hospitalização por IC"
+                  key_findings:
+                    - "NNT = 24 para prevenir 1 hospitalização"
+                    - "Perfil de segurança consistente com trials prévios"
+                    - "Benefício independente de status de diabetes"
+                  conflicts_of_interest: "Estudo patrocinado pela Eurofarma"
+      responses:
+        '201':
+          description: Estudo recebido e em análise
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClinicalUpdateResponse'
+        '400':
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Não autorizado
+        '429':
+          description: Rate limit excedido
+    
+    get:
+      summary: Listar estudos enviados
+      description: Retorna lista de estudos submetidos pelo laboratório
+      tags:
+        - Clinical Updates
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, approved, rejected, all]
+          description: Filtrar por status
+        - name: from_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Data inicial (YYYY-MM-DD)
+        - name: to_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Data final (YYYY-MM-DD)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+      responses:
+        '200':
+          description: Lista de estudos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ClinicalUpdateStatus'
+
+  /industry/patient-support:
+    post:
+      summary: Cadastrar programa de apoio ao paciente
+      description: |
+        Informar programas de desconto, acesso gratuito, ou suporte logístico.
+        
+        **Exemplo de Uso**:
+        - Programa Viver Bem (Cimed): 40% desconto na 2ª unidade
+        - Programa de Acesso Eurofarma: Medicamento gratuito para pacientes SUS
+      tags:
+        - Patient Support
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientSupport'
+            examples:
+              discount_program:
+                summary: Programa de Desconto
+                value:
+                  lab_id: "CIMED_001"
+                  program_name: "Programa Viver Bem"
+                  medication_anvisa_id: "1234567890123"
+                  medication_name: "Losartana 50mg"
+                  benefit_type: "discount"
+                  benefit_description: "40% de desconto na segunda unidade"
+                  eligibility_criteria:
+                    - "Receita médica válida"
+                    - "Cadastro no programa"
+                  activation_link: "https://cimed.com.br/cadastro-medico"
+                  valid_from: "2024-01-01"
+                  valid_until: "2024-12-31"
+                  terms_url: "https://cimed.com.br/termos-programa"
+      responses:
+        '201':
+          description: Programa cadastrado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientSupportResponse'
+        '400':
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /industry/educational-content:
+    post:
+      summary: Enviar conteúdo educacional
+      description: |
+        Compartilhar vídeos, infográficos, ou materiais educacionais **baseados em ciência**.
+        
+        **Filtro PhD**: Conteúdo passa por análise de IA para detectar viés comercial.
+        Apenas conteúdo educacional puro é aprovado.
+      tags:
+        - Educational Content
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EducationalContent'
+            examples:
+              mechanism_video:
+                summary: Vídeo de Mecanismo de Ação
+                value:
+                  lab_id: "EUROFARMA_001"
+                  content_type: "video"
+                  title: "Mecanismo de Ação dos iSGLT2 na Insuficiência Cardíaca"
+                  description: "Vídeo educacional explicando a fisiopatologia e o mecanismo de ação dos inibidores SGLT2"
+                  molecule: "Dapagliflozina"
+                  target_audience: ["Medical Students", "Cardiology Residents"]
+                  content_url: "https://cdn.eurofarma.com/videos/sglt2-moa.mp4"
+                  thumbnail_url: "https://cdn.eurofarma.com/thumbnails/sglt2-moa.jpg"
+                  duration_seconds: 420
+                  language: "pt-BR"
+                  references:
+                    - "McMurray JJV, et al. NEJM 2019"
+                    - "Packer M, et al. Circulation 2021"
+      responses:
+        '201':
+          description: Conteúdo recebido e em análise
+        '400':
+          description: Dados inválidos
+
+  /industry/safety-alerts:
+    post:
+      summary: Enviar alerta de segurança
+      description: |
+        **CRÍTICO**: Alertas de farmacovigilância, recalls, ou interações descobertas.
+        
+        Prioridade máxima. Sistema notifica imediatamente usuários que prescrevem a molécula.
+      tags:
+        - Safety Alerts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SafetyAlert'
+            examples:
+              recall:
+                summary: Recall de Lote
+                value:
+                  lab_id: "CIMED_001"
+                  alert_type: "recall"
+                  severity: "high"
+                  medication_anvisa_id: "1234567890123"
+                  medication_name: "Dipirona 500mg"
+                  affected_lots: ["LOT123456", "LOT123457"]
+                  issue_description: "Contaminação microbiana detectada em análise de controle de qualidade"
+                  action_required: "Suspender dispensação imediatamente. Devolver lotes afetados ao distribuidor."
+                  anvisa_notification_number: "ALERT/2024/001234"
+                  effective_date: "2024-02-20"
+                  contact_email: "farmacovigilancia@cimed.com.br"
+                  contact_phone: "+55 11 1234-5678"
+      responses:
+        '201':
+          description: Alerta recebido e notificações enviadas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alert_id:
+                    type: string
+                  status:
+                    type: string
+                  notifications_sent:
+                    type: integer
+                    description: Número de usuários notificados
+
+  /industry/analytics:
+    get:
+      summary: Obter métricas de engajamento
+      description: |
+        Dashboard de métricas para o laboratório.
+        
+        **Métricas Disponíveis**:
+        - Visualizações de estudos publicados
+        - Downloads de materiais educacionais
+        - Médicos que "seguem" suas moléculas
+        - Taxa de conversão (visualização → prescrição estimada)
+        - NPS (Net Promoter Score) do conteúdo
+        
+        **Privacidade**: Dados agregados, sem identificação individual de usuários.
+      tags:
+        - Analytics
+      parameters:
+        - name: metric_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [studies, educational, patient_programs, overall]
+        - name: from_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: group_by
+          in: query
+          schema:
+            type: string
+            enum: [day, week, month]
+            default: week
+      responses:
+        '200':
+          description: Métricas de engajamento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsResponse'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    ClinicalUpdate:
+      type: object
+      required:
+        - lab_id
+        - molecule
+        - study_type
+        - study_title
+        - summary
+        - target_audience
+      properties:
+        lab_id:
+          type: string
+          description: ID do laboratório (fornecido pelo MedFocus)
+          example: "EUROFARMA_001"
+        molecule:
+          type: string
+          description: Molécula estudada (nome genérico)
+          example: "Dapagliflozina"
+        study_type:
+          type: string
+          enum: [phase_4, real_world_evidence, meta_analysis, systematic_review, case_series]
+        study_title:
+          type: string
+          maxLength: 500
+        summary:
+          type: string
+          maxLength: 2000
+          description: Resumo executivo (para estudantes)
+        full_pdf_url:
+          type: string
+          format: uri
+          description: URL do estudo completo (PDF)
+        target_audience:
+          type: array
+          items:
+            type: string
+            enum: [Medical Students, General Practitioners, Cardiologists, Endocrinologists, Nephrologists, Neurologists, Psychiatrists, Other]
+        publication_date:
+          type: string
+          format: date
+        trial_registry:
+          type: string
+          description: Registro do trial (ex: NCT number)
+        primary_outcome:
+          type: string
+        key_findings:
+          type: array
+          items:
+            type: string
+        conflicts_of_interest:
+          type: string
+          description: Declaração de conflitos de interesse
+
+    ClinicalUpdateResponse:
+      type: object
+      properties:
+        update_id:
+          type: string
+          example: "upd_abc123xyz"
+        status:
+          type: string
+          enum: [received, in_review, approved, rejected]
+        estimated_review_time_hours:
+          type: integer
+          example: 48
+        message:
+          type: string
+
+    ClinicalUpdateStatus:
+      type: object
+      properties:
+        update_id:
+          type: string
+        study_title:
+          type: string
+        submission_date:
+          type: string
+          format: date-time
+        status:
+          type: string
+        reviewer_feedback:
+          type: string
+        views:
+          type: integer
+        downloads:
+          type: integer
+
+    PatientSupport:
+      type: object
+      required:
+        - lab_id
+        - program_name
+        - medication_anvisa_id
+        - benefit_type
+        - benefit_description
+      properties:
+        lab_id:
+          type: string
+        program_name:
+          type: string
+        medication_anvisa_id:
+          type: string
+          pattern: '^\d{13}$'
+          description: Código de barras EAN-13
+        medication_name:
+          type: string
+        benefit_type:
+          type: string
+          enum: [discount, free_medication, copay_assistance, logistics_support]
+        benefit_description:
+          type: string
+        eligibility_criteria:
+          type: array
+          items:
+            type: string
+        activation_link:
+          type: string
+          format: uri
+        valid_from:
+          type: string
+          format: date
+        valid_until:
+          type: string
+          format: date
+        terms_url:
+          type: string
+          format: uri
+
+    PatientSupportResponse:
+      type: object
+      properties:
+        program_id:
+          type: string
+        status:
+          type: string
+        activation_link:
+          type: string
+
+    EducationalContent:
+      type: object
+      required:
+        - lab_id
+        - content_type
+        - title
+        - molecule
+        - target_audience
+        - content_url
+      properties:
+        lab_id:
+          type: string
+        content_type:
+          type: string
+          enum: [video, infographic, article, interactive]
+        title:
+          type: string
+        description:
+          type: string
+        molecule:
+          type: string
+        target_audience:
+          type: array
+          items:
+            type: string
+        content_url:
+          type: string
+          format: uri
+        thumbnail_url:
+          type: string
+          format: uri
+        duration_seconds:
+          type: integer
+        language:
+          type: string
+          default: pt-BR
+        references:
+          type: array
+          items:
+            type: string
+
+    SafetyAlert:
+      type: object
+      required:
+        - lab_id
+        - alert_type
+        - severity
+        - medication_anvisa_id
+        - issue_description
+        - action_required
+      properties:
+        lab_id:
+          type: string
+        alert_type:
+          type: string
+          enum: [recall, interaction, adverse_event, contraindication_update]
+        severity:
+          type: string
+          enum: [critical, high, medium, low]
+        medication_anvisa_id:
+          type: string
+        medication_name:
+          type: string
+        affected_lots:
+          type: array
+          items:
+            type: string
+        issue_description:
+          type: string
+        action_required:
+          type: string
+        anvisa_notification_number:
+          type: string
+        effective_date:
+          type: string
+          format: date
+        contact_email:
+          type: string
+          format: email
+        contact_phone:
+          type: string
+
+    AnalyticsResponse:
+      type: object
+      properties:
+        period:
+          type: object
+          properties:
+            from:
+              type: string
+              format: date
+            to:
+              type: string
+              format: date
+        summary:
+          type: object
+          properties:
+            total_views:
+              type: integer
+            total_downloads:
+              type: integer
+            unique_users:
+              type: integer
+            engagement_rate:
+              type: number
+              format: float
+            nps_score:
+              type: number
+              format: float
+        time_series:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              views:
+                type: integer
+              downloads:
+                type: integer
+              unique_users:
+                type: integer
+        top_content:
+          type: array
+          items:
+            type: object
+            properties:
+              content_id:
+                type: string
+              title:
+                type: string
+              views:
+                type: integer
+              engagement_rate:
+                type: number
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        code:
+          type: string
+        details:
+          type: object
