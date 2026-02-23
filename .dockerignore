@@ -1,0 +1,66 @@
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Build outputs
+dist
+build
+*.dist
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Logs
+logs
+*.log
+
+# Test
+coverage
+.nyc_output
+
+# Temp
+tmp
+temp
+.cache
+.parcel-cache
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Docs
+docs
+research
+*.md
+!README.md
+
+# GCP
+gcp/cloud-functions
+gcp/config
+gcp/*.md
+
+# Scripts
+scripts
+
+# Manus
+.manus
+.manus-logs
