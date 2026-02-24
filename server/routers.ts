@@ -9,6 +9,7 @@ import { z } from "zod";
 import Stripe from "stripe";
 import { PLANS } from "./products";
 import { searchFDADrugs, getFDAAdverseEvents, getFDADrugInteractions, searchPubMed, calculateGlasgow, calculateSOFA, calculateAPACHEII, calculateWells, calculateCHA2DS2VASc, calculateChildPugh, calculateMELD } from "./services/medicalApis";
+import { THERAPEUTIC_CLASSES, getFullDrugLabel, getDrugAdverseEventStats, getDrugRecalls, searchDailyMed, getRxNormDrugInfo, getRxNormInteractions } from "./services/pharmacopeiaService";
 import { getOrCreateProgress, addXp, getXpHistory, logStudySession, updateUserProfile, createClassroom, getClassroomsByProfessor, getClassroomsByStudent, getClassroomById, joinClassroom, getEnrollments, removeEnrollment, createActivity, getActivitiesByClassroom, updateActivity, submitActivity, gradeSubmission, getSubmissionsByActivity, getStudentSubmissions, getClassroomAnalytics, findGeneratedMaterial, saveGeneratedMaterial, getUserMaterialHistory, getGeneratedMaterialById, rateMaterial, searchLibraryMaterials, saveLibraryMaterial, getLibraryMaterialById, toggleSaveMaterial, getUserSavedMaterialIds, getUserSavedMaterialsFull, getPopularLibraryMaterials, searchPubmedCache, savePubmedArticle, getPubmedArticleByPmid, addMaterialReview, getMaterialReviews, markReviewHelpful, trackStudyActivity, getUserStudyHistoryData, getUserTopSubjects, getUserQuizPerformance, subscribeToSubject, unsubscribeFromSubject, getUserSubscriptions, getUserNotifications, getUnreadNotificationCount, markNotificationRead, markAllNotificationsRead, notifySubscribersOfNewMaterial, saveStudyTemplate, getStudyTemplates, getStudyTemplateById, getUserTemplates, shareTemplate, getSharedTemplateByCode, getSharedTemplateFeed, likeSharedTemplate, createStudyRoom, getStudyRooms, joinStudyRoom, getStudyRoomById, sendRoomMessage, getRoomMessages, createSharedNote, getRoomNotes, createCalendarEvent, getCalendarEvents, updateCalendarEvent, deleteCalendarEvent, createRevisionSuggestions, getRevisionSuggestions, completeRevision, createSimulado, getSimulados, completeSimulado, getSimuladoQuestions, saveSimuladoQuestion, getSimuladoStats, getWeeklyGoals, createWeeklyGoal, updateGoalProgress, incrementGoalProgress, deleteWeeklyGoal, getUserXP, ensureUserXP, addXP, updateStreak, updateXPStats, getLeaderboard, getXPActivities, getPublicProfile, createClinicalCase, getClinicalCase, getUserClinicalCases, updateClinicalCase, createBattle, getBattleByCode, getBattle, getUserBattles, joinBattle, updateBattle, createSmartSummary, getUserSummaries, getPublicSummaries, getSummaryByShareCode, toggleSummaryPublic, postToFeed, getFeed, likeFeedItem, commentOnFeed, getFeedComments, getUserFeedLikes, getPerformanceBySpecialty, createFlashcardDeck, getUserFlashcardDecks, getPublicFlashcardDecks, addFlashcardCards, getDueFlashcards, getAllFlashcards, reviewFlashcard, deleteDeck, createExam, getUserExams, getUpcomingExams, updateExam, deleteExam, createStudySuggestions, getExamSuggestions, markSuggestionCompleted } from "./db";
 
 function getStripe() {
@@ -2605,6 +2606,299 @@ AVISO: Sugestão de apoio — prescrição final é responsabilidade do médico.
         });
         const content = response.choices[0]?.message?.content;
         return typeof content === 'string' ? JSON.parse(content) : { interactions: [], overallRisk: 'unknown', recommendation: '' };
+      }),
+  }),
+
+  // ─── Bíblia Farmacológica ────────────────────────────────────
+  pharmaBible: router({
+    // Listar todas as classes terapêuticas
+    getClasses: publicProcedure.query(() => {
+      return Object.entries(THERAPEUTIC_CLASSES).map(([key, cls]) => ({
+        id: key,
+        name: cls.name,
+        icon: cls.icon,
+        description: cls.description,
+        subclassCount: cls.subclasses.length,
+        prototypeCount: cls.prototypes.length,
+        subclasses: cls.subclasses,
+        prototypes: cls.prototypes,
+      }));
+    }),
+
+    // Buscar monografia completa de um fármaco via Gemini AI + OpenFDA
+    getDrugMonograph: publicProcedure
+      .input(z.object({ drugName: z.string(), userProfile: z.enum(['student', 'professor', 'doctor']).optional() }))
+      .mutation(async ({ input }) => {
+        const { drugName, userProfile = 'student' } = input;
+        // Buscar dados reais do OpenFDA
+        const [fdaLabel, adverseStats, recalls, dailyMedResults, rxNormInfo] = await Promise.all([
+          getFullDrugLabel(drugName),
+          getDrugAdverseEventStats(drugName),
+          getDrugRecalls(drugName),
+          searchDailyMed(drugName),
+          getRxNormDrugInfo(drugName),
+        ]);
+
+        const profileInstructions = userProfile === 'student'
+          ? 'Adapte para estudante de medicina: inclua explicações didáticas, mnemônicos e dicas de prova.'
+          : userProfile === 'professor'
+          ? 'Adapte para professor: inclua evidências científicas, comparações entre fármacos e pontos de discussão.'
+          : 'Adapte para médico/prescritor: foque em doses práticas, ajustes, monitoramento e decisões clínicas.';
+
+        const fdaContext = fdaLabel ? `\nDados OpenFDA disponíveis:\n- Indicações: ${fdaLabel.indications_and_usage?.[0]?.substring(0, 500) || 'N/A'}\n- Contraindicações: ${fdaLabel.contraindications?.[0]?.substring(0, 500) || 'N/A'}\n- Interações: ${fdaLabel.drug_interactions?.[0]?.substring(0, 500) || 'N/A'}\n- Efeitos adversos: ${fdaLabel.adverse_reactions?.[0]?.substring(0, 500) || 'N/A'}\n- Gravidez: ${fdaLabel.pregnancy?.[0]?.substring(0, 300) || 'N/A'}\n- Superdosagem: ${fdaLabel.overdosage?.[0]?.substring(0, 300) || 'N/A'}` : '';
+
+        const response = await invokeLLM({
+          messages: [
+            { role: 'system', content: `Você é um farmacologista clínico expert. Gere uma monografia farmacológica COMPLETA e DETALHADA em português brasileiro para o fármaco solicitado. ${profileInstructions} Use dados baseados em evidências. Responda APENAS em JSON válido.${fdaContext}` },
+            { role: 'user', content: `Gere a monografia completa do fármaco: ${drugName}` }
+          ],
+          responseFormat: {
+            type: 'json_schema',
+            json_schema: {
+              name: 'drug_monograph',
+              schema: {
+                type: 'object',
+                properties: {
+                  genericName: { type: 'string' },
+                  brandNames: { type: 'array', items: { type: 'string' } },
+                  drugClass: { type: 'string' },
+                  subClass: { type: 'string' },
+                  mechanismOfAction: { type: 'string' },
+                  pharmacokinetics: {
+                    type: 'object',
+                    properties: {
+                      absorption: { type: 'string' },
+                      distribution: { type: 'string' },
+                      metabolism: { type: 'string' },
+                      elimination: { type: 'string' },
+                      halfLife: { type: 'string' },
+                      bioavailability: { type: 'string' },
+                      proteinBinding: { type: 'string' },
+                      onsetOfAction: { type: 'string' },
+                      peakEffect: { type: 'string' },
+                      duration: { type: 'string' }
+                    },
+                    required: ['absorption', 'distribution', 'metabolism', 'elimination', 'halfLife', 'bioavailability', 'proteinBinding', 'onsetOfAction', 'peakEffect', 'duration'],
+                    additionalProperties: false
+                  },
+                  pharmacodynamics: { type: 'string' },
+                  indications: { type: 'array', items: { type: 'string' } },
+                  contraindications: { type: 'array', items: { type: 'string' } },
+                  dosage: {
+                    type: 'object',
+                    properties: {
+                      adult: { type: 'string' },
+                      pediatric: { type: 'string' },
+                      geriatric: { type: 'string' },
+                      renalAdjustment: { type: 'string' },
+                      hepaticAdjustment: { type: 'string' },
+                      maxDose: { type: 'string' }
+                    },
+                    required: ['adult', 'pediatric', 'geriatric', 'renalAdjustment', 'hepaticAdjustment', 'maxDose'],
+                    additionalProperties: false
+                  },
+                  routes: { type: 'array', items: { type: 'string' } },
+                  dosageForms: { type: 'array', items: { type: 'string' } },
+                  adverseEffects: {
+                    type: 'object',
+                    properties: {
+                      common: { type: 'array', items: { type: 'string' } },
+                      serious: { type: 'array', items: { type: 'string' } },
+                      rare: { type: 'array', items: { type: 'string' } },
+                      blackBoxWarning: { type: 'string' }
+                    },
+                    required: ['common', 'serious', 'rare', 'blackBoxWarning'],
+                    additionalProperties: false
+                  },
+                  interactions: {
+                    type: 'object',
+                    properties: {
+                      drugs: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, severity: { type: 'string' }, effect: { type: 'string' } }, required: ['name', 'severity', 'effect'], additionalProperties: false } },
+                      food: { type: 'array', items: { type: 'string' } },
+                      alcohol: { type: 'string' },
+                      labTests: { type: 'array', items: { type: 'string' } }
+                    },
+                    required: ['drugs', 'food', 'alcohol', 'labTests'],
+                    additionalProperties: false
+                  },
+                  specialPopulations: {
+                    type: 'object',
+                    properties: {
+                      pregnancy: { type: 'string' },
+                      lactation: { type: 'string' },
+                      pediatric: { type: 'string' },
+                      geriatric: { type: 'string' },
+                      renalImpairment: { type: 'string' },
+                      hepaticImpairment: { type: 'string' }
+                    },
+                    required: ['pregnancy', 'lactation', 'pediatric', 'geriatric', 'renalImpairment', 'hepaticImpairment'],
+                    additionalProperties: false
+                  },
+                  monitoring: { type: 'array', items: { type: 'string' } },
+                  patientCounseling: { type: 'array', items: { type: 'string' } },
+                  clinicalPearls: { type: 'array', items: { type: 'string' } },
+                  references: { type: 'array', items: { type: 'string' } }
+                },
+                required: ['genericName', 'brandNames', 'drugClass', 'subClass', 'mechanismOfAction', 'pharmacokinetics', 'pharmacodynamics', 'indications', 'contraindications', 'dosage', 'routes', 'dosageForms', 'adverseEffects', 'interactions', 'specialPopulations', 'monitoring', 'patientCounseling', 'clinicalPearls', 'references'],
+                additionalProperties: false
+              }
+            }
+          }
+        });
+        const monograph = JSON.parse(response.choices[0]?.message?.content as string || '{}');
+        return {
+          monograph,
+          fdaData: fdaLabel ? { available: true, adverseStats: adverseStats.slice(0, 15), recalls } : { available: false, adverseStats: [], recalls: [] },
+          dailyMed: dailyMedResults,
+          rxNorm: rxNormInfo,
+        };
+      }),
+
+    // Detalhes de uma classe terapêutica via Gemini AI
+    getClassDetails: publicProcedure
+      .input(z.object({ classId: z.string() }))
+      .mutation(async ({ input }) => {
+        const cls = THERAPEUTIC_CLASSES[input.classId];
+        if (!cls) throw new TRPCError({ code: 'NOT_FOUND', message: 'Classe não encontrada' });
+        const response = await invokeLLM({
+          messages: [
+            { role: 'system', content: 'Você é um farmacologista clínico expert. Gere informações detalhadas sobre a classe terapêutica solicitada em português brasileiro. Responda APENAS em JSON válido.' },
+            { role: 'user', content: `Detalhe a classe terapêutica: ${cls.name}. Subclasses: ${cls.subclasses.join(', ')}. Protótipos: ${cls.prototypes.join(', ')}.` }
+          ],
+          responseFormat: {
+            type: 'json_schema',
+            json_schema: {
+              name: 'drug_class_details',
+              schema: {
+                type: 'object',
+                properties: {
+                  className: { type: 'string' },
+                  overview: { type: 'string' },
+                  commonMechanism: { type: 'string' },
+                  prototypeDrug: { type: 'string' },
+                  drugs: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, distinguishingFeature: { type: 'string' }, relativeEfficacy: { type: 'string' } }, required: ['name', 'distinguishingFeature', 'relativeEfficacy'], additionalProperties: false } },
+                  commonIndications: { type: 'array', items: { type: 'string' } },
+                  classEffects: { type: 'array', items: { type: 'string' } },
+                  classContraindications: { type: 'array', items: { type: 'string' } },
+                  clinicalPearls: { type: 'array', items: { type: 'string' } },
+                  mnemonics: { type: 'array', items: { type: 'string' } }
+                },
+                required: ['className', 'overview', 'commonMechanism', 'prototypeDrug', 'drugs', 'commonIndications', 'classEffects', 'classContraindications', 'clinicalPearls', 'mnemonics'],
+                additionalProperties: false
+              }
+            }
+          }
+        });
+        return JSON.parse(response.choices[0]?.message?.content as string || '{}');
+      }),
+
+    // Guia de prescrição por condição clínica
+    getPrescriptionGuide: publicProcedure
+      .input(z.object({ condition: z.string() }))
+      .mutation(async ({ input }) => {
+        const response = await invokeLLM({
+          messages: [
+            { role: 'system', content: 'Você é um médico especialista em farmacoterapia baseada em evidências. Gere um guia de prescrição completo para a condição clínica solicitada, baseado em diretrizes atuais (UpToDate, Sociedades Brasileiras, ACC/AHA, ESC, NICE). Responda APENAS em JSON válido em português brasileiro.' },
+            { role: 'user', content: `Guia de prescrição para: ${input.condition}` }
+          ],
+          responseFormat: {
+            type: 'json_schema',
+            json_schema: {
+              name: 'prescription_guide',
+              schema: {
+                type: 'object',
+                properties: {
+                  condition: { type: 'string' },
+                  overview: { type: 'string' },
+                  firstLine: { type: 'array', items: { type: 'object', properties: { drug: { type: 'string' }, dose: { type: 'string' }, duration: { type: 'string' }, evidence: { type: 'string' } }, required: ['drug', 'dose', 'duration', 'evidence'], additionalProperties: false } },
+                  secondLine: { type: 'array', items: { type: 'object', properties: { drug: { type: 'string' }, dose: { type: 'string' }, duration: { type: 'string' }, evidence: { type: 'string' } }, required: ['drug', 'dose', 'duration', 'evidence'], additionalProperties: false } },
+                  thirdLine: { type: 'array', items: { type: 'object', properties: { drug: { type: 'string' }, dose: { type: 'string' }, duration: { type: 'string' }, evidence: { type: 'string' } }, required: ['drug', 'dose', 'duration', 'evidence'], additionalProperties: false } },
+                  specialConsiderations: { type: 'array', items: { type: 'string' } },
+                  monitoringRequired: { type: 'array', items: { type: 'string' } },
+                  referenceGuidelines: { type: 'array', items: { type: 'string' } },
+                  nonPharmacological: { type: 'array', items: { type: 'string' } }
+                },
+                required: ['condition', 'overview', 'firstLine', 'secondLine', 'thirdLine', 'specialConsiderations', 'monitoringRequired', 'referenceGuidelines', 'nonPharmacological'],
+                additionalProperties: false
+              }
+            }
+          }
+        });
+        return JSON.parse(response.choices[0]?.message?.content as string || '{}');
+      }),
+
+    // Comparar fármacos
+    compareDrugs: publicProcedure
+      .input(z.object({ drugs: z.array(z.string()).min(2).max(5) }))
+      .mutation(async ({ input }) => {
+        const response = await invokeLLM({
+          messages: [
+            { role: 'system', content: 'Você é um farmacologista clínico expert. Compare os fármacos solicitados de forma detalhada e objetiva, incluindo eficácia, segurança, custo, conveniência e evidências. Responda APENAS em JSON válido em português brasileiro.' },
+            { role: 'user', content: `Compare os seguintes fármacos: ${input.drugs.join(' vs ')}` }
+          ],
+          responseFormat: {
+            type: 'json_schema',
+            json_schema: {
+              name: 'drug_comparison',
+              schema: {
+                type: 'object',
+                properties: {
+                  drugs: { type: 'array', items: { type: 'string' } },
+                  comparison: { type: 'array', items: { type: 'object', properties: { parameter: { type: 'string' }, values: { type: 'object', additionalProperties: { type: 'string' } } }, required: ['parameter', 'values'], additionalProperties: false } },
+                  summary: { type: 'string' },
+                  recommendation: { type: 'string' },
+                  references: { type: 'array', items: { type: 'string' } }
+                },
+                required: ['drugs', 'comparison', 'summary', 'recommendation', 'references'],
+                additionalProperties: false
+              }
+            }
+          }
+        });
+        return JSON.parse(response.choices[0]?.message?.content as string || '{}');
+      }),
+
+    // Busca inteligente de fármacos
+    smartSearch: publicProcedure
+      .input(z.object({ query: z.string(), searchType: z.enum(['name', 'class', 'indication', 'mechanism', 'interaction']).optional() }))
+      .mutation(async ({ input }) => {
+        const { query, searchType = 'name' } = input;
+        const response = await invokeLLM({
+          messages: [
+            { role: 'system', content: `Você é um assistente farmacológico. O usuário está buscando informações sobre medicamentos. Tipo de busca: ${searchType}. Retorne resultados relevantes em português brasileiro. Responda APENAS em JSON válido.` },
+            { role: 'user', content: `Buscar: ${query}` }
+          ],
+          responseFormat: {
+            type: 'json_schema',
+            json_schema: {
+              name: 'drug_search_results',
+              schema: {
+                type: 'object',
+                properties: {
+                  results: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, genericName: { type: 'string' }, drugClass: { type: 'string' }, mainIndication: { type: 'string' }, briefDescription: { type: 'string' } }, required: ['name', 'genericName', 'drugClass', 'mainIndication', 'briefDescription'], additionalProperties: false } },
+                  suggestedSearches: { type: 'array', items: { type: 'string' } }
+                },
+                required: ['results', 'suggestedSearches'],
+                additionalProperties: false
+              }
+            }
+          }
+        });
+        return JSON.parse(response.choices[0]?.message?.content as string || '{"results":[],"suggestedSearches":[]}');
+      }),
+
+    // Perguntar ao farmacologista IA
+    askPharmacologist: publicProcedure
+      .input(z.object({ question: z.string(), context: z.string().optional() }))
+      .mutation(async ({ input }) => {
+        const response = await invokeLLM({
+          messages: [
+            { role: 'system', content: 'Você é um farmacologista clínico expert com décadas de experiência. Responda perguntas sobre farmacologia de forma precisa, baseada em evidências, em português brasileiro. Inclua referências quando possível. Formate a resposta de forma clara e organizada.' },
+            ...(input.context ? [{ role: 'user' as const, content: `Contexto: ${input.context}` }] : []),
+            { role: 'user', content: input.question }
+          ],
+        });
+        return { answer: response.choices[0]?.message?.content || 'Não foi possível gerar resposta.' };
       }),
   }),
 });

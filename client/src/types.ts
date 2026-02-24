@@ -130,7 +130,8 @@ export type View =
   | 'pubmedResearch'
   | 'myContent'
   | 'lectureTranscription'
-  | 'professorPortal';
+  | 'professorPortal'
+  | 'pharmaBible';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {

@@ -59,6 +59,7 @@ import PubMedResearch from '../components/medfocus/PubMedResearch';
 import LectureTranscription from '../components/medfocus/LectureTranscription';
 import MyContent from '../components/medfocus/MyContent';
 import ProfessorPortal from '../components/medfocus/ProfessorPortal';
+import PharmaBible from '../components/medfocus/PharmaBible';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
 import { useGamification } from '../hooks/useGamification';
@@ -201,6 +202,7 @@ export default function Home() {
       case 'lectureTranscription': return <LectureTranscription />;
       case 'myContent': return <MyContent />;
       case 'professorPortal': return <ProfessorPortal />;
+      case 'pharmaBible': return <PharmaBible />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{
@@ -282,7 +284,8 @@ export default function Home() {
                currentView === 'examCalendar' ? 'Calendário de Provas' :
                currentView === 'lectureTranscription' ? 'Transcrição de Aulas' :
                currentView === 'myContent' ? 'Meu Conteúdo' :
-               currentView === 'professorPortal' ? 'Portal do Professor' : currentView}
+               currentView === 'professorPortal' ? 'Portal do Professor' :
+               currentView === 'pharmaBible' ? 'Bíblia Farmacológica' : currentView}
             </h2>
           </div>
           <div className="flex items-center gap-2">
