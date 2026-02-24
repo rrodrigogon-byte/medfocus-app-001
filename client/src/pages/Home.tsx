@@ -107,6 +107,15 @@ export default function Home() {
   const { theme, toggleTheme } = useTheme();
   const gamification = useGamification();
 
+  // Check user subscription status (must be before any conditional returns)
+  const subscriptionQuery = trpc.stripe.getSubscription.useQuery(undefined, { 
+    retry: false,
+    enabled: isAuthenticated,
+  });
+  const userPlan = subscriptionQuery.data?.plan || 'free';
+  const hasFullAccess = subscriptionQuery.data?.hasFullAccess || false;
+  const isGuest = !isAuthenticated;
+
   // Daily login XP
   useEffect(() => {
     if (localUser) {
@@ -189,15 +198,6 @@ export default function Home() {
   if (!localUser) {
     return <Login onLogin={handleLogin} onOAuthLogin={handleOAuthLogin} />;
   }
-
-  // Check user subscription status
-  const subscriptionQuery = trpc.stripe.getSubscription.useQuery(undefined, { 
-    retry: false,
-    enabled: isAuthenticated,
-  });
-  const userPlan = subscriptionQuery.data?.plan || 'free';
-  const hasFullAccess = subscriptionQuery.data?.hasFullAccess || false;
-  const isGuest = !isAuthenticated;
 
   const renderView = () => {
     // Check if current view requires Pro and user doesn't have access
