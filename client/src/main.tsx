@@ -18,7 +18,10 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
   if (!isUnauthorized) return;
 
-  window.location.href = getLoginUrl();
+  // Redirect to root where Login component handles auth (avoids /login 404)
+  if (window.location.pathname !== '/') {
+    window.location.href = '/';
+  }
 };
 
 queryClient.getQueryCache().subscribe(event => {
