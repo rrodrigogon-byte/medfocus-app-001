@@ -16,6 +16,15 @@ export const users = mysqlTable("users", {
   stripeCustomerId: varchar("stripeCustomerId", { length: 128 }),
   stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 128 }),
   plan: mysqlEnum("plan", ["free", "pro", "premium"]).default("free").notNull(),
+  
+  // Trial fields
+  trialStartDate: timestamp("trialStartDate"),
+  trialEndDate: timestamp("trialEndDate"),
+  trialActive: boolean("trialActive").default(false).notNull(),
+  cardRegistered: boolean("cardRegistered").default(false).notNull(),
+  
+  // Subscription billing
+  billingInterval: mysqlEnum("billingInterval", ["monthly", "yearly"]).default("monthly"),
 
   // Profile fields for medical student
   universityId: varchar("universityId", { length: 64 }),

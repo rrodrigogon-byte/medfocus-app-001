@@ -60,9 +60,45 @@ import LectureTranscription from '../components/medfocus/LectureTranscription';
 import MyContent from '../components/medfocus/MyContent';
 import ProfessorPortal from '../components/medfocus/ProfessorPortal';
 import PharmaBible from '../components/medfocus/PharmaBible';
+import ProPaywall from '../components/medfocus/ProPaywall';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
 import { useGamification } from '../hooks/useGamification';
+
+// Módulos que requerem plano Pro
+const PRO_MODULES = new Set([
+  'smartSummary', 'clinicalCases', 'battle', 'quiz', 'atlas',
+  'simulado', 'diagnosisAssistant', 'clinicalProtocols', 'fdaDrugs',
+  'drugInteractions', 'classroom', 'analytics', 'professor',
+  'validated-library', 'reports', 'flashcardStudy', 'lectureTranscription',
+  'myContent', 'pharmaBible', 'pubmedResearch', 'studyRooms', 'socialFeed',
+]);
+
+const MODULE_NAMES: Record<string, string> = {
+  smartSummary: 'Resumos Inteligentes',
+  clinicalCases: 'Casos Clínicos com IA',
+  battle: 'Modo Batalha',
+  quiz: 'Quiz Avançado',
+  atlas: 'Atlas Anatômico',
+  simulado: 'Simulados de Residência',
+  diagnosisAssistant: 'Apoio Diagnóstico IA',
+  clinicalProtocols: 'Protocolos Clínicos',
+  fdaDrugs: 'FDA Drugs',
+  drugInteractions: 'Interações Medicamentosas',
+  classroom: 'Sala de Aula',
+  analytics: 'Analytics de Turma',
+  professor: 'Painel do Professor',
+  'validated-library': 'Conteúdo Validado',
+  reports: 'Relatórios PDF',
+  flashcardStudy: 'Flashcards SM-2',
+  lectureTranscription: 'Transcrição de Aulas',
+  myContent: 'Meu Conteúdo',
+  pharmaBible: 'Bíblia Farmacológica',
+  pubmedResearch: 'PubMed Research',
+  studyRooms: 'Salas de Estudo',
+  socialFeed: 'Feed Social',
+  professorPortal: 'Portal do Professor',
+};
 
 export default function Home() {
   const { user: authUser, loading: authLoading, isAuthenticated, logout: oauthLogout } = useAuth();
@@ -154,7 +190,35 @@ export default function Home() {
     return <Login onLogin={handleLogin} onOAuthLogin={handleOAuthLogin} />;
   }
 
+  // Check user subscription status
+  const subscriptionQuery = trpc.stripe.getSubscription.useQuery(undefined, { 
+    retry: false,
+    enabled: isAuthenticated,
+  });
+  const userPlan = subscriptionQuery.data?.plan || 'free';
+  const hasFullAccess = subscriptionQuery.data?.hasFullAccess || false;
+  const isGuest = !isAuthenticated;
+
   const renderView = () => {
+    // Check if current view requires Pro and user doesn't have access
+    if (PRO_MODULES.has(currentView) && !hasFullAccess && !isGuest) {
+      return (
+        <ProPaywall
+          moduleName={MODULE_NAMES[currentView] || currentView}
+          onUpgrade={() => setCurrentView('pricing')}
+        />
+      );
+    }
+    // Guest users trying to access PRO modules see paywall too
+    if (PRO_MODULES.has(currentView) && isGuest) {
+      return (
+        <ProPaywall
+          moduleName={MODULE_NAMES[currentView] || currentView}
+          moduleDescription="Faça login com sua conta Google e assine o plano Pro para acessar este recurso."
+          onUpgrade={() => setCurrentView('pricing')}
+        />
+      );
+    }
     switch (currentView) {
       case 'dashboard': return <Dashboard user={localUser} />;
       case 'planner': return <Planner user={localUser} />;
@@ -289,10 +353,18 @@ export default function Home() {
             </h2>
           </div>
           <div className="flex items-center gap-2">
-            {isAuthenticated && (
+            {hasFullAccess && (
               <span className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-                Premium
+                {subscriptionQuery.data?.trialActive ? `Trial (${subscriptionQuery.data.trialDaysLeft}d)` : 'PRO'}
               </span>
+            )}
+            {!hasFullAccess && isAuthenticated && (
+              <button
+                onClick={() => setCurrentView('pricing')}
+                className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20 hover:bg-amber-400/20 transition-colors"
+              >
+                Upgrade Pro
+              </button>
             )}
             {isAuthenticated && authUser?.id && (
               <button

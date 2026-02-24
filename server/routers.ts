@@ -7,7 +7,7 @@ import { invokeLLM } from "./_core/llm";
 import { ENV } from "./_core/env";
 import { z } from "zod";
 import Stripe from "stripe";
-import { PLANS } from "./products";
+import { PLANS, PRO_MODULES, FREE_MODULES, hasAccess } from "./products";
 import { searchFDADrugs, getFDAAdverseEvents, getFDADrugInteractions, searchPubMed, calculateGlasgow, calculateSOFA, calculateAPACHEII, calculateWells, calculateCHA2DS2VASc, calculateChildPugh, calculateMELD } from "./services/medicalApis";
 import { THERAPEUTIC_CLASSES, getFullDrugLabel, getDrugAdverseEventStats, getDrugRecalls, searchDailyMed, getRxNormDrugInfo, getRxNormInteractions } from "./services/pharmacopeiaService";
 import { getOrCreateProgress, addXp, getXpHistory, logStudySession, updateUserProfile, createClassroom, getClassroomsByProfessor, getClassroomsByStudent, getClassroomById, joinClassroom, getEnrollments, removeEnrollment, createActivity, getActivitiesByClassroom, updateActivity, submitActivity, gradeSubmission, getSubmissionsByActivity, getStudentSubmissions, getClassroomAnalytics, findGeneratedMaterial, saveGeneratedMaterial, getUserMaterialHistory, getGeneratedMaterialById, rateMaterial, searchLibraryMaterials, saveLibraryMaterial, getLibraryMaterialById, toggleSaveMaterial, getUserSavedMaterialIds, getUserSavedMaterialsFull, getPopularLibraryMaterials, searchPubmedCache, savePubmedArticle, getPubmedArticleByPmid, addMaterialReview, getMaterialReviews, markReviewHelpful, trackStudyActivity, getUserStudyHistoryData, getUserTopSubjects, getUserQuizPerformance, subscribeToSubject, unsubscribeFromSubject, getUserSubscriptions, getUserNotifications, getUnreadNotificationCount, markNotificationRead, markAllNotificationsRead, notifySubscribersOfNewMaterial, saveStudyTemplate, getStudyTemplates, getStudyTemplateById, getUserTemplates, shareTemplate, getSharedTemplateByCode, getSharedTemplateFeed, likeSharedTemplate, createStudyRoom, getStudyRooms, joinStudyRoom, getStudyRoomById, sendRoomMessage, getRoomMessages, createSharedNote, getRoomNotes, createCalendarEvent, getCalendarEvents, updateCalendarEvent, deleteCalendarEvent, createRevisionSuggestions, getRevisionSuggestions, completeRevision, createSimulado, getSimulados, completeSimulado, getSimuladoQuestions, saveSimuladoQuestion, getSimuladoStats, getWeeklyGoals, createWeeklyGoal, updateGoalProgress, incrementGoalProgress, deleteWeeklyGoal, getUserXP, ensureUserXP, addXP, updateStreak, updateXPStats, getLeaderboard, getXPActivities, getPublicProfile, createClinicalCase, getClinicalCase, getUserClinicalCases, updateClinicalCase, createBattle, getBattleByCode, getBattle, getUserBattles, joinBattle, updateBattle, createSmartSummary, getUserSummaries, getPublicSummaries, getSummaryByShareCode, toggleSummaryPublic, postToFeed, getFeed, likeFeedItem, commentOnFeed, getFeedComments, getUserFeedLikes, getPerformanceBySpecialty, createFlashcardDeck, getUserFlashcardDecks, getPublicFlashcardDecks, addFlashcardCards, getDueFlashcards, getAllFlashcards, reviewFlashcard, deleteDeck, createExam, getUserExams, getUpcomingExams, updateExam, deleteExam, createStudySuggestions, getExamSuggestions, markSuggestionCompleted } from "./db";
@@ -34,11 +34,17 @@ export const appRouter = router({
     }),
 
     createCheckout: protectedProcedure
-      .input(z.object({ planId: z.enum(["pro", "premium"]) }))
+      .input(z.object({ 
+        planId: z.enum(["pro"]),
+        interval: z.enum(["monthly", "yearly"]).default("monthly"),
+      }))
       .mutation(async ({ ctx, input }) => {
         const stripe = getStripe();
         const plan = PLANS[input.planId];
         const origin = ctx.req.headers.origin || process.env.APP_URL || "https://medfocus-app-969630653332.southamerica-east1.run.app";
+        const isYearly = input.interval === 'yearly';
+        const unitAmount = isYearly ? plan.yearlyPrice : plan.price;
+        const recurringInterval = isYearly ? 'year' as const : 'month' as const;
 
         const session = await stripe.checkout.sessions.create({
           mode: "subscription",
@@ -46,22 +52,28 @@ export const appRouter = router({
           customer_email: ctx.user.email || undefined,
           client_reference_id: ctx.user.id.toString(),
           allow_promotion_codes: true,
+          subscription_data: {
+            trial_period_days: 7,
+          },
           metadata: {
             user_id: ctx.user.id.toString(),
             customer_email: ctx.user.email || "",
             customer_name: ctx.user.name || "",
             plan: input.planId,
+            interval: input.interval,
           },
           line_items: [
             {
               price_data: {
                 currency: plan.currency,
                 product_data: {
-                  name: plan.name,
-                  description: plan.description,
+                  name: `${plan.name} (${isYearly ? 'Anual' : 'Mensal'})`,
+                  description: isYearly 
+                    ? `${plan.description} - Pagamento anual de R$ 250,00` 
+                    : `${plan.description} - R$ 29,90/mês`,
                 },
-                unit_amount: plan.price,
-                recurring: { interval: plan.interval },
+                unit_amount: unitAmount,
+                recurring: { interval: recurringInterval },
               },
               quantity: 1,
             },
@@ -75,11 +87,63 @@ export const appRouter = router({
 
     getSubscription: protectedProcedure.query(async ({ ctx }) => {
       const user = ctx.user;
+      const now = new Date();
+      const trialEnd = user.trialEndDate ? new Date(user.trialEndDate) : null;
+      const isTrialActive = user.trialActive && trialEnd && trialEnd > now;
+      const trialDaysLeft = isTrialActive && trialEnd ? Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+      
       return {
         plan: user.plan || "free",
         stripeCustomerId: user.stripeCustomerId,
         stripeSubscriptionId: user.stripeSubscriptionId,
+        trialActive: !!isTrialActive,
+        trialDaysLeft,
+        trialEndDate: user.trialEndDate?.toISOString() || null,
+        cardRegistered: user.cardRegistered || false,
+        billingInterval: user.billingInterval || 'monthly',
+        hasFullAccess: user.plan === 'pro' || user.plan === 'premium' || !!isTrialActive,
       };
+    }),
+
+    // Verificar acesso a módulo específico
+    checkAccess: protectedProcedure
+      .input(z.object({ moduleId: z.string() }))
+      .query(async ({ ctx, input }) => {
+        const user = ctx.user;
+        const now = new Date();
+        const trialEnd = user.trialEndDate ? new Date(user.trialEndDate) : null;
+        const isTrialActive = user.trialActive && trialEnd && trialEnd > now;
+        return {
+          hasAccess: hasAccess(user.plan || 'free', input.moduleId, !!isTrialActive),
+          isPro: user.plan === 'pro' || user.plan === 'premium',
+          isTrialActive: !!isTrialActive,
+        };
+      }),
+
+    // Iniciar trial de 7 dias (requer cartão cadastrado)
+    startTrial: protectedProcedure.mutation(async ({ ctx }) => {
+      const user = ctx.user;
+      if (user.trialActive || user.trialEndDate) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Trial já foi utilizado.' });
+      }
+      if (user.plan === 'pro' || user.plan === 'premium') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Você já possui um plano ativo.' });
+      }
+      
+      const now = new Date();
+      const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      
+      const { getDb } = await import('./db');
+      const { users } = await import('../drizzle/schema');
+      const { eq } = await import('drizzle-orm');
+      const db = await getDb();
+      if (db) {
+        await db.update(users)
+          .set({ trialActive: true, trialStartDate: now, trialEndDate: trialEnd })
+          .where(eq(users.id, user.id));
+      }
+      
+      return { success: true, trialEndDate: trialEnd.toISOString() };
     }),
   }),
 
