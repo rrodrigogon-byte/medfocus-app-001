@@ -119,7 +119,15 @@ export type View =
   | 'smartSummary'
   | 'socialFeed'
   | 'flashcardStudy'
-  | 'examCalendar';
+  | 'examCalendar'
+  | 'diagnosisAssistant'
+  | 'medicalCalculators'
+  | 'drugInteractions'
+  | 'fdaDrugs'
+  | 'anvisaConsult'
+  | 'cid10'
+  | 'clinicalProtocols'
+  | 'pubmedResearch';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {

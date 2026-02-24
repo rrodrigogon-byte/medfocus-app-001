@@ -8,6 +8,7 @@ import { ENV } from "./_core/env";
 import { z } from "zod";
 import Stripe from "stripe";
 import { PLANS } from "./products";
+import { searchFDADrugs, getFDAAdverseEvents, getFDADrugInteractions, searchPubMed, calculateGlasgow, calculateSOFA, calculateAPACHEII, calculateWells, calculateCHA2DS2VASc, calculateChildPugh, calculateMELD } from "./services/medicalApis";
 import { getOrCreateProgress, addXp, getXpHistory, logStudySession, updateUserProfile, createClassroom, getClassroomsByProfessor, getClassroomsByStudent, getClassroomById, joinClassroom, getEnrollments, removeEnrollment, createActivity, getActivitiesByClassroom, updateActivity, submitActivity, gradeSubmission, getSubmissionsByActivity, getStudentSubmissions, getClassroomAnalytics, findGeneratedMaterial, saveGeneratedMaterial, getUserMaterialHistory, getGeneratedMaterialById, rateMaterial, searchLibraryMaterials, saveLibraryMaterial, getLibraryMaterialById, toggleSaveMaterial, getUserSavedMaterialIds, getUserSavedMaterialsFull, getPopularLibraryMaterials, searchPubmedCache, savePubmedArticle, getPubmedArticleByPmid, addMaterialReview, getMaterialReviews, markReviewHelpful, trackStudyActivity, getUserStudyHistoryData, getUserTopSubjects, getUserQuizPerformance, subscribeToSubject, unsubscribeFromSubject, getUserSubscriptions, getUserNotifications, getUnreadNotificationCount, markNotificationRead, markAllNotificationsRead, notifySubscribersOfNewMaterial, saveStudyTemplate, getStudyTemplates, getStudyTemplateById, getUserTemplates, shareTemplate, getSharedTemplateByCode, getSharedTemplateFeed, likeSharedTemplate, createStudyRoom, getStudyRooms, joinStudyRoom, getStudyRoomById, sendRoomMessage, getRoomMessages, createSharedNote, getRoomNotes, createCalendarEvent, getCalendarEvents, updateCalendarEvent, deleteCalendarEvent, createRevisionSuggestions, getRevisionSuggestions, completeRevision, createSimulado, getSimulados, completeSimulado, getSimuladoQuestions, saveSimuladoQuestion, getSimuladoStats, getWeeklyGoals, createWeeklyGoal, updateGoalProgress, incrementGoalProgress, deleteWeeklyGoal, getUserXP, ensureUserXP, addXP, updateStreak, updateXPStats, getLeaderboard, getXPActivities, getPublicProfile, createClinicalCase, getClinicalCase, getUserClinicalCases, updateClinicalCase, createBattle, getBattleByCode, getBattle, getUserBattles, joinBattle, updateBattle, createSmartSummary, getUserSummaries, getPublicSummaries, getSummaryByShareCode, toggleSummaryPublic, postToFeed, getFeed, likeFeedItem, commentOnFeed, getFeedComments, getUserFeedLikes, getPerformanceBySpecialty, createFlashcardDeck, getUserFlashcardDecks, getPublicFlashcardDecks, addFlashcardCards, getDueFlashcards, getAllFlashcards, reviewFlashcard, deleteDeck, createExam, getUserExams, getUpcomingExams, updateExam, deleteExam, createStudySuggestions, getExamSuggestions, markSuggestionCompleted } from "./db";
 
 function getStripe() {
@@ -2128,6 +2129,483 @@ Use markdown para formatação.`
       await markSuggestionCompleted(input.id);
       return { success: true };
     }),
+  }),
+
+  // ═══════════════════════════════════════════════════════════════
+  // MÓDULOS PROFISSIONAIS MÉDICOS
+  // ═══════════════════════════════════════════════════════════════
+
+  // ─── Apoio a Diagnóstico com IA (Gemini) ────────────────────
+  diagnosis: router({
+    differential: publicProcedure
+      .input(z.object({
+        symptoms: z.array(z.string()),
+        patientAge: z.number().optional(),
+        patientSex: z.enum(['male', 'female', 'other']).optional(),
+        medicalHistory: z.string().optional(),
+        vitalSigns: z.object({
+          temperature: z.number().optional(),
+          heartRate: z.number().optional(),
+          bloodPressure: z.string().optional(),
+          respiratoryRate: z.number().optional(),
+          oxygenSaturation: z.number().optional(),
+        }).optional(),
+        labResults: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: 'system',
+              content: `Você é um sistema de apoio a diagnóstico médico baseado em evidências científicas. Você NÃO substitui o médico — apenas auxilia no raciocínio clínico.
+
+IMPORTANTE: Sempre inclua o aviso "Este é um sistema de apoio à decisão clínica. O diagnóstico final deve ser feito pelo médico responsável."
+
+Retorne JSON com diagnósticos diferenciais ordenados por probabilidade, incluindo:
+- Diagnóstico com código CID-10
+- Probabilidade estimada
+- Critérios que suportam
+- Exames recomendados
+- Referências bibliográficas (Harrison's, Cecil, UpToDate)
+- Red flags (sinais de alarme)
+- Conduta inicial sugerida`
+            },
+            {
+              role: 'user',
+              content: `Paciente: ${input.patientAge || 'idade não informada'} anos, sexo ${input.patientSex === 'male' ? 'masculino' : input.patientSex === 'female' ? 'feminino' : 'não informado'}.
+Sintomas: ${input.symptoms.join(', ')}.
+${input.medicalHistory ? `História médica: ${input.medicalHistory}` : ''}
+${input.vitalSigns ? `Sinais vitais: T ${input.vitalSigns.temperature || '-'}°C, FC ${input.vitalSigns.heartRate || '-'} bpm, PA ${input.vitalSigns.bloodPressure || '-'}, FR ${input.vitalSigns.respiratoryRate || '-'} irpm, SpO2 ${input.vitalSigns.oxygenSaturation || '-'}%` : ''}
+${input.labResults ? `Exames: ${input.labResults}` : ''}
+
+Gere diagnóstico diferencial completo.`
+            }
+          ],
+          response_format: {
+            type: 'json_schema',
+            json_schema: {
+              name: 'differential_diagnosis',
+              strict: true,
+              schema: {
+                type: 'object',
+                properties: {
+                  disclaimer: { type: 'string' },
+                  differentials: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        diagnosis: { type: 'string' },
+                        icd10: { type: 'string' },
+                        probability: { type: 'string' },
+                        supportingCriteria: { type: 'array', items: { type: 'string' } },
+                        againstCriteria: { type: 'array', items: { type: 'string' } },
+                        recommendedExams: { type: 'array', items: { type: 'string' } },
+                        initialManagement: { type: 'string' },
+                        references: { type: 'array', items: { type: 'string' } }
+                      },
+                      required: ['diagnosis', 'icd10', 'probability', 'supportingCriteria', 'againstCriteria', 'recommendedExams', 'initialManagement', 'references'],
+                      additionalProperties: false
+                    }
+                  },
+                  redFlags: { type: 'array', items: { type: 'string' } },
+                  urgency: { type: 'string' },
+                  suggestedWorkup: { type: 'array', items: { type: 'string' } }
+                },
+                required: ['disclaimer', 'differentials', 'redFlags', 'urgency', 'suggestedWorkup'],
+                additionalProperties: false
+              }
+            }
+          },
+        });
+        const content = response.choices[0]?.message?.content;
+        return typeof content === 'string' ? JSON.parse(content) : { disclaimer: 'Erro ao gerar diagnóstico', differentials: [], redFlags: [], urgency: 'unknown', suggestedWorkup: [] };
+      }),
+
+    imageAnalysis: publicProcedure
+      .input(z.object({
+        imageDescription: z.string(),
+        clinicalContext: z.string().optional(),
+        imageType: z.enum(['xray', 'ct', 'mri', 'ecg', 'dermatology', 'pathology', 'other']),
+      }))
+      .mutation(async ({ input }) => {
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: 'system',
+              content: `Você é um radiologista/patologista especialista auxiliando na interpretação de exames de imagem. Analise a descrição do exame e forneça uma interpretação estruturada com achados, diagnósticos diferenciais e recomendações. Sempre inclua referências bibliográficas. AVISO: Este é um sistema de apoio — a interpretação final deve ser feita pelo especialista.`
+            },
+            {
+              role: 'user',
+              content: `Tipo de exame: ${input.imageType}\nDescrição/Achados: ${input.imageDescription}\n${input.clinicalContext ? `Contexto clínico: ${input.clinicalContext}` : ''}\n\nForneça interpretação completa.`
+            }
+          ],
+        });
+        return { analysis: response.choices[0]?.message?.content || 'Análise indisponível.' };
+      }),
+
+    prescriptionAssistant: publicProcedure
+      .input(z.object({
+        diagnosis: z.string(),
+        patientAge: z.number().optional(),
+        patientWeight: z.number().optional(),
+        allergies: z.array(z.string()).optional(),
+        comorbidities: z.array(z.string()).optional(),
+        currentMedications: z.array(z.string()).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: 'system',
+              content: `Você é um farmacologista clínico especialista. Sugira prescrições baseadas em evidências para o diagnóstico informado. Inclua:
+- Medicamentos de primeira linha com dose, via e posologia
+- Alternativas em caso de alergia
+- Interações medicamentosas relevantes
+- Ajustes para idade/peso/comorbidades
+- Referências (Goodman & Gilman, UpToDate, diretrizes SUS)
+AVISO: Sugestão de apoio — prescrição final é responsabilidade do médico.`
+            },
+            {
+              role: 'user',
+              content: `Diagnóstico: ${input.diagnosis}\nPaciente: ${input.patientAge || '?'} anos, ${input.patientWeight || '?'} kg\nAlergias: ${input.allergies?.join(', ') || 'nenhuma conhecida'}\nComorbidades: ${input.comorbidities?.join(', ') || 'nenhuma'}\nMedicamentos em uso: ${input.currentMedications?.join(', ') || 'nenhum'}\n\nSugira prescrição baseada em evidências.`
+            }
+          ],
+        });
+        return { prescription: response.choices[0]?.message?.content || 'Prescrição indisponível.' };
+      }),
+  }),
+
+  // ─── OpenFDA Drug Database ──────────────────────────────────
+  fda: router({
+    searchDrugs: publicProcedure
+      .input(z.object({ query: z.string(), limit: z.number().optional() }))
+      .query(async ({ input }) => {
+        return await searchFDADrugs(input.query, input.limit || 10);
+      }),
+
+    adverseEvents: publicProcedure
+      .input(z.object({ drugName: z.string(), limit: z.number().optional() }))
+      .query(async ({ input }) => {
+        return await getFDAAdverseEvents(input.drugName, input.limit || 10);
+      }),
+
+    drugInteractions: publicProcedure
+      .input(z.object({ drugName: z.string() }))
+      .query(async ({ input }) => {
+        return await getFDADrugInteractions(input.drugName);
+      }),
+
+    drugInfo: publicProcedure
+      .input(z.object({ drugName: z.string() }))
+      .mutation(async ({ input }) => {
+        // Comprehensive drug info combining FDA data + AI analysis
+        const fdaData = await searchFDADrugs(input.drugName, 1);
+        const interactions = await getFDADrugInteractions(input.drugName);
+        
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: 'system',
+              content: `Você é um farmacologista clínico. Forneça informações completas sobre o medicamento solicitado, combinando dados da FDA com conhecimento farmacológico. Inclua: mecanismo de ação, farmacocinética, indicações, contraindicações, efeitos adversos, interações, uso em populações especiais (gestantes, idosos, crianças, insuficiência renal/hepática). Use referências de Goodman & Gilman e bulas oficiais.`
+            },
+            {
+              role: 'user',
+              content: `Medicamento: ${input.drugName}\n\nDados FDA disponíveis: ${JSON.stringify(fdaData[0] || {})}\nInterações FDA: ${JSON.stringify(interactions || {})}\n\nForneça informação farmacológica completa em português.`
+            }
+          ],
+        });
+        return {
+          fdaData: fdaData[0] || null,
+          interactions,
+          aiAnalysis: response.choices[0]?.message?.content || 'Análise indisponível.',
+        };
+      }),
+  }),
+
+  // ─── ANVISA Integration ─────────────────────────────────────
+  anvisa: router({
+    searchDrug: publicProcedure
+      .input(z.object({ query: z.string() }))
+      .mutation(async ({ input }) => {
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: 'system',
+              content: `Você é um especialista em regulação sanitária brasileira (ANVISA). Forneça informações sobre o medicamento no contexto brasileiro, incluindo:\n- Nome comercial e genérico\n- Classe terapêutica\n- Registro ANVISA (se conhecido)\n- Classificação (referência, genérico, similar)\n- Disponibilidade no SUS (RENAME)\n- Tarja (branca, vermelha, preta)\n- Necessidade de receita\n- Preço máximo ao consumidor (PMC) aproximado\n- Equivalentes genéricos disponíveis\nRetorne JSON válido.`
+            },
+            {
+              role: 'user',
+              content: `Buscar informações ANVISA sobre: ${input.query}`
+            }
+          ],
+          response_format: {
+            type: 'json_schema',
+            json_schema: {
+              name: 'anvisa_drug',
+              strict: true,
+              schema: {
+                type: 'object',
+                properties: {
+                  nome_comercial: { type: 'string' },
+                  principio_ativo: { type: 'string' },
+                  classe_terapeutica: { type: 'string' },
+                  registro_anvisa: { type: 'string' },
+                  classificacao: { type: 'string' },
+                  disponivel_sus: { type: 'boolean' },
+                  tarja: { type: 'string' },
+                  necessita_receita: { type: 'string' },
+                  preco_aproximado: { type: 'string' },
+                  genericos_disponiveis: { type: 'array', items: { type: 'string' } },
+                  observacoes: { type: 'string' }
+                },
+                required: ['nome_comercial', 'principio_ativo', 'classe_terapeutica', 'registro_anvisa', 'classificacao', 'disponivel_sus', 'tarja', 'necessita_receita', 'preco_aproximado', 'genericos_disponiveis', 'observacoes'],
+                additionalProperties: false
+              }
+            }
+          },
+        });
+        const content = response.choices[0]?.message?.content;
+        return typeof content === 'string' ? JSON.parse(content) : {};
+      }),
+
+    compareGenerics: publicProcedure
+      .input(z.object({ drugName: z.string() }))
+      .mutation(async ({ input }) => {
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: 'system',
+              content: `Você é um farmacêutico especialista em medicamentos genéricos no Brasil. Compare o medicamento de referência com seus genéricos disponíveis no mercado brasileiro. Inclua: bioequivalência, preços comparativos, fabricantes, e recomendações.`
+            },
+            {
+              role: 'user',
+              content: `Compare genéricos disponíveis para: ${input.drugName}`
+            }
+          ],
+        });
+        return { comparison: response.choices[0]?.message?.content || 'Comparação indisponível.' };
+      }),
+  }),
+
+  // ─── CID-10 / ICD-10 Lookup ─────────────────────────────────
+  cid10: router({
+    search: publicProcedure
+      .input(z.object({ query: z.string() }))
+      .mutation(async ({ input }) => {
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: 'system',
+              content: `Você é um codificador CID-10 especialista. Busque códigos CID-10 relevantes para a consulta. Retorne JSON com os códigos mais relevantes, incluindo subcategorias quando aplicável.`
+            },
+            {
+              role: 'user',
+              content: `Buscar códigos CID-10 para: ${input.query}`
+            }
+          ],
+          response_format: {
+            type: 'json_schema',
+            json_schema: {
+              name: 'cid10_results',
+              strict: true,
+              schema: {
+                type: 'object',
+                properties: {
+                  results: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        code: { type: 'string' },
+                        description: { type: 'string' },
+                        category: { type: 'string' },
+                        chapter: { type: 'string' },
+                        includes: { type: 'array', items: { type: 'string' } },
+                        excludes: { type: 'array', items: { type: 'string' } }
+                      },
+                      required: ['code', 'description', 'category', 'chapter', 'includes', 'excludes'],
+                      additionalProperties: false
+                    }
+                  }
+                },
+                required: ['results'],
+                additionalProperties: false
+              }
+            }
+          },
+        });
+        const content = response.choices[0]?.message?.content;
+        return typeof content === 'string' ? JSON.parse(content) : { results: [] };
+      }),
+  }),
+
+  // ─── Calculadoras Médicas ───────────────────────────────────
+  calculators: router({
+    glasgow: publicProcedure
+      .input(z.object({ eye: z.number(), verbal: z.number(), motor: z.number() }))
+      .query(({ input }) => calculateGlasgow(input.eye, input.verbal, input.motor)),
+
+    sofa: publicProcedure
+      .input(z.object({
+        pao2fio2: z.number(), platelets: z.number(), bilirubin: z.number(),
+        map: z.number(), creatinine: z.number(), glasgow: z.number(),
+      }))
+      .query(({ input }) => calculateSOFA(input.pao2fio2, input.platelets, input.bilirubin, input.map, input.creatinine, input.glasgow)),
+
+    wells: publicProcedure
+      .input(z.object({
+        clinicalDVT: z.boolean(), alternativeDiagnosisLessLikely: z.boolean(),
+        heartRate100: z.boolean(), immobilization: z.boolean(),
+        previousDVTPE: z.boolean(), hemoptysis: z.boolean(), malignancy: z.boolean(),
+      }))
+      .query(({ input }) => calculateWells(input.clinicalDVT, input.alternativeDiagnosisLessLikely, input.heartRate100, input.immobilization, input.previousDVTPE, input.hemoptysis, input.malignancy)),
+
+    cha2ds2vasc: publicProcedure
+      .input(z.object({
+        chf: z.boolean(), hypertension: z.boolean(), age75: z.boolean(),
+        diabetes: z.boolean(), stroke: z.boolean(), vascular: z.boolean(),
+        age65: z.boolean(), female: z.boolean(),
+      }))
+      .query(({ input }) => calculateCHA2DS2VASc(input.chf, input.hypertension, input.age75, input.diabetes, input.stroke, input.vascular, input.age65, input.female)),
+
+    childPugh: publicProcedure
+      .input(z.object({
+        bilirubin: z.number(), albumin: z.number(), inr: z.number(),
+        ascites: z.enum(['none', 'mild', 'moderate_severe']),
+        encephalopathy: z.enum(['none', 'grade1_2', 'grade3_4']),
+      }))
+      .query(({ input }) => calculateChildPugh(input.bilirubin, input.albumin, input.inr, input.ascites, input.encephalopathy)),
+
+    meld: publicProcedure
+      .input(z.object({
+        bilirubin: z.number(), inr: z.number(), creatinine: z.number(),
+        sodium: z.number().optional(),
+      }))
+      .query(({ input }) => calculateMELD(input.bilirubin, input.inr, input.creatinine, input.sodium)),
+
+    apacheII: publicProcedure
+      .input(z.object({
+        age: z.number(), temperature: z.number(), map: z.number(),
+        heartRate: z.number(), respiratoryRate: z.number(), pao2: z.number(),
+        arterialPh: z.number(), sodium: z.number(), potassium: z.number(),
+        creatinine: z.number(), hematocrit: z.number(), wbc: z.number(),
+        glasgow: z.number(), chronicHealth: z.number(),
+      }))
+      .query(({ input }) => calculateAPACHEII(
+        input.age, input.temperature, input.map, input.heartRate,
+        input.respiratoryRate, input.pao2, input.arterialPh,
+        input.sodium, input.potassium, input.creatinine,
+        input.hematocrit, input.wbc, input.glasgow, input.chronicHealth
+      )),
+  }),
+
+  // ─── PubMed Research Avançado ───────────────────────────────
+  pubmed: router({
+    search: publicProcedure
+      .input(z.object({ query: z.string(), maxResults: z.number().optional() }))
+      .mutation(async ({ input }) => {
+        return await searchPubMed(input.query, input.maxResults || 10);
+      }),
+
+    analyzeArticle: publicProcedure
+      .input(z.object({ title: z.string(), abstractText: z.string(), journal: z.string() }))
+      .mutation(async ({ input }) => {
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: 'system',
+              content: `Você é um pesquisador médico especialista em análise crítica de artigos científicos. Analise o artigo e forneça:\n- Resumo em português\n- Nível de evidência (Oxford)\n- Pontos fortes e limitações\n- Aplicabilidade clínica\n- Comparação com a literatura atual`
+            },
+            {
+              role: 'user',
+              content: `Analise este artigo:\nTítulo: ${input.title}\nJornal: ${input.journal}\nResumo: ${input.abstractText}`
+            }
+          ],
+        });
+        return { analysis: response.choices[0]?.message?.content || 'Análise indisponível.' };
+      }),
+  }),
+
+  // ─── Protocolos Clínicos e Diretrizes ───────────────────────
+  protocols: router({
+    search: publicProcedure
+      .input(z.object({ condition: z.string(), source: z.enum(['sus', 'who', 'nice', 'aha', 'all']).optional() }))
+      .mutation(async ({ input }) => {
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: 'system',
+              content: `Você é um especialista em protocolos clínicos e diretrizes terapêuticas. Forneça o protocolo mais atualizado para a condição clínica, incluindo:\n- Protocolo do SUS (PCDT) se disponível\n- Diretrizes internacionais (WHO, NICE, AHA, ESC)\n- Fluxograma de manejo\n- Critérios diagnósticos\n- Tratamento de primeira linha\n- Critérios de encaminhamento\n- Referências oficiais com links quando possível`
+            },
+            {
+              role: 'user',
+              content: `Buscar protocolos clínicos para: ${input.condition}${input.source && input.source !== 'all' ? ` (fonte: ${input.source})` : ''}`
+            }
+          ],
+        });
+        return { protocol: response.choices[0]?.message?.content || 'Protocolo indisponível.' };
+      }),
+  }),
+
+  // ─── Interação Medicamentosa Avançada ────────────────────────
+  drugInteraction: router({
+    check: publicProcedure
+      .input(z.object({ drugs: z.array(z.string()).min(2) }))
+      .mutation(async ({ input }) => {
+        // Get FDA data for each drug
+        const fdaPromises = input.drugs.map(d => getFDADrugInteractions(d));
+        const fdaResults = await Promise.all(fdaPromises);
+        
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: 'system',
+              content: `Você é um farmacologista clínico especialista em interações medicamentosas. Analise as interações entre os medicamentos fornecidos. Retorne JSON com:\n- Interações encontradas (gravidade: leve/moderada/grave/contraindicada)\n- Mecanismo da interação\n- Manejo clínico recomendado\n- Alternativas terapêuticas\n- Referências (Micromedex, UpToDate, Stockley's)`
+            },
+            {
+              role: 'user',
+              content: `Verifique interações entre: ${input.drugs.join(' + ')}\n\nDados FDA: ${JSON.stringify(fdaResults.filter(Boolean))}`
+            }
+          ],
+          response_format: {
+            type: 'json_schema',
+            json_schema: {
+              name: 'drug_interactions',
+              strict: true,
+              schema: {
+                type: 'object',
+                properties: {
+                  interactions: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        drug1: { type: 'string' },
+                        drug2: { type: 'string' },
+                        severity: { type: 'string' },
+                        mechanism: { type: 'string' },
+                        clinicalEffect: { type: 'string' },
+                        management: { type: 'string' },
+                        alternatives: { type: 'array', items: { type: 'string' } },
+                        references: { type: 'array', items: { type: 'string' } }
+                      },
+                      required: ['drug1', 'drug2', 'severity', 'mechanism', 'clinicalEffect', 'management', 'alternatives', 'references'],
+                      additionalProperties: false
+                    }
+                  },
+                  overallRisk: { type: 'string' },
+                  recommendation: { type: 'string' }
+                },
+                required: ['interactions', 'overallRisk', 'recommendation'],
+                additionalProperties: false
+              }
+            }
+          },
+        });
+        const content = response.choices[0]?.message?.content;
+        return typeof content === 'string' ? JSON.parse(content) : { interactions: [], overallRisk: 'unknown', recommendation: '' };
+      }),
   }),
 });
 
