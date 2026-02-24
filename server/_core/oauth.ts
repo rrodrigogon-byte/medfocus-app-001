@@ -1,6 +1,6 @@
 /**
  * Authentication Routes — Standalone JWT (replaces Manus OAuth).
- * Supports: register, login, Google OAuth (optional), guest mode.
+ * Supports: register with password, login with password verification, guest mode.
  */
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import type { Express, Request, Response } from "express";
@@ -24,51 +24,97 @@ async function createSessionToken(openId: string, name: string): Promise<string>
     .sign(secretKey);
 }
 
+// Helper to update passwordHash directly via raw SQL
+async function updatePasswordHash(openId: string, passwordHash: string) {
+  const dbInstance = await db.getDb();
+  if (!dbInstance) return;
+  try {
+    await dbInstance.execute(
+      `UPDATE users SET passwordHash = ? WHERE openId = ?`,
+      [passwordHash, openId]
+    );
+  } catch (e) {
+    console.error("[Auth] Failed to update passwordHash:", e);
+  }
+}
+
+// Helper to get passwordHash
+async function getPasswordHash(openId: string): Promise<string | null> {
+  const dbInstance = await db.getDb();
+  if (!dbInstance) return null;
+  try {
+    const result = await dbInstance.execute(
+      `SELECT passwordHash FROM users WHERE openId = ?`,
+      [openId]
+    );
+    const rows = result as any;
+    if (rows && rows[0] && rows[0].length > 0) {
+      return rows[0][0].passwordHash || null;
+    }
+    return null;
+  } catch (e) {
+    console.error("[Auth] Failed to get passwordHash:", e);
+    return null;
+  }
+}
+
 export function registerOAuthRoutes(app: Express) {
   // ─── Register ─────────────────────────────────────────────
   app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
-      const { email, password, name, role = "user" } = req.body;
+      const { email, password, name } = req.body;
 
       if (!email || !password || !name) {
-        res.status(400).json({ error: "Email, password e nome são obrigatórios" });
+        res.status(400).json({ error: "Email, senha e nome são obrigatórios" });
         return;
       }
 
+      if (password.length < 6) {
+        res.status(400).json({ error: "A senha deve ter no mínimo 6 caracteres" });
+        return;
+      }
+
+      const openId = email.toLowerCase().trim();
+
       // Check if user exists
-      const existing = await db.getUserByOpenId(email.toLowerCase());
+      const existing = await db.getUserByOpenId(openId);
       if (existing) {
-        res.status(409).json({ error: "Email já cadastrado" });
+        res.status(409).json({ error: "Este e-mail já está cadastrado. Faça login." });
         return;
       }
 
       // Hash password
       const passwordHash = await bcrypt.hash(password, 10);
-      const openId = email.toLowerCase();
+
+      // Determine role - admin if owner email
+      const isOwner = openId === ENV.ownerEmail?.toLowerCase() || openId === ENV.ownerOpenId?.toLowerCase();
+      const role = isOwner ? "admin" : "user";
 
       // Create user
       await db.upsertUser({
         openId,
-        name,
-        email: email.toLowerCase(),
+        name: name.trim(),
+        email: openId,
         loginMethod: "email",
+        role: role as any,
         lastSignedIn: new Date(),
       });
 
+      // Save password hash
+      await updatePasswordHash(openId, passwordHash);
+
       // Create session token
-      const sessionToken = await createSessionToken(openId, name);
+      const sessionToken = await createSessionToken(openId, name.trim());
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
-      // Store password hash in a separate mechanism (we'll use the user record)
-      // For now, store as part of the login method
       res.json({
         success: true,
-        user: { openId, name, email: email.toLowerCase(), role },
+        user: { openId, name: name.trim(), email: openId, role },
       });
     } catch (error) {
       console.error("[Auth] Register failed:", error);
-      res.status(500).json({ error: "Falha no registro" });
+      res.status(500).json({ error: "Falha no registro. Tente novamente." });
     }
   });
 
@@ -104,26 +150,29 @@ export function registerOAuthRoutes(app: Express) {
         return;
       }
 
-      const user = await db.getUserByOpenId(email.toLowerCase());
+      const openId = email.toLowerCase().trim();
+      const user = await db.getUserByOpenId(openId);
+
       if (!user) {
-        // Auto-create user on first login (for OAuth-like flow)
-        await db.upsertUser({
-          openId: email.toLowerCase(),
-          name: email.split("@")[0],
-          email: email.toLowerCase(),
-          loginMethod: "email",
-          lastSignedIn: new Date(),
-        });
-
-        const sessionToken = await createSessionToken(email.toLowerCase(), email.split("@")[0]);
-        const cookieOptions = getSessionCookieOptions(req);
-        res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
-
-        res.json({
-          success: true,
-          user: { openId: email.toLowerCase(), name: email.split("@")[0], role: "user" },
-        });
+        res.status(401).json({ error: "E-mail não cadastrado. Crie uma conta primeiro." });
         return;
+      }
+
+      // Verify password if user has one
+      if (password) {
+        const storedHash = await getPasswordHash(openId);
+        if (storedHash) {
+          const isValid = await bcrypt.compare(password, storedHash);
+          if (!isValid) {
+            res.status(401).json({ error: "Senha incorreta." });
+            return;
+          }
+        }
+        // If no stored hash (legacy user), allow login and save new hash
+        if (!storedHash && password) {
+          const newHash = await bcrypt.hash(password, 10);
+          await updatePasswordHash(openId, newHash);
+        }
       }
 
       // Update last sign in
@@ -147,7 +196,7 @@ export function registerOAuthRoutes(app: Express) {
       });
     } catch (error) {
       console.error("[Auth] Login failed:", error);
-      res.status(500).json({ error: "Falha no login" });
+      res.status(500).json({ error: "Falha no login. Tente novamente." });
     }
   });
 

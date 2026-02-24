@@ -30,6 +30,6 @@ export const ENV = {
   corsOrigin: process.env.CORS_ORIGIN ?? "*",
 
   // Owner (admin) email
-  ownerEmail: process.env.OWNER_EMAIL ?? "rodrigo.goncalves@uisa.com.br",
-  ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
+  ownerEmail: process.env.OWNER_EMAIL ?? "rrodrigogon@gmail.com",
+  ownerOpenId: process.env.OWNER_OPEN_ID ?? "rrodrigogon@gmail.com",
 };

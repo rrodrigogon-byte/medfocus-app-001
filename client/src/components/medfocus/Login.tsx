@@ -1,12 +1,11 @@
 /**
  * MedFocus Login — Premium Split-Screen Design
- * Font: Outfit (display), Plus Jakarta Sans (body)
- * Palette: Deep navy sidebar + clean white form
+ * Real backend authentication via /api/auth/register and /api/auth/login
  */
 import React, { useState } from 'react';
 
 interface AuthProps {
-  onLogin: (name: string, email: string) => void;
+  onLogin: (name: string, email: string, role?: string) => void;
   onOAuthLogin?: () => void;
 }
 
@@ -23,38 +22,77 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onOAuthLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const getUsers = () => JSON.parse(localStorage.getItem('medfocus_db_users') || '{}');
-  const saveUsers = (users: any) => localStorage.setItem('medfocus_db_users', JSON.stringify(users));
-
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    if (password.length < 6) { setError('A senha deve ter no mínimo 6 caracteres.'); return; }
     if (password !== confirmPassword) { setError('As senhas não coincidem.'); return; }
-    const users = getUsers();
-    const normalizedEmail = email.toLowerCase().trim();
-    if (users[normalizedEmail]) { setError('Este e-mail já está cadastrado.'); return; }
     setIsLoading(true);
-    const userData = { name: name.trim() || 'Doutor(a)', password };
-    users[normalizedEmail] = userData;
-    saveUsers(users);
-    onLogin(userData.name, normalizedEmail);
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email: email.toLowerCase().trim(), password, name: name.trim() || 'Estudante' }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Erro ao criar conta.');
+        setIsLoading(false);
+        return;
+      }
+      // Backend set the session cookie, now call onLogin
+      onLogin(data.user.name, data.user.email || data.user.openId, data.user.role);
+    } catch (err) {
+      setError('Erro de conexão. Tente novamente.');
+      setIsLoading(false);
+    }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const users = getUsers();
-    const normalizedEmail = email.toLowerCase().trim();
-    const user = users[normalizedEmail];
-    if (!user) { setError('E-mail não cadastrado.'); return; }
-    if (user.password !== password) { setError('Senha incorreta.'); return; }
     setIsLoading(true);
-    onLogin(user.name, normalizedEmail);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email: email.toLowerCase().trim(), password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Erro ao fazer login.');
+        setIsLoading(false);
+        return;
+      }
+      onLogin(data.user.name, data.user.email || data.user.openId, data.user.role);
+    } catch (err) {
+      setError('Erro de conexão. Tente novamente.');
+      setIsLoading(false);
+    }
   };
 
-  const handleGuestAccess = () => {
+  const handleGuestAccess = async () => {
     setIsLoading(true);
-    onLogin('Convidado', 'convidado@medfocus.demo');
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ guestName: 'Convidado' }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        // Fallback to local guest if backend fails
+        onLogin('Convidado', 'convidado@medfocus.demo');
+        return;
+      }
+      onLogin(data.user.name, data.user.openId, data.user.role);
+    } catch {
+      // Fallback to local guest
+      onLogin('Convidado', 'convidado@medfocus.demo');
+    }
   };
 
   const inputClass = "w-full px-4 py-3.5 bg-muted/50 border border-border rounded-xl outline-none transition-all text-foreground font-medium placeholder:text-muted-foreground/60 focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm";

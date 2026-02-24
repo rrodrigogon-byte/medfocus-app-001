@@ -60,6 +60,7 @@ import LectureTranscription from '../components/medfocus/LectureTranscription';
 import MyContent from '../components/medfocus/MyContent';
 import ProfessorPortal from '../components/medfocus/ProfessorPortal';
 import PharmaBible from '../components/medfocus/PharmaBible';
+import AdminDashboard from '../components/medfocus/AdminDashboard';
 import ProPaywall from '../components/medfocus/ProPaywall';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
@@ -150,11 +151,14 @@ export default function Home() {
     }
   }, [isAuthenticated, authLoading]);
 
-  const handleLogin = (name: string, email: string) => {
-    const newUser: User = { id: `guest_${Date.now()}`, name, email, isLoggedIn: true, role: 'student' };
+  const handleLogin = (name: string, email: string, role?: string) => {
+    const userRole = role === 'admin' ? 'admin' : 'student';
+    const newUser: User = { id: email, name, email, isLoggedIn: true, role: userRole as any };
     setLocalUser(newUser);
     setCurrentView('dashboard');
     localStorage.setItem('medfocus_user', JSON.stringify(newUser));
+    // Reload to activate the session cookie set by the backend
+    window.location.reload();
   };
 
   const handleOAuthLogin = () => {
@@ -267,6 +271,7 @@ export default function Home() {
       case 'myContent': return <MyContent />;
       case 'professorPortal': return <ProfessorPortal />;
       case 'pharmaBible': return <PharmaBible />;
+      case 'adminDashboard': return <AdminDashboard userName={localUser?.name} />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{

@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { invokeLLM } from "./_core/llm";
 import { ENV } from "./_core/env";
@@ -2964,6 +2964,46 @@ AVISO: Sugestão de apoio — prescrição final é responsabilidade do médico.
         });
         return { answer: response.choices[0]?.message?.content || 'Não foi possível gerar resposta.' };
       }),
+  }),
+
+  // ─── Admin Dashboard ──────────────────────────────────────
+  admin: router({
+    stats: adminProcedure.query(async ({ ctx }) => {
+      const { getDb } = await import('./db');
+      const dbInstance = await getDb();
+      if (!dbInstance) return { totalUsers: 0, activeSubscribers: 0, trialUsers: 0, monthlyRevenue: 0, yearlyRevenue: 0, churnRate: 0, newUsersToday: 0, newUsersWeek: 0 };
+      try {
+        const [totalResult] = await dbInstance.execute(`SELECT COUNT(*) as total FROM users`) as any;
+        const totalUsers = totalResult?.[0]?.total || 0;
+        const [proResult] = await dbInstance.execute(`SELECT COUNT(*) as total FROM users WHERE plan IN ('pro', 'premium')`) as any;
+        const activeSubscribers = proResult?.[0]?.total || 0;
+        const [trialResult] = await dbInstance.execute(`SELECT COUNT(*) as total FROM users WHERE trialActive = 1`) as any;
+        const trialUsers = trialResult?.[0]?.total || 0;
+        const [todayResult] = await dbInstance.execute(`SELECT COUNT(*) as total FROM users WHERE DATE(createdAt) = CURDATE()`) as any;
+        const newUsersToday = todayResult?.[0]?.total || 0;
+        const [weekResult] = await dbInstance.execute(`SELECT COUNT(*) as total FROM users WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)`) as any;
+        const newUsersWeek = weekResult?.[0]?.total || 0;
+        const monthlyRevenue = activeSubscribers * 29.90;
+        const yearlyRevenue = monthlyRevenue * 12;
+        const churnRate = totalUsers > 0 ? Math.round(((totalUsers - activeSubscribers - trialUsers) / totalUsers) * 100) : 0;
+        return { totalUsers, activeSubscribers, trialUsers, monthlyRevenue, yearlyRevenue, churnRate, newUsersToday, newUsersWeek };
+      } catch (e) {
+        console.error('[Admin] Stats error:', e);
+        return { totalUsers: 0, activeSubscribers: 0, trialUsers: 0, monthlyRevenue: 0, yearlyRevenue: 0, churnRate: 0, newUsersToday: 0, newUsersWeek: 0 };
+      }
+    }),
+    subscribers: adminProcedure.query(async ({ ctx }) => {
+      const { getDb } = await import('./db');
+      const dbInstance = await getDb();
+      if (!dbInstance) return [];
+      try {
+        const [rows] = await dbInstance.execute(`SELECT id, openId, name, email, role, plan, trialActive, trialStartDate, trialEndDate, createdAt, lastSignedIn, stripeCustomerId, billingInterval FROM users ORDER BY createdAt DESC LIMIT 500`) as any;
+        return rows || [];
+      } catch (e) {
+        console.error('[Admin] Subscribers error:', e);
+        return [];
+      }
+    }),
   }),
 });
 

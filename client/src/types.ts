@@ -131,7 +131,8 @@ export type View =
   | 'myContent'
   | 'lectureTranscription'
   | 'professorPortal'
-  | 'pharmaBible';
+  | 'pharmaBible'
+  | 'adminDashboard';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {
