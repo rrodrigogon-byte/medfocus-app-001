@@ -7,7 +7,7 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/medfocus/medfocus-app:$COMMIT_SHA'
+      - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/medfocus/medfocus-app:${_COMMIT_SHA}'
       - '-t'
       - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/medfocus/medfocus-app:latest'
       - '.'
@@ -16,14 +16,14 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/medfocus/medfocus-app:$COMMIT_SHA'
+      - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/medfocus/medfocus-app:${_COMMIT_SHA}'
 
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
       - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/medfocus/medfocus-app:latest'
 
-  # Step 3: Deploy to Cloud Run
+  # Step 3: Deploy to Cloud Run (uses --update-env-vars to preserve existing vars like DATABASE_URL)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -31,7 +31,7 @@ steps:
       - 'deploy'
       - 'medfocus-app'
       - '--image'
-      - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/medfocus/medfocus-app:$COMMIT_SHA'
+      - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/medfocus/medfocus-app:${_COMMIT_SHA}'
       - '--region'
       - 'southamerica-east1'
       - '--platform'
@@ -49,11 +49,14 @@ steps:
       - '10'
       - '--add-cloudsql-instances'
       - 'viralgram-4-0-rodrigo:southamerica-east1:viralgram-mysql'
-      - '--set-env-vars'
+      - '--update-env-vars'
       - 'NODE_ENV=production'
 
+substitutions:
+  _COMMIT_SHA: 'latest'
+
 images:
-  - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/medfocus/medfocus-app:$COMMIT_SHA'
+  - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/medfocus/medfocus-app:${_COMMIT_SHA}'
   - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/medfocus/medfocus-app:latest'
 
 options:
