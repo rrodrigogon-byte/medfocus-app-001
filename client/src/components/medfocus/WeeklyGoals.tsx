@@ -53,7 +53,7 @@ export default function WeeklyGoals() {
     return getWeekStart(d);
   }, [currentWeekOffset]);
 
-  const goalsQuery = trpc.goals.list.useQuery({ weekStart });
+  const goalsQuery = trpc.goals.list.useQuery({ weekStart }, { retry: false });
   const createGoal = trpc.goals.create.useMutation({
     onSuccess: () => {
       goalsQuery.refetch();

@@ -54,11 +54,11 @@ const ExamCalendar: React.FC = () => {
   });
 
   // Queries
-  const exams = trpc.examCalendar.list.useQuery(undefined, { enabled: isAuthenticated });
-  const upcomingExams = trpc.examCalendar.upcoming.useQuery({ days: 90 }, { enabled: isAuthenticated });
+  const exams = trpc.examCalendar.list.useQuery(undefined, { enabled: isAuthenticated, retry: false });
+  const upcomingExams = trpc.examCalendar.upcoming.useQuery({ days: 90 }, { enabled: isAuthenticated, retry: false });
   const suggestions = trpc.examCalendar.suggestions.useQuery(
     { examId: selectedExamId! },
-    { enabled: !!selectedExamId && view === 'detail' }
+    { enabled: !!selectedExamId && view === 'detail', retry: false }
   );
 
   // Mutations

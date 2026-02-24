@@ -30,7 +30,7 @@ const SocialFeed: React.FC = () => {
   const [expandedComments, setExpandedComments] = useState<Set<number>>(new Set());
   const [commentInputs, setCommentInputs] = useState<Record<number, string>>({});
 
-  const { data: feedItems, refetch, isLoading } = trpc.feed.list.useQuery({});
+  const { data: feedItems, refetch, isLoading, isError } = trpc.feed.list.useQuery({}, { retry: false });
   const likeMutation = trpc.feed.like.useMutation();
   const commentMutation = trpc.feed.comment.useMutation();
 

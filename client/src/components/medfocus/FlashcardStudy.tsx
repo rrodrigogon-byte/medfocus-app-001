@@ -46,15 +46,15 @@ const FlashcardStudy: React.FC = () => {
   const [sessionStats, setSessionStats] = useState({ easy: 0, good: 0, hard: 0, again: 0 });
 
   // Queries
-  const myDecks = trpc.flashcards.myDecks.useQuery(undefined, { enabled: isAuthenticated });
-  const publicDecks = trpc.flashcards.publicDecks.useQuery();
+  const myDecks = trpc.flashcards.myDecks.useQuery(undefined, { enabled: isAuthenticated, retry: false });
+  const publicDecks = trpc.flashcards.publicDecks.useQuery(undefined, { retry: false });
   const dueCards = trpc.flashcards.getDueCards.useQuery(
     { deckId: selectedDeckId! },
-    { enabled: !!selectedDeckId && view === 'review' }
+    { enabled: !!selectedDeckId && view === 'review', retry: false }
   );
   const allCards = trpc.flashcards.getAllCards.useQuery(
     { deckId: selectedDeckId! },
-    { enabled: !!selectedDeckId && view === 'review' }
+    { enabled: !!selectedDeckId && view === 'review', retry: false }
   );
 
   // Mutations

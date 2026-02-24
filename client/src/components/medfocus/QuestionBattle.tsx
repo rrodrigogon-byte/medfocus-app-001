@@ -68,7 +68,7 @@ const QuestionBattle: React.FC = () => {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const msgHandlerRef = useRef<(msg: any) => void>(() => {});
 
-  const { data: battleHistory } = trpc.battle.list.useQuery();
+  const { data: battleHistory } = trpc.battle.list.useQuery(undefined, { retry: false });
 
   const soloQuestions = useMemo(() => {
     const shuffled = [...REAL_QUESTIONS].sort(() => Math.random() - 0.5);

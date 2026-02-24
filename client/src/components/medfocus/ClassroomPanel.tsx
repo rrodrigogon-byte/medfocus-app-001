@@ -70,8 +70,8 @@ const ClassroomPanel: React.FC<ClassroomPanelProps> = ({ user }) => {
   const utils = trpc.useUtils();
 
   // ─── Queries ─────────────────────────────
-  const { data: classroomsData, isLoading: loadingClassrooms } = trpc.classroom.myClassrooms.useQuery(undefined, {
-    retry: 1,
+  const { data: classroomsData, isLoading: loadingClassrooms, isError: classroomsError } = trpc.classroom.myClassrooms.useQuery(undefined, {
+    retry: false,
   });
 
   const { data: selectedClassroom } = trpc.classroom.getById.useQuery(
@@ -160,7 +160,7 @@ const ClassroomPanel: React.FC<ClassroomPanelProps> = ({ user }) => {
   }, [allClassrooms, searchTerm]);
 
   // ─── Loading State ─────────────────────────────
-  if (loadingClassrooms) {
+  if (loadingClassrooms && !classroomsError) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center">

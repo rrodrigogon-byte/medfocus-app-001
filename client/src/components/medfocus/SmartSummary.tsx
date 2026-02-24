@@ -35,8 +35,8 @@ const SmartSummary: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const generateSummary = trpc.summary.generate.useMutation();
-  const { data: mySummaries, refetch: refetchMine } = trpc.summary.list.useQuery();
-  const { data: publicSummaries } = trpc.summary.public.useQuery();
+  const { data: mySummaries, refetch: refetchMine } = trpc.summary.list.useQuery(undefined, { retry: false });
+  const { data: publicSummaries } = trpc.summary.public.useQuery(undefined, { retry: false });
   const togglePublic = trpc.summary.togglePublic.useMutation();
 
   const handleGenerate = async (t?: string, s?: string) => {

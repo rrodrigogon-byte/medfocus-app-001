@@ -40,12 +40,12 @@ export default function Leaderboard() {
   const [filterUniversity, setFilterUniversity] = useState(false);
   const [showActivities, setShowActivities] = useState(false);
 
-  const myXP = trpc.xp.me.useQuery();
+  const myXP = trpc.xp.me.useQuery(undefined, { retry: false });
   const leaderboard = trpc.xp.leaderboard.useQuery({
     period,
     universityId: filterUniversity ? (myXP.data?.universityId || undefined) : undefined,
-  });
-  const activities = trpc.xp.activities.useQuery({ limit: 15 }, { enabled: showActivities });
+  }, { retry: false });
+  const activities = trpc.xp.activities.useQuery({ limit: 15 }, { enabled: showActivities, retry: false });
 
   const myData = myXP.data;
   const levelInfo = myData ? getLevelInfo(myData.totalXP) : null;

@@ -11,7 +11,7 @@ const TeacherAnalyticsPanel: React.FC = () => {
   const [selectedClassroomId, setSelectedClassroomId] = useState<number | null>(null);
 
   // Fetch all classrooms for the professor
-  const { data: classroomsData, isLoading: loadingClassrooms } = trpc.classroom.myClassrooms.useQuery();
+  const { data: classroomsData, isLoading: loadingClassrooms, isError: classroomsError } = trpc.classroom.myClassrooms.useQuery(undefined, { retry: false });
 
   // Fetch analytics for selected classroom
   const { data: analytics, isLoading: loadingAnalytics } = trpc.classroom.analytics.useQuery(
@@ -91,7 +91,7 @@ const TeacherAnalyticsPanel: React.FC = () => {
   };
 
   // Loading state
-  if (loadingClassrooms) {
+  if (loadingClassrooms && !classroomsError) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center">
@@ -102,15 +102,32 @@ const TeacherAnalyticsPanel: React.FC = () => {
     );
   }
 
-  // No classrooms
-  if (professorClassrooms.length === 0) {
+  // No classrooms or auth error
+  if (classroomsError || professorClassrooms.length === 0) {
     return (
       <div className="text-center py-16 bg-card rounded-xl border border-border">
         <div className="text-5xl mb-4">📊</div>
-        <h3 className="text-xl font-bold text-foreground mb-2">Nenhuma turma encontrada</h3>
-        <p className="text-muted-foreground text-sm max-w-md mx-auto">
-          Crie uma sala de aula na seção "Sala de Aula" para começar a acompanhar o desempenho dos seus alunos.
+        <h3 className="text-xl font-bold text-foreground mb-2">Analytics de Turma</h3>
+        <p className="text-muted-foreground text-sm max-w-md mx-auto mb-6">
+          {classroomsError ? 'Faça login com sua conta de professor para acessar os analytics das suas turmas.' : 'Crie uma sala de aula na seção "Sala de Aula" para começar a acompanhar o desempenho dos seus alunos.'}
         </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto mt-6">
+          <div className="bg-muted/50 rounded-xl p-4 border border-border">
+            <div className="text-2xl mb-2">👥</div>
+            <h4 className="text-sm font-bold text-foreground">Gestão de Turmas</h4>
+            <p className="text-xs text-muted-foreground mt-1">Acompanhe o progresso de cada aluno em tempo real</p>
+          </div>
+          <div className="bg-muted/50 rounded-xl p-4 border border-border">
+            <div className="text-2xl mb-2">📈</div>
+            <h4 className="text-sm font-bold text-foreground">Métricas Detalhadas</h4>
+            <p className="text-xs text-muted-foreground mt-1">Taxa de conclusão, médias e distribuição por atividade</p>
+          </div>
+          <div className="bg-muted/50 rounded-xl p-4 border border-border">
+            <div className="text-2xl mb-2">⚠️</div>
+            <h4 className="text-sm font-bold text-foreground">Alertas de Risco</h4>
+            <p className="text-xs text-muted-foreground mt-1">Identifique alunos com desempenho abaixo do esperado</p>
+          </div>
+        </div>
       </div>
     );
   }

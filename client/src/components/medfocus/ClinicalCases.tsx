@@ -176,7 +176,7 @@ const ClinicalCases: React.FC = () => {
   const startCase = trpc.clinicalCase.start.useMutation();
   const interact = trpc.clinicalCase.interact.useMutation();
   const completeCase = trpc.clinicalCase.complete.useMutation();
-  const { data: caseHistory, refetch: refetchHistory } = trpc.clinicalCase.list.useQuery();
+  const { data: caseHistory, refetch: refetchHistory } = trpc.clinicalCase.list.useQuery(undefined, { retry: false });
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });

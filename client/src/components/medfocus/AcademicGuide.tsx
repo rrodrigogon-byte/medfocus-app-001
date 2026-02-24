@@ -38,6 +38,7 @@ const AcademicGuide: React.FC<GuideProps> = ({ user, onUpdateUser }) => {
   // Material history query
   const historyQuery = trpc.materials.history.useQuery(undefined, {
     enabled: isAuthenticated && viewMode === 'history',
+    retry: false,
   });
 
   const selectedUniv = UNIVERSITIES.find(u => u.id === selectedUnivId);
