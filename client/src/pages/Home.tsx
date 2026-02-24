@@ -127,12 +127,14 @@ export default function Home() {
   // Sync OAuth user to local state
   useEffect(() => {
     if (isAuthenticated && authUser) {
+      const dbRole = (authUser as any).role || 'student';
+      const userRole = dbRole === 'admin' ? 'admin' : dbRole === 'professor' ? 'professor' : 'student';
       const oauthUser: User = {
         id: authUser.id?.toString() || `oauth_${Date.now()}`,
         name: authUser.name || 'Estudante',
         email: authUser.email || '',
         isLoggedIn: true,
-        role: 'student',
+        role: userRole as any,
         universityId: localStorage.getItem('medfocus_universityId') || undefined,
         currentYear: Number(localStorage.getItem('medfocus_currentYear')) || undefined,
       };
