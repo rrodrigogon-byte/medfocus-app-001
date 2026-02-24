@@ -56,6 +56,9 @@ import ANVISAConsult from '../components/medfocus/ANVISAConsult';
 import CID10Lookup from '../components/medfocus/CID10Lookup';
 import ClinicalProtocols from '../components/medfocus/ClinicalProtocols';
 import PubMedResearch from '../components/medfocus/PubMedResearch';
+import LectureTranscription from '../components/medfocus/LectureTranscription';
+import MyContent from '../components/medfocus/MyContent';
+import ProfessorPortal from '../components/medfocus/ProfessorPortal';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
 import { useGamification } from '../hooks/useGamification';
@@ -195,6 +198,9 @@ export default function Home() {
       case 'cid10': return <CID10Lookup />;
       case 'clinicalProtocols': return <ClinicalProtocols />;
       case 'pubmedResearch': return <PubMedResearch />;
+      case 'lectureTranscription': return <LectureTranscription />;
+      case 'myContent': return <MyContent />;
+      case 'professorPortal': return <ProfessorPortal />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{
@@ -273,7 +279,10 @@ export default function Home() {
                currentView === 'smartSummary' ? 'Resumos Inteligentes' :
                currentView === 'socialFeed' ? 'Feed Social' :
                currentView === 'flashcardStudy' ? 'Flashcards SM-2' :
-               currentView === 'examCalendar' ? 'Calendário de Provas' : currentView}
+               currentView === 'examCalendar' ? 'Calendário de Provas' :
+               currentView === 'lectureTranscription' ? 'Transcrição de Aulas' :
+               currentView === 'myContent' ? 'Meu Conteúdo' :
+               currentView === 'professorPortal' ? 'Portal do Professor' : currentView}
             </h2>
           </div>
           <div className="flex items-center gap-2">

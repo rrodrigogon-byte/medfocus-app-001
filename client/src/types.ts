@@ -127,7 +127,10 @@ export type View =
   | 'anvisaConsult'
   | 'cid10'
   | 'clinicalProtocols'
-  | 'pubmedResearch';
+  | 'pubmedResearch'
+  | 'myContent'
+  | 'lectureTranscription'
+  | 'professorPortal';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {
