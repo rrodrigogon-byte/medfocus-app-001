@@ -306,6 +306,8 @@ export default function Home() {
         onLogout={handleLogout}
         userName={localUser.name}
         isOAuth={isAuthenticated}
+        userRole={localUser.role === 'admin' ? 'admin' : localUser.role === 'professor' ? 'professor' : 'student'}
+        userPlan={(localUser as any).plan || 'free'}
       />
       <main className="flex-1 overflow-y-auto custom-scrollbar">
         {/* Top bar */}

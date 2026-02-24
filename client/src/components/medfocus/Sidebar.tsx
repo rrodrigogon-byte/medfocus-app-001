@@ -19,7 +19,7 @@ interface NavItem {
   id: View;
   label: string;
   icon: string;
-  badge?: 'pro' | 'premium' | 'new' | 'ai';
+  badge?: 'pro' | 'premium' | 'new' | 'ai' | 'admin';
 }
 
 interface NavGroup {
@@ -165,8 +165,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onLogout, 
       'pro': 'bg-amber-500/20 text-amber-400 border-amber-500/30',
       'premium': 'bg-rose-500/20 text-rose-400 border-rose-500/30',
       'new': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+      'admin': 'bg-red-500/20 text-red-400 border-red-500/30',
     };
-    const labels: Record<string, string> = { 'ai': 'IA', 'pro': 'PRO', 'premium': '★', 'new': 'NEW' };
+    const labels: Record<string, string> = { 'ai': 'IA', 'pro': 'PRO', 'premium': '★', 'new': 'NEW', 'admin': 'ADM' };
     return (
       <span className={`ml-auto text-[8px] font-bold px-1.5 py-0.5 rounded-full border ${styles[type] || ''}`}>
         {labels[type] || type}
