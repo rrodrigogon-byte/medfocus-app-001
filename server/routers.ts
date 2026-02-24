@@ -8,7 +8,7 @@ import { ENV } from "./_core/env";
 import { z } from "zod";
 import Stripe from "stripe";
 import { PLANS, PRO_MODULES, FREE_MODULES, hasAccess } from "./products";
-import { searchFDADrugs, getFDAAdverseEvents, getFDADrugInteractions, searchPubMed, calculateGlasgow, calculateSOFA, calculateAPACHEII, calculateWells, calculateCHA2DS2VASc, calculateChildPugh, calculateMELD } from "./services/medicalApis";
+import { searchFDADrugs, getFDAAdverseEvents, getFDADrugInteractions, searchPubMed, calculateGlasgow, calculateSOFA, calculateAPACHEII, calculateWells, calculateCHA2DS2VASc, calculateChildPugh, calculateMELD, calculateCURB65, calculateHEART, calculatePERC, calculateNEWS2, calculateQSOFA, calculateHASBLED, calculateGRACE, calculateNIHSS } from "./services/medicalApis";
 import { THERAPEUTIC_CLASSES, getFullDrugLabel, getDrugAdverseEventStats, getDrugRecalls, searchDailyMed, getRxNormDrugInfo, getRxNormInteractions } from "./services/pharmacopeiaService";
 import { getOrCreateProgress, addXp, getXpHistory, logStudySession, updateUserProfile, createClassroom, getClassroomsByProfessor, getClassroomsByStudent, getClassroomById, joinClassroom, getEnrollments, removeEnrollment, createActivity, getActivitiesByClassroom, updateActivity, submitActivity, gradeSubmission, getSubmissionsByActivity, getStudentSubmissions, getClassroomAnalytics, findGeneratedMaterial, saveGeneratedMaterial, getUserMaterialHistory, getGeneratedMaterialById, rateMaterial, searchLibraryMaterials, saveLibraryMaterial, getLibraryMaterialById, toggleSaveMaterial, getUserSavedMaterialIds, getUserSavedMaterialsFull, getPopularLibraryMaterials, searchPubmedCache, savePubmedArticle, getPubmedArticleByPmid, addMaterialReview, getMaterialReviews, markReviewHelpful, trackStudyActivity, getUserStudyHistoryData, getUserTopSubjects, getUserQuizPerformance, subscribeToSubject, unsubscribeFromSubject, getUserSubscriptions, getUserNotifications, getUnreadNotificationCount, markNotificationRead, markAllNotificationsRead, notifySubscribersOfNewMaterial, saveStudyTemplate, getStudyTemplates, getStudyTemplateById, getUserTemplates, shareTemplate, getSharedTemplateByCode, getSharedTemplateFeed, likeSharedTemplate, createStudyRoom, getStudyRooms, joinStudyRoom, getStudyRoomById, sendRoomMessage, getRoomMessages, createSharedNote, getRoomNotes, createCalendarEvent, getCalendarEvents, updateCalendarEvent, deleteCalendarEvent, createRevisionSuggestions, getRevisionSuggestions, completeRevision, createSimulado, getSimulados, completeSimulado, getSimuladoQuestions, saveSimuladoQuestion, getSimuladoStats, getWeeklyGoals, createWeeklyGoal, updateGoalProgress, incrementGoalProgress, deleteWeeklyGoal, getUserXP, ensureUserXP, addXP, updateStreak, updateXPStats, getLeaderboard, getXPActivities, getPublicProfile, createClinicalCase, getClinicalCase, getUserClinicalCases, updateClinicalCase, createBattle, getBattleByCode, getBattle, getUserBattles, joinBattle, updateBattle, createSmartSummary, getUserSummaries, getPublicSummaries, getSummaryByShareCode, toggleSummaryPublic, postToFeed, getFeed, likeFeedItem, commentOnFeed, getFeedComments, getUserFeedLikes, getPerformanceBySpecialty, createFlashcardDeck, getUserFlashcardDecks, getPublicFlashcardDecks, addFlashcardCards, getDueFlashcards, getAllFlashcards, reviewFlashcard, deleteDeck, createExam, getUserExams, getUpcomingExams, updateExam, deleteExam, createStudySuggestions, getExamSuggestions, markSuggestionCompleted } from "./db";
 
@@ -2563,6 +2563,81 @@ AVISO: Sugestão de apoio — prescrição final é responsabilidade do médico.
         input.sodium, input.potassium, input.creatinine,
         input.hematocrit, input.wbc, input.glasgow, input.chronicHealth
       )),
+
+    curb65: publicProcedure
+      .input(z.object({
+        confusion: z.boolean(), urea: z.number(), respiratoryRate: z.number(),
+        systolicBP: z.number(), diastolicBP: z.number(), age: z.number(),
+      }))
+      .query(({ input }) => calculateCURB65(input.confusion, input.urea, input.respiratoryRate, input.systolicBP, input.diastolicBP, input.age)),
+
+    heart: publicProcedure
+      .input(z.object({
+        history: z.union([z.literal(0), z.literal(1), z.literal(2)]),
+        ecg: z.union([z.literal(0), z.literal(1), z.literal(2)]),
+        age: z.union([z.literal(0), z.literal(1), z.literal(2)]),
+        riskFactors: z.union([z.literal(0), z.literal(1), z.literal(2)]),
+        troponin: z.union([z.literal(0), z.literal(1), z.literal(2)]),
+      }))
+      .query(({ input }) => calculateHEART(input.history, input.ecg, input.age, input.riskFactors, input.troponin)),
+
+    perc: publicProcedure
+      .input(z.object({
+        age50: z.boolean(), hr100: z.boolean(), spo2_95: z.boolean(),
+        unilateralLegSwelling: z.boolean(), hemoptysis: z.boolean(),
+        recentSurgery: z.boolean(), priorDVTPE: z.boolean(), estrogenUse: z.boolean(),
+      }))
+      .query(({ input }) => calculatePERC(input.age50, input.hr100, input.spo2_95, input.unilateralLegSwelling, input.hemoptysis, input.recentSurgery, input.priorDVTPE, input.estrogenUse)),
+
+    news2: publicProcedure
+      .input(z.object({
+        respiratoryRate: z.number(), spo2: z.number(), onSupplementalO2: z.boolean(),
+        temperature: z.number(), systolicBP: z.number(), heartRate: z.number(),
+        consciousness: z.enum(['alert', 'confusion', 'voice', 'pain', 'unresponsive']),
+      }))
+      .query(({ input }) => calculateNEWS2(input.respiratoryRate, input.spo2, input.onSupplementalO2, input.temperature, input.systolicBP, input.heartRate, input.consciousness)),
+
+    qsofa: publicProcedure
+      .input(z.object({
+        alteredMentation: z.boolean(), respiratoryRate: z.number(), systolicBP: z.number(),
+      }))
+      .query(({ input }) => calculateQSOFA(input.alteredMentation, input.respiratoryRate, input.systolicBP)),
+
+    hasbled: publicProcedure
+      .input(z.object({
+        hypertension: z.boolean(), abnormalRenal: z.boolean(), abnormalLiver: z.boolean(),
+        stroke: z.boolean(), bleeding: z.boolean(), labileINR: z.boolean(),
+        elderly: z.boolean(), drugs: z.boolean(), alcohol: z.boolean(),
+      }))
+      .query(({ input }) => calculateHASBLED(input.hypertension, input.abnormalRenal, input.abnormalLiver, input.stroke, input.bleeding, input.labileINR, input.elderly, input.drugs, input.alcohol)),
+
+    grace: publicProcedure
+      .input(z.object({
+        age: z.number(), heartRate: z.number(), systolicBP: z.number(),
+        creatinine: z.number(), killipClass: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
+        cardiacArrest: z.boolean(), stDeviation: z.boolean(), elevatedBiomarkers: z.boolean(),
+      }))
+      .query(({ input }) => calculateGRACE(input.age, input.heartRate, input.systolicBP, input.creatinine, input.killipClass, input.cardiacArrest, input.stDeviation, input.elevatedBiomarkers)),
+
+    nihss: publicProcedure
+      .input(z.object({
+        consciousness: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
+        questions: z.union([z.literal(0), z.literal(1), z.literal(2)]),
+        commands: z.union([z.literal(0), z.literal(1), z.literal(2)]),
+        gaze: z.union([z.literal(0), z.literal(1), z.literal(2)]),
+        visual: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
+        facialPalsy: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
+        motorArmLeft: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
+        motorArmRight: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
+        motorLegLeft: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
+        motorLegRight: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
+        ataxia: z.union([z.literal(0), z.literal(1), z.literal(2)]),
+        sensory: z.union([z.literal(0), z.literal(1), z.literal(2)]),
+        language: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
+        dysarthria: z.union([z.literal(0), z.literal(1), z.literal(2)]),
+        extinction: z.union([z.literal(0), z.literal(1), z.literal(2)]),
+      }))
+      .query(({ input }) => calculateNIHSS(input.consciousness, input.questions, input.commands, input.gaze, input.visual, input.facialPalsy, input.motorArmLeft, input.motorArmRight, input.motorLegLeft, input.motorLegRight, input.ataxia, input.sensory, input.language, input.dysarthria, input.extinction)),
   }),
 
   // ─── PubMed Research Avançado ───────────────────────────────

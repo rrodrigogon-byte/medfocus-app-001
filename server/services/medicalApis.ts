@@ -419,3 +419,314 @@ export function calculateMELD(bilirubin: number, inr: number, creatinine: number
 
   return { name: sodium ? 'MELD-Na Score' : 'MELD Score', score, interpretation, details: { min: 6, max: 40 } };
 }
+
+
+// ─── CURB-65 — Pneumonia Severity (Lim WS et al. Thorax. 2003;58(5):377-382) ───
+export function calculateCURB65(
+  confusion: boolean, urea: number, respiratoryRate: number,
+  systolicBP: number, diastolicBP: number, age: number
+): CalculatorResult {
+  let score = 0;
+  if (confusion) score++;
+  if (urea > 7) score++; // >7 mmol/L (or >42 mg/dL BUN)
+  if (respiratoryRate >= 30) score++;
+  if (systolicBP < 90 || diastolicBP <= 60) score++;
+  if (age >= 65) score++;
+
+  let interpretation = '';
+  if (score === 0) interpretation = 'Baixo risco (mortalidade 0.6%) — Tratamento ambulatorial';
+  else if (score === 1) interpretation = 'Baixo risco (mortalidade 2.7%) — Considerar tratamento ambulatorial';
+  else if (score === 2) interpretation = 'Risco moderado (mortalidade 6.8%) — Internação hospitalar';
+  else if (score === 3) interpretation = 'Alto risco (mortalidade 14.0%) — Internação + considerar UTI';
+  else interpretation = 'Muito alto risco (mortalidade 27.8-57.3%) — UTI obrigatória';
+
+  return {
+    name: 'CURB-65',
+    score,
+    interpretation,
+    details: {
+      min: 0, max: 5,
+      reference: 'Lim WS et al. Thorax. 2003;58(5):377-382. PMID: 12728155',
+      criteria: { confusion, urea_elevated: urea > 7, tachypnea: respiratoryRate >= 30, hypotension: systolicBP < 90 || diastolicBP <= 60, age_65: age >= 65 }
+    }
+  };
+}
+
+// ─── HEART Score — Chest Pain Risk (Six AJ et al. Neth Heart J. 2008;16(6):191-196) ───
+export function calculateHEART(
+  history: 0 | 1 | 2, ecg: 0 | 1 | 2, age: 0 | 1 | 2,
+  riskFactors: 0 | 1 | 2, troponin: 0 | 1 | 2
+): CalculatorResult {
+  const score = history + ecg + age + riskFactors + troponin;
+
+  let interpretation = '';
+  if (score <= 3) interpretation = 'Baixo risco (MACE 0.9-1.7%) — Alta precoce, seguimento ambulatorial';
+  else if (score <= 6) interpretation = 'Risco moderado (MACE 12-16.6%) — Observação + investigação';
+  else interpretation = 'Alto risco (MACE 50-65%) — Estratégia invasiva precoce';
+
+  return {
+    name: 'HEART Score',
+    score,
+    interpretation,
+    details: {
+      min: 0, max: 10,
+      reference: 'Six AJ et al. Neth Heart J. 2008;16(6):191-196. Backus BE et al. Int J Cardiol. 2013;168(3):2153-2158',
+      components: { history, ecg, age, riskFactors, troponin }
+    }
+  };
+}
+
+// ─── PERC Rule — PE Rule-Out (Kline JA et al. J Thromb Haemost. 2008;6(5):772-780) ───
+export function calculatePERC(
+  age50: boolean, hr100: boolean, spo2_95: boolean, unilateralLegSwelling: boolean,
+  hemoptysis: boolean, recentSurgery: boolean, priorDVTPE: boolean, estrogenUse: boolean
+): CalculatorResult {
+  const criteria = [age50, hr100, spo2_95, unilateralLegSwelling, hemoptysis, recentSurgery, priorDVTPE, estrogenUse];
+  const positiveCount = criteria.filter(Boolean).length;
+  const allNegative = positiveCount === 0;
+
+  return {
+    name: 'PERC Rule',
+    score: positiveCount,
+    interpretation: allNegative
+      ? 'PERC negativo — TEP pode ser excluído sem D-dímero (se pré-teste baixo)'
+      : `PERC positivo (${positiveCount} critério(s)) — Prosseguir com D-dímero ou angioTC`,
+    details: {
+      min: 0, max: 8,
+      reference: 'Kline JA et al. J Thromb Haemost. 2008;6(5):772-780. PMID: 18318689',
+      percNegative: allNegative,
+      criteria: { age50, hr100, spo2_95, unilateralLegSwelling, hemoptysis, recentSurgery, priorDVTPE, estrogenUse }
+    }
+  };
+}
+
+// ─── NEWS-2 — National Early Warning Score (Royal College of Physicians, 2017) ───
+export function calculateNEWS2(
+  respiratoryRate: number, spo2: number, onSupplementalO2: boolean,
+  temperature: number, systolicBP: number, heartRate: number,
+  consciousness: 'alert' | 'confusion' | 'voice' | 'pain' | 'unresponsive'
+): CalculatorResult {
+  let score = 0;
+
+  // Respiratory rate
+  if (respiratoryRate <= 8) score += 3;
+  else if (respiratoryRate <= 11) score += 1;
+  else if (respiratoryRate <= 20) score += 0;
+  else if (respiratoryRate <= 24) score += 2;
+  else score += 3;
+
+  // SpO2 Scale 1 (no hypercapnic risk)
+  if (spo2 <= 91) score += 3;
+  else if (spo2 <= 93) score += 2;
+  else if (spo2 <= 95) score += 1;
+  else score += 0;
+
+  // Supplemental O2
+  if (onSupplementalO2) score += 2;
+
+  // Temperature
+  if (temperature <= 35.0) score += 3;
+  else if (temperature <= 36.0) score += 1;
+  else if (temperature <= 38.0) score += 0;
+  else if (temperature <= 39.0) score += 1;
+  else score += 2;
+
+  // Systolic BP
+  if (systolicBP <= 90) score += 3;
+  else if (systolicBP <= 100) score += 2;
+  else if (systolicBP <= 110) score += 1;
+  else if (systolicBP <= 219) score += 0;
+  else score += 3;
+
+  // Heart rate
+  if (heartRate <= 40) score += 3;
+  else if (heartRate <= 50) score += 1;
+  else if (heartRate <= 90) score += 0;
+  else if (heartRate <= 110) score += 1;
+  else if (heartRate <= 130) score += 2;
+  else score += 3;
+
+  // Consciousness
+  if (consciousness === 'alert') score += 0;
+  else if (consciousness === 'confusion') score += 3;
+  else if (consciousness === 'voice') score += 3;
+  else if (consciousness === 'pain') score += 3;
+  else score += 3;
+
+  let interpretation = '';
+  if (score === 0) interpretation = 'Baixo risco — Monitoramento de rotina';
+  else if (score <= 4) interpretation = 'Baixo risco — Avaliação por enfermeiro, considerar aumento de monitoramento';
+  else if (score <= 6) interpretation = 'Risco médio — Resposta urgente, avaliação médica';
+  else interpretation = 'Alto risco — Resposta de emergência, considerar UTI';
+
+  return {
+    name: 'NEWS-2',
+    score,
+    interpretation,
+    details: {
+      min: 0, max: 20,
+      reference: 'Royal College of Physicians. NEWS2. 2017. www.rcplondon.ac.uk/projects/outputs/national-early-warning-score-news-2',
+    }
+  };
+}
+
+// ─── qSOFA — Quick SOFA (Seymour CW et al. JAMA. 2016;315(8):762-774) ───
+export function calculateQSOFA(
+  alteredMentation: boolean, respiratoryRate: number, systolicBP: number
+): CalculatorResult {
+  let score = 0;
+  if (alteredMentation) score++;
+  if (respiratoryRate >= 22) score++;
+  if (systolicBP <= 100) score++;
+
+  let interpretation = '';
+  if (score === 0) interpretation = 'Baixo risco de sepse — Monitorar clinicamente';
+  else if (score === 1) interpretation = 'Risco intermediário — Avaliar SOFA completo se infecção suspeita';
+  else interpretation = 'Alto risco de sepse (mortalidade 3-14x maior) — Avaliar SOFA + iniciar bundle de sepse';
+
+  return {
+    name: 'qSOFA',
+    score,
+    interpretation,
+    details: {
+      min: 0, max: 3,
+      reference: 'Seymour CW et al. JAMA. 2016;315(8):762-774. Singer M et al. JAMA. 2016;315(8):801-810',
+      criteria: { alteredMentation, tachypnea: respiratoryRate >= 22, hypotension: systolicBP <= 100 }
+    }
+  };
+}
+
+// ─── HAS-BLED — Bleeding Risk in AF (Pisters R et al. Chest. 2010;138(5):1093-1100) ───
+export function calculateHASBLED(
+  hypertension: boolean, abnormalRenal: boolean, abnormalLiver: boolean,
+  stroke: boolean, bleeding: boolean, labileINR: boolean,
+  elderly: boolean, drugs: boolean, alcohol: boolean
+): CalculatorResult {
+  let score = 0;
+  if (hypertension) score++;
+  if (abnormalRenal) score++;
+  if (abnormalLiver) score++;
+  if (stroke) score++;
+  if (bleeding) score++;
+  if (labileINR) score++;
+  if (elderly) score++;
+  if (drugs) score++;
+  if (alcohol) score++;
+
+  let interpretation = '';
+  if (score <= 2) interpretation = 'Baixo risco de sangramento — Anticoagulação segura';
+  else interpretation = `Alto risco de sangramento (score ${score}) — Cautela com anticoagulação, corrigir fatores modificáveis`;
+
+  return {
+    name: 'HAS-BLED',
+    score,
+    interpretation,
+    details: {
+      min: 0, max: 9,
+      reference: 'Pisters R et al. Chest. 2010;138(5):1093-1100. PMID: 20299623',
+      criteria: { hypertension, abnormalRenal, abnormalLiver, stroke, bleeding, labileINR, elderly, drugs, alcohol }
+    }
+  };
+}
+
+// ─── GRACE Score — ACS Risk (Fox KAA et al. BMJ. 2006;333(7578):1091) ───
+export function calculateGRACE(
+  age: number, heartRate: number, systolicBP: number,
+  creatinine: number, killipClass: 1 | 2 | 3 | 4,
+  cardiacArrest: boolean, stDeviation: boolean, elevatedBiomarkers: boolean
+): CalculatorResult {
+  // Simplified GRACE score calculation
+  let score = 0;
+
+  // Age
+  if (age < 30) score += 0;
+  else if (age < 40) score += 8;
+  else if (age < 50) score += 25;
+  else if (age < 60) score += 41;
+  else if (age < 70) score += 58;
+  else if (age < 80) score += 75;
+  else if (age < 90) score += 91;
+  else score += 100;
+
+  // Heart rate
+  if (heartRate < 50) score += 0;
+  else if (heartRate < 70) score += 3;
+  else if (heartRate < 90) score += 9;
+  else if (heartRate < 110) score += 15;
+  else if (heartRate < 150) score += 24;
+  else if (heartRate < 200) score += 38;
+  else score += 46;
+
+  // Systolic BP
+  if (systolicBP < 80) score += 58;
+  else if (systolicBP < 100) score += 53;
+  else if (systolicBP < 120) score += 43;
+  else if (systolicBP < 140) score += 34;
+  else if (systolicBP < 160) score += 24;
+  else if (systolicBP < 200) score += 10;
+  else score += 0;
+
+  // Creatinine (mg/dL)
+  if (creatinine < 0.4) score += 1;
+  else if (creatinine < 0.8) score += 4;
+  else if (creatinine < 1.2) score += 7;
+  else if (creatinine < 1.6) score += 10;
+  else if (creatinine < 2.0) score += 13;
+  else if (creatinine < 4.0) score += 21;
+  else score += 28;
+
+  // Killip class
+  score += (killipClass - 1) * 20;
+
+  // Other
+  if (cardiacArrest) score += 39;
+  if (stDeviation) score += 28;
+  if (elevatedBiomarkers) score += 14;
+
+  let interpretation = '';
+  if (score <= 108) interpretation = 'Baixo risco (mortalidade hospitalar <1%) — Estratégia conservadora';
+  else if (score <= 140) interpretation = 'Risco intermediário (mortalidade 1-3%) — Estratégia invasiva precoce';
+  else interpretation = 'Alto risco (mortalidade >3%) — Estratégia invasiva urgente (<24h)';
+
+  return {
+    name: 'GRACE Score',
+    score,
+    interpretation,
+    details: {
+      min: 0, max: 372,
+      reference: 'Fox KAA et al. BMJ. 2006;333(7578):1091. Granger CB et al. Arch Intern Med. 2003;163(19):2345-2353',
+    }
+  };
+}
+
+// ─── NIHSS — National Institutes of Health Stroke Scale ───
+export function calculateNIHSS(
+  consciousness: 0 | 1 | 2 | 3, questions: 0 | 1 | 2, commands: 0 | 1 | 2,
+  gaze: 0 | 1 | 2, visual: 0 | 1 | 2 | 3, facialPalsy: 0 | 1 | 2 | 3,
+  motorArmLeft: 0 | 1 | 2 | 3 | 4, motorArmRight: 0 | 1 | 2 | 3 | 4,
+  motorLegLeft: 0 | 1 | 2 | 3 | 4, motorLegRight: 0 | 1 | 2 | 3 | 4,
+  ataxia: 0 | 1 | 2, sensory: 0 | 1 | 2,
+  language: 0 | 1 | 2 | 3, dysarthria: 0 | 1 | 2,
+  extinction: 0 | 1 | 2
+): CalculatorResult {
+  const score = consciousness + questions + commands + gaze + visual + facialPalsy +
+    motorArmLeft + motorArmRight + motorLegLeft + motorLegRight +
+    ataxia + sensory + language + dysarthria + extinction;
+
+  let interpretation = '';
+  if (score === 0) interpretation = 'Sem déficit neurológico';
+  else if (score <= 4) interpretation = 'AVC leve — Considerar trombólise se <4.5h';
+  else if (score <= 15) interpretation = 'AVC moderado — Trombólise + considerar trombectomia se oclusão de grande vaso';
+  else if (score <= 20) interpretation = 'AVC moderado-grave — Trombólise + trombectomia se elegível';
+  else interpretation = 'AVC grave — Trombólise + trombectomia urgente se elegível';
+
+  return {
+    name: 'NIHSS',
+    score,
+    interpretation,
+    details: {
+      min: 0, max: 42,
+      reference: 'Brott T et al. Stroke. 1989;20(7):864-870. Powers WJ et al. Stroke. 2019;50(12):e344-e418',
+    }
+  };
+}
