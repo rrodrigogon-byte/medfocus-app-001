@@ -1,5 +1,6 @@
 import { eq, and, sql, desc, count, avg, gte, lte, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import mysql from "mysql2/promise";
 import { InsertUser, users, userProgress, xpLog, studySessions, classrooms, enrollments, activities, submissions, generatedMaterials, libraryMaterials, userSavedMaterials, materialReviews, pubmedArticles, userStudyHistory, sharedTemplates, studyTemplates, studyRooms, studyRoomParticipants, studyRoomMessages, sharedNotes, calendarEvents, revisionSuggestions, simulados, simuladoQuestions, subjectSubscriptions, materialNotifications, weeklyGoals, userXP, xpActivities, clinicalCases, questionBattles, smartSummaries, socialFeed, socialFeedLikes, socialFeedComments, flashcardDecks, flashcardCards, examCalendar, studySuggestions } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -9,7 +10,27 @@ let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      const dbUrl = process.env.DATABASE_URL;
+      // Parse socket path from URL if present (Cloud SQL on Cloud Run)
+      const socketMatch = dbUrl.match(/[?&]socket=([^&]+)/);
+      if (socketMatch) {
+        // Cloud Run with Cloud SQL Unix socket
+        const urlObj = new URL(dbUrl.replace('mysql://', 'http://'));
+        const pool = mysql.createPool({
+          user: urlObj.username,
+          password: decodeURIComponent(urlObj.password),
+          database: urlObj.pathname.slice(1),
+          socketPath: socketMatch[1],
+          waitForConnections: true,
+          connectionLimit: 5,
+        });
+        _db = drizzle(pool);
+        console.log('[Database] Connected via Cloud SQL socket:', socketMatch[1]);
+      } else {
+        // Standard TCP connection (local dev, Cloud SQL proxy)
+        _db = drizzle(dbUrl);
+        console.log('[Database] Connected via TCP');
+      }
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
