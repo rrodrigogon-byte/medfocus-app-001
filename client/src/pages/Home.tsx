@@ -233,7 +233,7 @@ export default function Home() {
       case 'academic': return <AcademicManagement user={localUser} />;
       case 'guide': return <AcademicGuide user={localUser} onUpdateUser={handleUpdateUser} />;
       case 'research': return <GlobalResearch />;
-      case 'materials': return <StudyMaterialGenerator university={localUser.universityId || 'USP'} year={localUser.currentYear || 1} subjects={['Anatomia', 'Fisiologia', 'Farmacologia', 'Clínica']} />;
+      case 'materials': return <StudyMaterialGenerator university={localUser.universityId || 'USP'} year={localUser.currentYear || 1} subjects={['Anatomia', 'Fisiologia', 'Farmacologia', 'Clínica Médica', 'Patologia', 'Bioquímica', 'Microbiologia', 'Imunologia', 'Cardiologia', 'Neurologia', 'Pediatria', 'Ginecologia', 'Cirurgia', 'Ortopedia', 'Dermatologia', 'Psiquiatria', 'Emergência', 'Oncologia', 'Radiologia', 'Saúde Pública', 'Infectologia', 'Endocrinologia', 'Nefrologia', 'Pneumologia', 'Gastroenterologia', 'Hematologia', 'Reumatologia', 'Urologia', 'Oftalmologia', 'Otorrinolaringologia']} />;
       case 'weekly': return <WeeklyStudyChecklist user={localUser} onChecklistComplete={gamification.completeChecklistItem} />;
       case 'library': return <AcademicLibrary />;
       case 'studyContent': return <PreloadedStudy onQuizComplete={gamification.completeQuiz} onFlashcardReview={gamification.reviewFlashcard} onSubjectStudy={gamification.studySubject} />;
