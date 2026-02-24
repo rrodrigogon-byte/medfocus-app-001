@@ -36,7 +36,7 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const stripe = getStripe();
         const plan = PLANS[input.planId];
-        const origin = ctx.req.headers.origin || "https://medfocus-h6i7pa9q.manus.space";
+        const origin = ctx.req.headers.origin || process.env.APP_URL || "https://medfocus-app-969630653332.southamerica-east1.run.app";
 
         const session = await stripe.checkout.sessions.create({
           mode: "subscription",

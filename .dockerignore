@@ -1,0 +1,12 @@
+node_modules
+.git
+.gitignore
+.manus-logs
+*.md
+!README.md
+research/
+docs/
+*.test.ts
+vitest.config.ts
+.env
+.env.*
