@@ -65,6 +65,7 @@ import ProPaywall from '../components/medfocus/ProPaywall';
 import MedicalDisciplines from '../components/medfocus/MedicalDisciplines';
 import VideoAulas from '../components/medfocus/VideoAulas';
 import AtlasAnalytics from '../components/medfocus/AtlasAnalytics';
+import MedicineComparator from '../components/medfocus/MedicineComparator';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
 import { useGamification } from '../hooks/useGamification';
@@ -106,6 +107,7 @@ const MODULE_NAMES: Record<string, string> = {
   disciplines: 'Disciplinas Médicas',
   videoAulas: 'Vídeo-Aulas',
   atlasAnalytics: 'Atlas Analytics',
+  medicineComparator: 'Comparador de Medicamentos',
 };
 
 export default function Home() {
@@ -284,6 +286,7 @@ export default function Home() {
       case 'disciplines': return <MedicalDisciplines />;
       case 'videoAulas': return <VideoAulas />;
       case 'atlasAnalytics': return <AtlasAnalytics />;
+      case 'medicineComparator': return <MedicineComparator />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{

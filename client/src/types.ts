@@ -135,7 +135,8 @@ export type View =
   | 'adminDashboard'
   | 'disciplines'
   | 'videoAulas'
-  | 'atlasAnalytics';
+  | 'atlasAnalytics'
+  | 'medicineComparator';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {
