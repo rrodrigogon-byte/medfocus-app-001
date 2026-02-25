@@ -666,6 +666,15 @@ export default function MedicineComparator() {
   const [ordenacao, setOrdenacao] = useState<'economia' | 'nome' | 'preco'>('economia');
   const [mostrarSoVendaLivre, setMostrarSoVendaLivre] = useState(false);
 
+  const calcEconomia = useCallback((m: Medicamento) => {
+    const menor = Math.min(...m.genericos.map((g) => g.preco));
+    return ((m.referencia.preco - menor) / m.referencia.preco) * 100;
+  }, []);
+
+  const menorGenerico = useCallback((m: Medicamento) => {
+    return Math.min(...m.genericos.map((g) => g.preco));
+  }, []);
+
   const medicamentosFiltrados = useMemo(() => {
     let lista = [...MEDICAMENTOS_DB];
 
@@ -701,16 +710,7 @@ export default function MedicineComparator() {
     });
 
     return lista;
-  }, [busca, categoriaFiltro, ordenacao, mostrarSoVendaLivre]);
-
-  const calcEconomia = useCallback((m: Medicamento) => {
-    const menor = Math.min(...m.genericos.map((g) => g.preco));
-    return ((m.referencia.preco - menor) / m.referencia.preco) * 100;
-  }, []);
-
-  const menorGenerico = useCallback((m: Medicamento) => {
-    return Math.min(...m.genericos.map((g) => g.preco));
-  }, []);
+  }, [busca, categoriaFiltro, ordenacao, mostrarSoVendaLivre, calcEconomia, menorGenerico]);
 
   const formatBRL = (v: number) =>
     v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
