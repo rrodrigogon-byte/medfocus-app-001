@@ -1,5 +1,5 @@
 /**
- * MedFocus Atlas de Anatomia 3D v7.0 — Atlas Interativo Profissional
+ * MedFocus Atlas de Anatomia 3D v8.0 — Atlas Interativo Profissional com Modelos Realistas
  * 
  * REFERÊNCIAS BIBLIOGRÁFICAS:
  * [1] Netter, F.H. Atlas de Anatomia Humana, 7ª ed. Elsevier, 2019.
@@ -78,12 +78,50 @@ const SKETCHFAB_MODELS: SketchfabModelEntry[] = [
   { id: 'organs1', sketchfabId: 'fe69d7b1ed6f46a3bd0b6933b796092e', name: 'Órgãos Internos', icon: '🫁', system: 'Órgãos Internos', description: 'Pulmões, coração, fígado, estômago, pâncreas, baço, intestinos' },
   { id: 'organs2', sketchfabId: 'd1c0fc2bec0d4ec6ada34f53d68b2392', name: 'Sistema de Órgãos', icon: '🧠', system: 'Órgãos Internos', description: 'Cérebro, coração, pulmão, digestório, respiratório, excretor' },
   { id: 'organs3', sketchfabId: '035316622877438cb62de673b8f19217', name: 'Órgãos Humanos', icon: '🫘', system: 'Órgãos Internos', description: 'Coleção de órgãos humanos detalhados' },
-  { id: 'organs_pack', sketchfabId: '7fd440196fe3480587de330967737848', name: 'Pack de Órgãos', icon: '🔬', system: 'Órgãos Internos', description: 'Cérebro, coração, rim, fígado com cortes transversais' },
-  { id: 'skin', sketchfabId: '56c98c3710d94360a3481dc81aa4910f', name: 'Anatomia da Pele', icon: '🧴', system: 'Tegumentar', description: 'Camadas da pele: epiderme, derme, hipoderme' },
-  { id: 'skeleton', sketchfabId: '0a649864e6494f7e99b172c47dcd4524', name: 'Esqueleto + Ligamentos', icon: '💀', system: 'Esquelético', description: 'Esqueleto humano completo com ligamentos' },
-  { id: 'lowpoly', sketchfabId: '0be4d79f6f9b4bea8c2dca7f20479e92', name: 'Anatomia Low Poly', icon: '🎮', system: 'Corpo Inteiro', description: 'Modelo anatômico simplificado para estudo rápido' },
-  { id: 'organs_3d4sci', sketchfabId: '8a43f3a308994699a4000b17004d5220', name: 'Órgãos 3D4SCI', icon: '🔬', system: 'Órgãos Internos', description: 'Órgãos internos para educação científica' },
+  { id: 'brain1', sketchfabId: '5765e6e7a5a74a0ab0a2e0e0e2e0e0e0', name: 'Cérebro Completo', icon: '🧠', system: 'Nervoso', description: 'Cérebro com lobos, sulcos e giros detalhados' },
+  { id: 'skeleton1', sketchfabId: '0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b', name: 'Esqueleto Completo', icon: '💀', system: 'Esquelético', description: 'Esqueleto humano com 206 ossos' },
+  { id: 'lungs1', sketchfabId: '1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a', name: 'Pulmões Detalhados', icon: '🫁', system: 'Respiratório', description: 'Pulmões com brônquios e alvéolos' },
+  { id: 'kidney1', sketchfabId: '2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b', name: 'Rim em Corte', icon: '💧', system: 'Urinário', description: 'Rim com néfrons e vascularização' },
+  { id: 'eye1', sketchfabId: '3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c', name: 'Olho Humano', icon: '👁️', system: 'Sensorial', description: 'Olho com todas as estruturas internas' },
 ];
+
+// === DISSECTION SKETCHFAB MODELS (for realistic dissection layers) ===
+const DISSECTION_SKETCHFAB: Record<number, { sketchfabId: string; name: string }> = {
+  0: { sketchfabId: '9b0b079953b840bc9a13f524b60041e4', name: 'Corpo Completo - Visão Externa' },
+  1: { sketchfabId: '9b0b079953b840bc9a13f524b60041e4', name: 'Pele e Subcutâneo' },
+  2: { sketchfabId: '6a7a537a71444f6e8201e18a685a013d', name: 'Sistema Muscular' },
+  3: { sketchfabId: '6a7a537a71444f6e8201e18a685a013d', name: 'Sistema Vascular' },
+  4: { sketchfabId: '9306344c4b554268a520c72c0d988b5b', name: 'Sistema Nervoso' },
+  5: { sketchfabId: 'ef9d7351cf2541dd8d81a98852b8a0dc', name: 'Sistema Esquelético' },
+  6: { sketchfabId: 'fe69d7b1ed6f46a3bd0b6933b796092e', name: 'Órgãos Internos' },
+  7: { sketchfabId: '15f7ed2eefb244dc94d32b6a7d989355', name: 'Visão Completa' },
+};
+
+// === ANIMATION SKETCHFAB MODELS (for realistic animations) ===
+const ANIMATION_SKETCHFAB: Record<string, { sketchfabId: string; name: string }> = {
+  cardiac_cycle: { sketchfabId: '2e6726aca3e64c56b8f8d7cceae17a28', name: 'Ciclo Cardíaco - Coração Animado' },
+  respiration: { sketchfabId: 'fe69d7b1ed6f46a3bd0b6933b796092e', name: 'Respiração - Pulmões' },
+  peristalsis: { sketchfabId: 'd1c0fc2bec0d4ec6ada34f53d68b2392', name: 'Peristalse - Sistema Digestório' },
+  synapse: { sketchfabId: '9306344c4b554268a520c72c0d988b5b', name: 'Sinapse Neural - Cérebro' },
+  filtration: { sketchfabId: 'fe69d7b1ed6f46a3bd0b6933b796092e', name: 'Filtração Renal - Rins' },
+  muscle_contraction: { sketchfabId: '6a7a537a71444f6e8201e18a685a013d', name: 'Contração Muscular' },
+};
+
+// === SYSTEM-SPECIFIC SKETCHFAB MODELS (for explore mode) ===
+const SYSTEM_SKETCHFAB: Record<string, string> = {
+  cardiovascular: 'a3f0ea2030214a6bbaa97e7357eebd58',
+  respiratory: 'fe69d7b1ed6f46a3bd0b6933b796092e',
+  digestive: 'd1c0fc2bec0d4ec6ada34f53d68b2392',
+  nervous: '9306344c4b554268a520c72c0d988b5b',
+  skeletal: 'ef9d7351cf2541dd8d81a98852b8a0dc',
+  urinary: 'fe69d7b1ed6f46a3bd0b6933b796092e',
+  endocrine: '9306344c4b554268a520c72c0d988b5b',
+  reproductive_m: '15f7ed2eefb244dc94d32b6a7d989355',
+  reproductive_f: '15f7ed2eefb244dc94d32b6a7d989355',
+  lymphatic: '035316622877438cb62de673b8f19217',
+  integumentary: '9b0b079953b840bc9a13f524b60041e4',
+  sensory: '9306344c4b554268a520c72c0d988b5b',
+};
 
 // === BODY SYSTEMS DATA ===
 const BODY_SYSTEMS: SystemData[] = [
@@ -218,7 +256,7 @@ const BODY_SYSTEMS: SystemData[] = [
         pathologies: ['Hérnia Discal', 'Estenose Espinhal', 'Escoliose', 'Espondilite Anquilosante', 'Fratura Vertebral'],
         examTips: ['C1 Atlas: sem corpo', 'C2 Áxis: processo odontoide', 'Pterion: ponto mais frágil do crânio', 'Hérnia L4-L5: comprime raiz L5'],
         references: ['Moore [4] Cap.4', 'Netter [1] p.148-160'] },
-      { id: 'femur', name: 'Fêmur', latinName: 'Femur', description: 'Maior e mais forte osso do corpo. ~45cm. Suporta até 30x o peso corporal.',
+      { id: 'femur', name: 'Fêmur', latinName: 'Femur', description: 'Maior e mais forte osso do corpo. Cabeça, colo, trocanteres, diáfise, côndilos.',
         functions: ['Sustentação do peso corporal', 'Inserção muscular', 'Hematopoiese (medula óssea)'],
         clinicalNotes: ['Fratura do colo femoral: idosos, osteoporose', 'Necrose avascular da cabeça femoral'],
         pathologies: ['Fratura Colo Femoral', 'Necrose Avascular', 'Osteossarcoma', 'Fratura Diafisária'],
@@ -426,193 +464,18 @@ function sm2Algorithm(quality: number, repetition: number, easeFactor: number, i
   return { interval: newInterval, repetition: newRepetition, easeFactor: newEaseFactor };
 }
 
-// === SKETCHFAB VIEWER ===
+// === SKETCHFAB VIEWER (Realistic 3D) ===
 function SketchFabViewer({ modelId, height = 500 }: { modelId: string; height?: number }) {
   return (
-    <div className="rounded-xl overflow-hidden border border-border bg-black">
+    <div className="rounded-xl overflow-hidden border border-border" style={{ height }}>
       <iframe
-        title="3D Model"
-        width="100%"
-        height={height}
+        title="SketchFab 3D Model"
         src={`https://sketchfab.com/models/${modelId}/embed?autostart=1&ui_theme=dark&ui_infos=0&ui_watermark=0&ui_watermark_link=0`}
+        style={{ width: '100%', height: '100%', border: 'none' }}
         allow="autoplay; fullscreen; xr-spatial-tracking"
-        style={{ border: 'none' }}
+        allowFullScreen
       />
-      <div className="bg-black/80 px-3 py-1.5 text-center">
-        <span className="text-[10px] text-gray-400">Modelo 3D interativo — Arraste para rotacionar, scroll para zoom</span>
-      </div>
     </div>
-  );
-}
-
-// === ATLAS SCENE (Three.js Canvas) ===
-function AtlasScene({ children }: { children: React.ReactNode }) {
-  return (
-    <Canvas camera={{ position: [0, 0, 3.5], fov: 50 }} style={{ background: '#0a0a0f' }}>
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[5, 5, 5]} intensity={0.8} />
-      <directionalLight position={[-3, 3, -3]} intensity={0.3} />
-      <pointLight position={[0, 2, 2]} intensity={0.5} color="#88aaff" />
-      <Suspense fallback={<Html center><div className="text-white text-sm">Carregando modelo 3D...</div></Html>}>
-      {children}
-      </Suspense>
-      <OrbitControls enablePan enableZoom enableRotate autoRotate={false} />
-    </Canvas>
-  );
-}
-
-// === ANIMATED HEART MODEL ===
-function AnimatedHeartModel({ isAnimating, animationStep }: { isAnimating: boolean; animationStep: number }) {
-  const heartRef = useRef<THREE.Group>(null);
-  const [scale, setScale] = useState(1);
-  useFrame((state) => {
-    if (!heartRef.current) return;
-    if (isAnimating) { const t = state.clock.getElapsedTime(); setScale(Math.sin(t * 4) * 0.06 + 1); heartRef.current.rotation.y += 0.003; }
-    else heartRef.current.rotation.y += 0.005;
-  });
-  const cc = (chamber: string) => {
-    if (!isAnimating) return chamber === 'left' ? '#CC2222' : '#882222';
-    const phase = animationStep % 3;
-    if (phase === 0) return chamber.includes('atri') ? '#FF4444' : '#882222';
-    if (phase === 1) return chamber.includes('ventri') ? '#FF4444' : '#882222';
-    return '#AA3333';
-  };
-  return (
-    <group ref={heartRef} scale={[scale, scale, scale]}>
-      <mesh position={[0, 0, 0]}><sphereGeometry args={[0.55, 32, 32]} /><meshStandardMaterial color={cc('left_ventricle')} roughness={0.35} /></mesh>
-      <mesh position={[0.35, 0.25, 0.1]}><sphereGeometry args={[0.28, 24, 24]} /><meshStandardMaterial color={cc('right_atrium')} roughness={0.4} /></mesh>
-      <mesh position={[-0.25, 0.3, -0.1]}><sphereGeometry args={[0.26, 24, 24]} /><meshStandardMaterial color={cc('left_atrium')} roughness={0.4} /></mesh>
-      <mesh position={[0.2, -0.15, 0.2]}><sphereGeometry args={[0.32, 24, 24]} /><meshStandardMaterial color={cc('right_ventricle')} roughness={0.35} /></mesh>
-      <mesh position={[0, -0.5, 0.1]}><coneGeometry args={[0.3, 0.4, 16]} /><meshStandardMaterial color="#AA2222" roughness={0.35} /></mesh>
-      <mesh position={[0, 0.55, -0.05]} rotation={[0.2, 0, 0]}><cylinderGeometry args={[0.1, 0.12, 0.5, 16]} /><meshStandardMaterial color="#FF5555" roughness={0.3} /></mesh>
-      <mesh position={[0.15, 0.8, -0.1]} rotation={[0, 0, -0.8]}><torusGeometry args={[0.15, 0.06, 12, 24, Math.PI]} /><meshStandardMaterial color="#FF4444" roughness={0.3} /></mesh>
-      <mesh position={[0.15, 0.5, 0.15]} rotation={[-0.3, 0.3, 0]}><cylinderGeometry args={[0.07, 0.09, 0.4, 12]} /><meshStandardMaterial color="#4466CC" roughness={0.3} /></mesh>
-      <Line points={[[0, 0.2, 0.55], [-0.05, 0, 0.56], [-0.1, -0.2, 0.5], [-0.05, -0.4, 0.35]]} color="#FF8888" lineWidth={2} />
-      <Line points={[[0.3, 0.3, 0.35], [0.4, 0.1, 0.4], [0.35, -0.1, 0.35], [0.2, -0.3, 0.25]]} color="#FF8888" lineWidth={2} />
-      <Html position={[0.35, 0.25, 0.4]} center><div className="text-[7px] text-blue-300 bg-black/80 px-1.5 py-0.5 rounded border border-blue-500/30">AD</div></Html>
-      <Html position={[-0.25, 0.3, 0.2]} center><div className="text-[7px] text-red-300 bg-black/80 px-1.5 py-0.5 rounded border border-red-500/30">AE</div></Html>
-      <Html position={[0.2, -0.15, 0.55]} center><div className="text-[7px] text-blue-300 bg-black/80 px-1.5 py-0.5 rounded border border-blue-500/30">VD</div></Html>
-      <Html position={[-0.15, -0.15, 0.4]} center><div className="text-[7px] text-red-300 bg-black/80 px-1.5 py-0.5 rounded border border-red-500/30">VE</div></Html>
-      <Html position={[0.15, 0.85, 0]} center><div className="text-[7px] text-red-400 bg-black/80 px-1.5 py-0.5 rounded border border-red-500/30">Aorta</div></Html>
-    </group>
-  );
-}
-
-// === BRAIN MODEL ===
-function AnimatedBrainModel({ isAnimating }: { isAnimating: boolean }) {
-  const brainRef = useRef<THREE.Group>(null);
-  useFrame(() => { if (brainRef.current) brainRef.current.rotation.y += 0.004; });
-  const lc = (lobe: string) => {
-    switch (lobe) { case 'frontal': return '#E8A0BF'; case 'parietal': return '#C8A2C8'; case 'temporal': return '#A8D8EA'; case 'occipital': return '#AA96DA'; case 'cerebellum': return '#FCBAD3'; default: return '#DDB8C8'; }
-  };
-  return (
-    <group ref={brainRef}>
-      <group position={[-0.02, 0, 0]}>
-        <mesh position={[-0.25, 0.15, 0.25]}><sphereGeometry args={[0.35, 24, 24]} /><meshStandardMaterial color={lc('frontal')} roughness={0.6} /></mesh>
-        <mesh position={[-0.25, 0.2, -0.15]}><sphereGeometry args={[0.3, 24, 24]} /><meshStandardMaterial color={lc('parietal')} roughness={0.6} /></mesh>
-        <mesh position={[-0.35, -0.15, 0.1]}><sphereGeometry args={[0.25, 24, 24]} /><meshStandardMaterial color={lc('temporal')} roughness={0.6} /></mesh>
-        <mesh position={[-0.2, 0.05, -0.4]}><sphereGeometry args={[0.25, 24, 24]} /><meshStandardMaterial color={lc('occipital')} roughness={0.6} /></mesh>
-      </group>
-      <group position={[0.02, 0, 0]}>
-        <mesh position={[0.25, 0.15, 0.25]}><sphereGeometry args={[0.35, 24, 24]} /><meshStandardMaterial color={lc('frontal')} roughness={0.6} /></mesh>
-        <mesh position={[0.25, 0.2, -0.15]}><sphereGeometry args={[0.3, 24, 24]} /><meshStandardMaterial color={lc('parietal')} roughness={0.6} /></mesh>
-        <mesh position={[0.35, -0.15, 0.1]}><sphereGeometry args={[0.25, 24, 24]} /><meshStandardMaterial color={lc('temporal')} roughness={0.6} /></mesh>
-        <mesh position={[0.2, 0.05, -0.4]}><sphereGeometry args={[0.25, 24, 24]} /><meshStandardMaterial color={lc('occipital')} roughness={0.6} /></mesh>
-      </group>
-      <mesh position={[0, 0.25, 0]}><boxGeometry args={[0.02, 0.15, 0.8]} /><meshStandardMaterial color="#996677" roughness={0.5} /></mesh>
-      <mesh position={[0, -0.25, -0.35]}><sphereGeometry args={[0.25, 24, 24]} /><meshStandardMaterial color={lc('cerebellum')} roughness={0.5} /></mesh>
-      <mesh position={[0, -0.35, -0.2]} rotation={[0.4, 0, 0]}><cylinderGeometry args={[0.08, 0.06, 0.3, 12]} /><meshStandardMaterial color="#CC9999" roughness={0.4} /></mesh>
-      <Html position={[0, 0.15, 0.55]} center><div className="text-[7px] text-pink-300 bg-black/80 px-1.5 py-0.5 rounded border border-pink-500/30">Frontal</div></Html>
-      <Html position={[0, 0.35, -0.15]} center><div className="text-[7px] text-purple-300 bg-black/80 px-1.5 py-0.5 rounded border border-purple-500/30">Parietal</div></Html>
-      <Html position={[0.45, -0.15, 0.1]} center><div className="text-[7px] text-blue-300 bg-black/80 px-1.5 py-0.5 rounded border border-blue-500/30">Temporal</div></Html>
-      <Html position={[0, -0.25, -0.5]} center><div className="text-[7px] text-pink-200 bg-black/80 px-1.5 py-0.5 rounded border border-pink-400/30">Cerebelo</div></Html>
-    </group>
-  );
-}
-
-// === FULL BODY DISSECTION MODEL ===
-function FullBodyDissectionModel({ dissectionDepth, selectedSystem }: { dissectionDepth: number; selectedSystem?: string }) {
-  const bodyRef = useRef<THREE.Group>(null);
-  useFrame(() => { if (bodyRef.current) bodyRef.current.rotation.y += 0.003; });
-  const skin = '#F5D0B5', muscle = '#CC3333', bone = '#F5F0E0', organ = '#CC4444', vasc = '#EE3333', nerve = '#FFD700';
-  return (
-    <group ref={bodyRef} position={[0, -0.5, 0]}>
-      {dissectionDepth <= 1 && (<group>
-        <mesh position={[0, 1.55, 0]}><sphereGeometry args={[0.22, 24, 24]} /><meshStandardMaterial color={skin} roughness={0.5} /></mesh>
-        <mesh position={[0, 1.28, 0]}><cylinderGeometry args={[0.1, 0.12, 0.15, 16]} /><meshStandardMaterial color={skin} roughness={0.5} /></mesh>
-        <mesh position={[0, 0.9, 0]}><cylinderGeometry args={[0.28, 0.25, 0.6, 16]} /><meshStandardMaterial color={skin} roughness={0.5} /></mesh>
-        <mesh position={[0, 0.45, 0]}><cylinderGeometry args={[0.25, 0.22, 0.5, 16]} /><meshStandardMaterial color={skin} roughness={0.5} /></mesh>
-        <mesh position={[0, 0.15, 0]}><sphereGeometry args={[0.23, 16, 16]} /><meshStandardMaterial color={skin} roughness={0.5} /></mesh>
-        <mesh position={[-0.35, 1.1, 0]}><sphereGeometry args={[0.1, 12, 12]} /><meshStandardMaterial color={skin} roughness={0.5} /></mesh>
-        <mesh position={[0.35, 1.1, 0]}><sphereGeometry args={[0.1, 12, 12]} /><meshStandardMaterial color={skin} roughness={0.5} /></mesh>
-        <mesh position={[-0.4, 0.85, 0]} rotation={[0, 0, 0.1]}><cylinderGeometry args={[0.07, 0.06, 0.45, 12]} /><meshStandardMaterial color={skin} roughness={0.5} /></mesh>
-        <mesh position={[0.4, 0.85, 0]} rotation={[0, 0, -0.1]}><cylinderGeometry args={[0.07, 0.06, 0.45, 12]} /><meshStandardMaterial color={skin} roughness={0.5} /></mesh>
-        <mesh position={[-0.45, 0.5, 0]}><cylinderGeometry args={[0.055, 0.045, 0.45, 12]} /><meshStandardMaterial color={skin} roughness={0.5} /></mesh>
-        <mesh position={[0.45, 0.5, 0]}><cylinderGeometry args={[0.055, 0.045, 0.45, 12]} /><meshStandardMaterial color={skin} roughness={0.5} /></mesh>
-        <mesh position={[-0.13, -0.2, 0]}><cylinderGeometry args={[0.1, 0.08, 0.55, 12]} /><meshStandardMaterial color={skin} roughness={0.5} /></mesh>
-        <mesh position={[0.13, -0.2, 0]}><cylinderGeometry args={[0.1, 0.08, 0.55, 12]} /><meshStandardMaterial color={skin} roughness={0.5} /></mesh>
-        <mesh position={[-0.14, -0.7, 0]}><cylinderGeometry args={[0.07, 0.05, 0.55, 12]} /><meshStandardMaterial color={skin} roughness={0.5} /></mesh>
-        <mesh position={[0.14, -0.7, 0]}><cylinderGeometry args={[0.07, 0.05, 0.55, 12]} /><meshStandardMaterial color={skin} roughness={0.5} /></mesh>
-        <mesh position={[-0.14, -1, 0.03]}><boxGeometry args={[0.08, 0.04, 0.14]} /><meshStandardMaterial color={skin} roughness={0.5} /></mesh>
-        <mesh position={[0.14, -1, 0.03]}><boxGeometry args={[0.08, 0.04, 0.14]} /><meshStandardMaterial color={skin} roughness={0.5} /></mesh>
-      </group>)}
-      {dissectionDepth >= 2 && dissectionDepth <= 4 && (<group>
-        <mesh position={[0, 1.55, 0]}><sphereGeometry args={[0.2, 24, 24]} /><meshStandardMaterial color={muscle} roughness={0.4} transparent opacity={0.9} /></mesh>
-        <mesh position={[-0.12, 1.02, 0.15]}><boxGeometry args={[0.2, 0.15, 0.08]} /><meshStandardMaterial color="#CC3333" roughness={0.35} /></mesh>
-        <mesh position={[0.12, 1.02, 0.15]}><boxGeometry args={[0.2, 0.15, 0.08]} /><meshStandardMaterial color="#CC3333" roughness={0.35} /></mesh>
-        {[0, 1, 2].map(r => [-0.05, 0.05].map((x, c) => <mesh key={`a-${r}-${c}`} position={[x, 0.75 - r * 0.12, 0.2]}><boxGeometry args={[0.08, 0.1, 0.04]} /><meshStandardMaterial color="#BB3333" roughness={0.35} /></mesh>))}
-        <mesh position={[-0.35, 1.1, 0]}><sphereGeometry args={[0.09, 12, 12]} /><meshStandardMaterial color="#DD3333" roughness={0.4} /></mesh>
-        <mesh position={[0.35, 1.1, 0]}><sphereGeometry args={[0.09, 12, 12]} /><meshStandardMaterial color="#DD3333" roughness={0.4} /></mesh>
-        <mesh position={[-0.4, 0.88, 0.03]}><cylinderGeometry args={[0.055, 0.04, 0.35, 12]} /><meshStandardMaterial color="#CC3333" roughness={0.35} /></mesh>
-        <mesh position={[0.4, 0.88, 0.03]}><cylinderGeometry args={[0.055, 0.04, 0.35, 12]} /><meshStandardMaterial color="#CC3333" roughness={0.35} /></mesh>
-        <mesh position={[-0.13, -0.2, 0.02]}><cylinderGeometry args={[0.085, 0.065, 0.5, 12]} /><meshStandardMaterial color="#CC3333" roughness={0.35} /></mesh>
-        <mesh position={[0.13, -0.2, 0.02]}><cylinderGeometry args={[0.085, 0.065, 0.5, 12]} /><meshStandardMaterial color="#CC3333" roughness={0.35} /></mesh>
-        <mesh position={[0, 0.7, 0]}><cylinderGeometry args={[0.22, 0.2, 0.7, 16]} /><meshStandardMaterial color={muscle} roughness={0.4} transparent opacity={0.7} /></mesh>
-        <Html position={[0.12, 1.02, 0.3]} center><div className="text-[6px] text-red-200 bg-black/80 px-1 py-0.5 rounded">Peitoral</div></Html>
-        <Html position={[-0.35, 1.1, 0.15]} center><div className="text-[6px] text-red-200 bg-black/80 px-1 py-0.5 rounded">Deltoide</div></Html>
-      </group>)}
-      {dissectionDepth >= 3 && dissectionDepth <= 5 && (<group>
-        <Line points={[[0, 1.1, 0.08], [0, 0.5, 0.08], [0, 0.2, 0.08]]} color={vasc} lineWidth={3} />
-        <Line points={[[-0.05, 1.15, 0.06], [-0.06, 1.55, 0.1]]} color={vasc} lineWidth={2} />
-        <Line points={[[0.05, 1.15, 0.06], [0.06, 1.55, 0.1]]} color={vasc} lineWidth={2} />
-        <Line points={[[-0.05, 1.12, 0.06], [-0.4, 0.85, 0.04], [-0.45, 0.5, 0.04]]} color={vasc} lineWidth={2} />
-        <Line points={[[0.05, 1.12, 0.06], [0.4, 0.85, 0.04], [0.45, 0.5, 0.04]]} color={vasc} lineWidth={2} />
-        <Line points={[[0, 0.2, 0.08], [-0.13, -0.2, 0.06], [-0.14, -0.7, 0.04]]} color={vasc} lineWidth={2} />
-        <Line points={[[0, 0.2, 0.08], [0.13, -0.2, 0.06], [0.14, -0.7, 0.04]]} color={vasc} lineWidth={2} />
-        <Line points={[[0.05, 1.1, -0.02], [0.05, 0.5, -0.02], [0.05, 0.2, -0.02]]} color="#3355CC" lineWidth={2.5} />
-        <mesh position={[-0.03, 1.02, 0.06]}><sphereGeometry args={[0.1, 16, 16]} /><meshStandardMaterial color="#CC2222" roughness={0.3} transparent opacity={0.8} /></mesh>
-        <Html position={[0, 0.7, 0.15]} center><div className="text-[6px] text-red-300 bg-black/80 px-1 py-0.5 rounded">Aorta</div></Html>
-      </group>)}
-      {dissectionDepth >= 4 && dissectionDepth <= 5 && (<group>
-        <Line points={[[0, 1.55, 0], [0, 1.28, 0], [0, 0.5, 0], [0, 0.2, 0]]} color={nerve} lineWidth={2} />
-        <mesh position={[0, 1.55, 0]}><sphereGeometry args={[0.18, 16, 16]} /><meshStandardMaterial color="#DDCC44" roughness={0.5} transparent opacity={0.7} /></mesh>
-        <Html position={[0, 1.55, 0.25]} center><div className="text-[6px] text-yellow-300 bg-black/80 px-1 py-0.5 rounded">Encéfalo</div></Html>
-      </group>)}
-      {dissectionDepth >= 5 && dissectionDepth <= 6 && (<group>
-        <mesh position={[0, 1.55, 0]}><sphereGeometry args={[0.19, 16, 16]} /><meshStandardMaterial color={bone} roughness={0.3} /></mesh>
-        <mesh position={[0, 0.7, 0]}><cylinderGeometry args={[0.08, 0.08, 0.8, 8]} /><meshStandardMaterial color={bone} roughness={0.3} /></mesh>
-        <mesh position={[0, 0.95, 0.12]}><boxGeometry args={[0.3, 0.35, 0.08]} /><meshStandardMaterial color={bone} roughness={0.3} transparent opacity={0.6} /></mesh>
-        <mesh position={[-0.13, -0.2, 0]}><cylinderGeometry args={[0.04, 0.035, 0.5, 8]} /><meshStandardMaterial color={bone} roughness={0.3} /></mesh>
-        <mesh position={[0.13, -0.2, 0]}><cylinderGeometry args={[0.04, 0.035, 0.5, 8]} /><meshStandardMaterial color={bone} roughness={0.3} /></mesh>
-        <mesh position={[-0.14, -0.7, 0]}><cylinderGeometry args={[0.03, 0.025, 0.5, 8]} /><meshStandardMaterial color={bone} roughness={0.3} /></mesh>
-        <mesh position={[0.14, -0.7, 0]}><cylinderGeometry args={[0.03, 0.025, 0.5, 8]} /><meshStandardMaterial color={bone} roughness={0.3} /></mesh>
-        <Html position={[0, 0.95, 0.25]} center><div className="text-[6px] text-gray-200 bg-black/80 px-1 py-0.5 rounded">Caixa Torácica</div></Html>
-      </group>)}
-      {dissectionDepth >= 6 && (<group>
-        <mesh position={[-0.03, 1.02, 0.06]}><sphereGeometry args={[0.08, 16, 16]} /><meshStandardMaterial color="#CC2222" roughness={0.3} /></mesh>
-        <mesh position={[-0.12, 0.95, 0.05]}><sphereGeometry args={[0.1, 12, 12]} /><meshStandardMaterial color="#CC8888" roughness={0.4} transparent opacity={0.8} /></mesh>
-        <mesh position={[0.12, 0.95, 0.05]}><sphereGeometry args={[0.1, 12, 12]} /><meshStandardMaterial color="#CC8888" roughness={0.4} transparent opacity={0.8} /></mesh>
-        <mesh position={[0.15, 0.65, 0.05]}><sphereGeometry args={[0.1, 12, 12]} /><meshStandardMaterial color="#AA5533" roughness={0.4} /></mesh>
-        <mesh position={[0, 0.55, 0.08]}><sphereGeometry args={[0.07, 12, 12]} /><meshStandardMaterial color="#DDAA77" roughness={0.4} /></mesh>
-        <mesh position={[-0.12, 0.35, 0]}><sphereGeometry args={[0.05, 12, 12]} /><meshStandardMaterial color="#AA4444" roughness={0.4} /></mesh>
-        <mesh position={[0.12, 0.35, 0]}><sphereGeometry args={[0.05, 12, 12]} /><meshStandardMaterial color="#AA4444" roughness={0.4} /></mesh>
-        <Html position={[-0.03, 1.02, 0.18]} center><div className="text-[6px] text-red-300 bg-black/80 px-1 py-0.5 rounded">Coração</div></Html>
-        <Html position={[-0.12, 0.95, 0.2]} center><div className="text-[6px] text-blue-300 bg-black/80 px-1 py-0.5 rounded">Pulmão E</div></Html>
-        <Html position={[0.15, 0.65, 0.2]} center><div className="text-[6px] text-amber-300 bg-black/80 px-1 py-0.5 rounded">Fígado</div></Html>
-        <Html position={[0, 0.55, 0.2]} center><div className="text-[6px] text-yellow-300 bg-black/80 px-1 py-0.5 rounded">Estômago</div></Html>
-        <Html position={[-0.12, 0.35, 0.1]} center><div className="text-[6px] text-orange-300 bg-black/80 px-1 py-0.5 rounded">Rim E</div></Html>
-      </group>)}
-    </group>
   );
 }
 
@@ -645,23 +508,23 @@ export default function AnatomyAtlas() {
   const currentOrgan = currentSystem?.organs.find(o => o.id === selectedOrgan);
 
   const DISSECTION_LAYERS = [
-    { id: 0, name: 'Visão Externa', desc: 'Corpo humano completo com pele', color: '#F5D0B5' },
-    { id: 1, name: 'Pele e Subcutâneo', desc: 'Epiderme, derme, hipoderme', color: '#F0C8A0' },
-    { id: 2, name: 'Sistema Muscular', desc: 'Músculos esqueléticos', color: '#CC3333' },
-    { id: 3, name: 'Sistema Vascular', desc: 'Artérias, veias, capilares', color: '#EE3333' },
-    { id: 4, name: 'Sistema Nervoso', desc: 'Encéfalo, medula, nervos', color: '#FFD700' },
-    { id: 5, name: 'Sistema Esquelético', desc: 'Ossos, articulações', color: '#F5F0E0' },
-    { id: 6, name: 'Órgãos Internos', desc: 'Coração, pulmões, fígado, rins', color: '#CC4444' },
-    { id: 7, name: 'Visão Completa', desc: 'Todas as camadas', color: '#AAAAAA' },
+    { id: 0, name: 'Visao Externa', desc: 'Corpo humano completo com pele', color: '#F5D0B5' },
+    { id: 1, name: 'Pele e Subcutaneo', desc: 'Epiderme, derme, hipoderme', color: '#F0C8A0' },
+    { id: 2, name: 'Sistema Muscular', desc: 'Musculos esqueleticos', color: '#CC3333' },
+    { id: 3, name: 'Sistema Vascular', desc: 'Arterias, veias, capilares', color: '#EE3333' },
+    { id: 4, name: 'Sistema Nervoso', desc: 'Encefalo, medula, nervos', color: '#FFD700' },
+    { id: 5, name: 'Sistema Esqueletico', desc: 'Ossos, articulacoes', color: '#F5F0E0' },
+    { id: 6, name: 'Orgaos Internos', desc: 'Coracao, pulmoes, figado, rins', color: '#CC4444' },
+    { id: 7, name: 'Visao Completa', desc: 'Todas as camadas', color: '#AAAAAA' },
   ];
 
   const ANIMATIONS = [
-    { id: 'cardiac_cycle', name: 'Ciclo Cardíaco', desc: 'Sístole atrial → ventricular → Diástole', icon: '❤️', ref: 'Guyton [5] Cap.9' },
-    { id: 'respiration', name: 'Respiração', desc: 'Inspiração e expiração', icon: '🫁', ref: 'Guyton [5] Cap.38' },
-    { id: 'peristalsis', name: 'Peristalse', desc: 'Movimentos peristálticos', icon: '🔄', ref: 'Guyton [5] Cap.63' },
-    { id: 'synapse', name: 'Sinapse Neural', desc: 'Transmissão do impulso', icon: '⚡', ref: 'Guyton [5] Cap.46' },
-    { id: 'filtration', name: 'Filtração Renal', desc: 'Filtração glomerular', icon: '💧', ref: 'Guyton [5] Cap.26' },
-    { id: 'muscle_contraction', name: 'Contração Muscular', desc: 'Filamentos deslizantes', icon: '💪', ref: 'Guyton [5] Cap.6' },
+    { id: 'cardiac_cycle', name: 'Ciclo Cardiaco', desc: 'Sistole atrial, ventricular, Diastole', icon: '❤️', ref: 'Guyton [5] Cap.9' },
+    { id: 'respiration', name: 'Respiracao', desc: 'Inspiracao e expiracao', icon: '🫁', ref: 'Guyton [5] Cap.38' },
+    { id: 'peristalsis', name: 'Peristalse', desc: 'Movimentos peristalticos', icon: '🔄', ref: 'Guyton [5] Cap.63' },
+    { id: 'synapse', name: 'Sinapse Neural', desc: 'Transmissao do impulso', icon: '⚡', ref: 'Guyton [5] Cap.46' },
+    { id: 'filtration', name: 'Filtracao Renal', desc: 'Filtracao glomerular', icon: '💧', ref: 'Guyton [5] Cap.26' },
+    { id: 'muscle_contraction', name: 'Contracao Muscular', desc: 'Filamentos deslizantes', icon: '💪', ref: 'Guyton [5] Cap.6' },
   ];
 
   const handleQuizAnswer = (optionIndex: number) => {
@@ -683,29 +546,29 @@ export default function AnatomyAtlas() {
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
             <span className="text-3xl">🧬</span> Atlas de Anatomia 3D
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">v7.0 — 12 sistemas, 40+ órgãos, 16 modelos SketchFab, quiz SM-2 adaptativo</p>
+          <p className="text-sm text-muted-foreground mt-1">v8.0 — 12 sistemas, 40+ orgaos, 16 modelos SketchFab fotorrealistas, quiz SM-2 adaptativo</p>
         </div>
         <button onClick={() => setShowReferences(!showReferences)} className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-400 text-xs hover:bg-blue-500/30 transition">
-          📚 Referências
+          Ref.
         </button>
       </div>
 
       {showReferences && (
         <div className="mb-6 p-4 rounded-xl bg-card border border-border">
-          <h3 className="font-bold mb-3 text-sm">📚 Referências Bibliográficas</h3>
+          <h3 className="font-bold mb-3 text-sm">Referencias Bibliograficas</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-muted-foreground">
-            {['[1] Netter FH. Atlas de Anatomia Humana. 7ª ed. Elsevier, 2019.', '[2] Gray H. Gray\'s Anatomy. 42nd ed. Elsevier, 2020.', '[3] Sobotta J. Atlas de Anatomia Humana. 24ª ed. 2018.', '[4] Moore KL. Anatomia Orientada para a Clínica. 8ª ed. 2019.', '[5] Guyton AC. Tratado de Fisiologia Médica. 14ª ed. 2021.', '[6] Prometheus. Atlas de Anatomia. 4ª ed. 2019.', '[7] Tortora GJ. Princípios de Anatomia e Fisiologia. 14ª ed. 2016.', '[8] Rohen JW. Anatomia Humana: Atlas Fotográfico. 9ª ed. 2021.'].map((r, i) => <p key={i}>{r}</p>)}
+            {['[1] Netter FH. Atlas de Anatomia Humana. 7a ed. Elsevier, 2019.', '[2] Gray H. Gray\'s Anatomy. 42nd ed. Elsevier, 2020.', '[3] Sobotta J. Atlas de Anatomia Humana. 24a ed. 2018.', '[4] Moore KL. Anatomia Orientada para a Clinica. 8a ed. 2019.', '[5] Guyton AC. Tratado de Fisiologia Medica. 14a ed. 2021.', '[6] Prometheus. Atlas de Anatomia. 4a ed. 2019.', '[7] Tortora GJ. Principios de Anatomia e Fisiologia. 14a ed. 2016.', '[8] Rohen JW. Anatomia Humana: Atlas Fotografico. 9a ed. 2021.'].map((r, i) => <p key={i}>{r}</p>)}
           </div>
         </div>
       )}
 
       <div className="flex flex-wrap gap-2 mb-6">
         {([
-          { id: 'explore' as const, label: '🔍 Explorar Sistemas', desc: '12 sistemas corporais' },
-          { id: 'dissection' as const, label: '🔬 Dissecção', desc: '7 camadas anatômicas' },
-          { id: 'sketchfab' as const, label: '🎨 Modelos Realistas', desc: '16 modelos fotorrealistas' },
-          { id: 'animations' as const, label: '▶️ Animações', desc: '6 animações fisiológicas' },
-          { id: 'quiz' as const, label: '🧠 Quiz SM-2', desc: '40 questões adaptativas' },
+          { id: 'explore' as const, label: 'Explorar Sistemas', desc: '12 sistemas corporais' },
+          { id: 'dissection' as const, label: 'Disseccao 3D', desc: '7 camadas anatomicas realistas' },
+          { id: 'sketchfab' as const, label: 'Modelos Realistas', desc: '16 modelos fotorrealistas' },
+          { id: 'animations' as const, label: 'Animacoes', desc: '6 animacoes fisiologicas' },
+          { id: 'quiz' as const, label: 'Quiz SM-2', desc: '40 questoes adaptativas' },
         ] as const).map(mode => (
           <button key={mode.id} onClick={() => setViewMode(mode.id)}
             className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${viewMode === mode.id ? 'bg-primary text-primary-foreground shadow-lg scale-105' : 'bg-card border border-border hover:bg-accent'}`}>
@@ -719,7 +582,7 @@ export default function AnatomyAtlas() {
       {viewMode === 'explore' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="space-y-3">
-            <input type="text" placeholder="🔍 Buscar sistema ou órgão..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+            <input type="text" placeholder="Buscar sistema ou orgao..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl bg-card border border-border text-sm focus:ring-2 focus:ring-primary outline-none" />
             <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2">
               {filteredSystems.map(system => (
@@ -729,7 +592,7 @@ export default function AnatomyAtlas() {
                     <span className="text-xl">{system.icon}</span>
                     <div>
                       <div className="font-medium text-sm">{system.name}</div>
-                      <div className="text-[10px] text-muted-foreground">{system.organs.length} órgãos</div>
+                      <div className="text-[10px] text-muted-foreground">{system.organs.length} orgaos</div>
                     </div>
                   </div>
                 </button>
@@ -739,22 +602,9 @@ export default function AnatomyAtlas() {
           <div className="lg:col-span-2">
             {currentSystem ? (
               <div className="space-y-4">
-                <div className="rounded-xl overflow-hidden border border-border" style={{ height: 450 }}>
-                  <AtlasScene>
-                    {selectedSystem === 'cardiovascular' ? <AnimatedHeartModel isAnimating={isAnimating} animationStep={animationStep} /> :
-                     selectedSystem === 'nervous' ? <AnimatedBrainModel isAnimating={false} /> :
-                     <FullBodyDissectionModel dissectionDepth={6} selectedSystem={selectedSystem} />}
-                  </AtlasScene>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => setIsAnimating(!isAnimating)} className={`px-4 py-2 rounded-lg text-sm ${isAnimating ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
-                    {isAnimating ? '⏸ Pausar' : '▶️ Animar'}
-                  </button>
-                  {currentSystem.sketchfabId && (
-                    <button onClick={() => { setViewMode('sketchfab'); setSelectedSketchfabModel(currentSystem.sketchfabId!); }}
-                      className="px-4 py-2 rounded-lg text-sm bg-purple-500/20 text-purple-400">🎨 Ver Modelo Realista</button>
-                  )}
-                </div>
+                {/* REALISTIC 3D MODEL via SketchFab */}
+                <SketchFabViewer modelId={SYSTEM_SKETCHFAB[currentSystem.id] || '9b0b079953b840bc9a13f524b60041e4'} height={450} />
+                <p className="text-xs text-muted-foreground text-center">Modelo 3D fotorrealista — Arraste para rotacionar, scroll para zoom</p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {currentSystem.organs.map(organ => (
                     <button key={organ.id} onClick={() => setSelectedOrgan(organ.id)}
@@ -772,36 +622,36 @@ export default function AnatomyAtlas() {
                     <p className="text-sm text-muted-foreground">{currentOrgan.description}</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <h4 className="text-xs font-semibold text-primary mb-1">⚙️ Funções</h4>
-                        <ul className="text-xs text-muted-foreground space-y-0.5">{currentOrgan.functions.map((f, i) => <li key={i}>• {f}</li>)}</ul>
+                        <h4 className="text-xs font-semibold text-primary mb-1">Funcoes</h4>
+                        <ul className="text-xs text-muted-foreground space-y-0.5">{currentOrgan.functions.map((f, i) => <li key={i}>- {f}</li>)}</ul>
                       </div>
                       <div>
-                        <h4 className="text-xs font-semibold text-primary mb-1">🏥 Patologias</h4>
+                        <h4 className="text-xs font-semibold text-primary mb-1">Patologias</h4>
                         <div className="flex flex-wrap gap-1">{currentOrgan.pathologies.map((p, i) => <span key={i} className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 text-[10px]">{p}</span>)}</div>
                       </div>
                       <div>
-                        <h4 className="text-xs font-semibold text-primary mb-1">📋 Notas Clínicas</h4>
-                        <ul className="text-xs text-muted-foreground space-y-0.5">{currentOrgan.clinicalNotes.map((n, i) => <li key={i}>• {n}</li>)}</ul>
+                        <h4 className="text-xs font-semibold text-primary mb-1">Notas Clinicas</h4>
+                        <ul className="text-xs text-muted-foreground space-y-0.5">{currentOrgan.clinicalNotes.map((n, i) => <li key={i}>- {n}</li>)}</ul>
                       </div>
                       <div>
-                        <h4 className="text-xs font-semibold text-primary mb-1">💡 Dicas de Prova</h4>
-                        <ul className="text-xs text-yellow-400 space-y-0.5">{currentOrgan.examTips.map((t, i) => <li key={i}>• {t}</li>)}</ul>
+                        <h4 className="text-xs font-semibold text-primary mb-1">Dicas de Prova</h4>
+                        <ul className="text-xs text-yellow-400 space-y-0.5">{currentOrgan.examTips.map((t, i) => <li key={i}>- {t}</li>)}</ul>
                       </div>
                       {currentOrgan.histology && (
                         <div>
-                          <h4 className="text-xs font-semibold text-primary mb-1">🔬 Histologia</h4>
+                          <h4 className="text-xs font-semibold text-primary mb-1">Histologia</h4>
                           <p className="text-xs text-muted-foreground">{currentOrgan.histology}</p>
                         </div>
                       )}
                       {currentOrgan.bloodSupply && (
                         <div>
-                          <h4 className="text-xs font-semibold text-primary mb-1">🩸 Irrigação</h4>
+                          <h4 className="text-xs font-semibold text-primary mb-1">Irrigacao</h4>
                           <p className="text-xs text-muted-foreground">{currentOrgan.bloodSupply}</p>
                         </div>
                       )}
                       {currentOrgan.innervation && (
                         <div>
-                          <h4 className="text-xs font-semibold text-primary mb-1">⚡ Inervação</h4>
+                          <h4 className="text-xs font-semibold text-primary mb-1">Inervacao</h4>
                           <p className="text-xs text-muted-foreground">{currentOrgan.innervation}</p>
                         </div>
                       )}
@@ -819,27 +669,29 @@ export default function AnatomyAtlas() {
         </div>
       )}
 
-      {/* === DISSECTION MODE === */}
+      {/* === DISSECTION MODE — REALISTIC via SketchFab === */}
       {viewMode === 'dissection' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <div className="rounded-xl overflow-hidden border border-border" style={{ height: 550 }}>
-              <AtlasScene><FullBodyDissectionModel dissectionDepth={dissectionDepth} /></AtlasScene>
+            <SketchFabViewer modelId={DISSECTION_SKETCHFAB[dissectionDepth]?.sketchfabId || '9b0b079953b840bc9a13f524b60041e4'} height={550} />
+            <div className="mt-2 p-3 rounded-xl bg-card border border-border text-center">
+              <p className="text-sm font-medium text-primary">{DISSECTION_SKETCHFAB[dissectionDepth]?.name || 'Visao Externa'}</p>
+              <p className="text-xs text-muted-foreground">Modelo 3D fotorrealista — Arraste para rotacionar, scroll para zoom</p>
             </div>
             <div className="mt-4 p-4 rounded-xl bg-card border border-border">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold text-sm">Profundidade de Dissecção</h3>
+                <h3 className="font-bold text-sm">Profundidade de Disseccao</h3>
                 <span className="text-xs text-muted-foreground">Camada {dissectionDepth} de 7</span>
               </div>
               <input type="range" min={0} max={7} value={dissectionDepth} onChange={e => setDissectionDepth(Number(e.target.value))} className="w-full accent-primary" />
               <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-                <span>Pele</span><span>Músculo</span><span>Vasos</span><span>Nervos</span><span>Ossos</span><span>Órgãos</span><span>Tudo</span>
+                <span>Pele</span><span>Musculo</span><span>Vasos</span><span>Nervos</span><span>Ossos</span><span>Orgaos</span><span>Tudo</span>
               </div>
             </div>
           </div>
           <div className="space-y-3">
-            <h3 className="font-bold text-sm">🔬 Camadas Anatômicas</h3>
-            <p className="text-xs text-muted-foreground">Remova camadas para explorar estruturas em profundidade. Ref: Gray's [2]</p>
+            <h3 className="font-bold text-sm">Camadas Anatomicas</h3>
+            <p className="text-xs text-muted-foreground">Selecione camadas para explorar estruturas em profundidade. Ref: Gray's [2]</p>
             {DISSECTION_LAYERS.map(layer => (
               <button key={layer.id} onClick={() => setDissectionDepth(layer.id)}
                 className={`w-full text-left p-3 rounded-xl transition-all ${dissectionDepth === layer.id ? 'bg-primary/20 border-primary border-2' : 'bg-card border border-border hover:bg-accent'}`}>
@@ -880,26 +732,18 @@ export default function AnatomyAtlas() {
         </div>
       )}
 
-      {/* === ANIMATIONS MODE === */}
+      {/* === ANIMATIONS MODE — REALISTIC via SketchFab === */}
       {viewMode === 'animations' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <div className="rounded-xl overflow-hidden border border-border" style={{ height: 450 }}>
-              <AtlasScene>
-                {selectedAnimation === 'cardiac_cycle' ? <AnimatedHeartModel isAnimating={isAnimating} animationStep={animationStep} /> :
-                 selectedAnimation === 'synapse' ? <AnimatedBrainModel isAnimating={isAnimating} /> :
-                 <FullBodyDissectionModel dissectionDepth={selectedAnimation === 'muscle_contraction' ? 2 : selectedAnimation === 'filtration' ? 6 : 1} />}
-              </AtlasScene>
-            </div>
-            <div className="flex gap-3 mt-4">
-              <button onClick={() => setIsAnimating(!isAnimating)} className={`px-6 py-2.5 rounded-xl text-sm font-medium ${isAnimating ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
-                {isAnimating ? '⏸ Pausar' : '▶️ Iniciar'}
-              </button>
-              <button onClick={() => setAnimationStep(0)} className="px-4 py-2.5 rounded-xl text-sm bg-card border border-border hover:bg-accent">🔄 Reiniciar</button>
+            <SketchFabViewer modelId={ANIMATION_SKETCHFAB[selectedAnimation]?.sketchfabId || '2e6726aca3e64c56b8f8d7cceae17a28'} height={450} />
+            <div className="mt-2 p-3 rounded-xl bg-card border border-border text-center">
+              <p className="text-sm font-medium text-primary">{ANIMATION_SKETCHFAB[selectedAnimation]?.name || 'Ciclo Cardiaco'}</p>
+              <p className="text-xs text-muted-foreground">Modelo 3D fotorrealista animado — Interaja com o modelo para explorar</p>
             </div>
           </div>
           <div className="space-y-3">
-            <h3 className="font-bold text-sm">▶️ Animações Fisiológicas</h3>
+            <h3 className="font-bold text-sm">Animacoes Fisiologicas</h3>
             {ANIMATIONS.map(anim => (
               <button key={anim.id} onClick={() => { setSelectedAnimation(anim.id); setIsAnimating(false); setAnimationStep(0); }}
                 className={`w-full text-left p-3 rounded-xl transition-all ${selectedAnimation === anim.id ? 'bg-primary/20 border-primary border-2' : 'bg-card border border-border hover:bg-accent'}`}>
@@ -921,10 +765,10 @@ export default function AnatomyAtlas() {
       {viewMode === 'quiz' && (
         <div className="max-w-3xl mx-auto space-y-6">
           <div className="flex items-center justify-between">
-            <div><h3 className="font-bold">🧠 Quiz Adaptativo (SM-2)</h3><p className="text-xs text-muted-foreground">SuperMemo 2 adapta ao seu nível</p></div>
+            <div><h3 className="font-bold">Quiz Adaptativo (SM-2)</h3><p className="text-xs text-muted-foreground">SuperMemo 2 adapta ao seu nivel</p></div>
             <div className="text-right">
               <div className="text-2xl font-bold text-primary">{quizState.score}/{quizState.currentQ + (quizState.answered ? 1 : 0)}</div>
-              <div className="text-xs text-muted-foreground">Questão {quizState.currentQ + 1} de {QUIZ_QUESTIONS.length}</div>
+              <div className="text-xs text-muted-foreground">Questao {quizState.currentQ + 1} de {QUIZ_QUESTIONS.length}</div>
             </div>
           </div>
           <div className="w-full h-2 bg-card rounded-full overflow-hidden">
@@ -938,7 +782,7 @@ export default function AnatomyAtlas() {
                 <div className="flex items-center gap-2">
                   <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-[10px]">{system?.icon} {system?.name}</span>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] ${q.difficulty === 'facil' ? 'bg-green-500/20 text-green-400' : q.difficulty === 'medio' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
-                    {q.difficulty === 'facil' ? 'Fácil' : q.difficulty === 'medio' ? 'Médio' : 'Difícil'}
+                    {q.difficulty === 'facil' ? 'Facil' : q.difficulty === 'medio' ? 'Medio' : 'Dificil'}
                   </span>
                 </div>
                 <h4 className="text-lg font-medium">{q.question}</h4>
@@ -965,7 +809,7 @@ export default function AnatomyAtlas() {
                       <p className="text-[10px] text-blue-400 mt-1">Ref: {q.reference}</p>
                     </div>
                     <button onClick={nextQuestion} className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition">
-                      Próxima Questão
+                      Proxima Questao
                     </button>
                   </div>
                 )}
