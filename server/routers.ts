@@ -3095,6 +3095,87 @@ AVISO: Sugestão de apoio — prescrição final é responsabilidade do médico.
         return [];
       }
     }),
+    addUser: adminProcedure.input(z.object({
+      name: z.string().min(1),
+      email: z.string().email(),
+      plan: z.enum(['free', 'pro', 'premium']).default('pro'),
+      role: z.enum(['user', 'admin']).default('user'),
+      validityDays: z.number().min(0).default(30),
+      notes: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      const { getDb } = await import('./db');
+      const dbInstance = await getDb();
+      if (!dbInstance) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      try {
+        const openId = `admin_invite_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+        const now = new Date();
+        const trialEnd = input.validityDays > 0 ? new Date(now.getTime() + input.validityDays * 24 * 60 * 60 * 1000) : null;
+        await dbInstance.execute(
+          `INSERT INTO users (openId, name, email, role, plan, trialActive, trialStartDate, trialEndDate, createdAt, updatedAt, lastSignedIn) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())`,
+          [openId, input.name, input.email, input.role, input.plan, input.validityDays > 0 ? 1 : 0, now, trialEnd]
+        );
+        console.log(`[Admin] User added: ${input.name} (${input.email}) plan=${input.plan} validity=${input.validityDays}d`);
+        return { success: true, openId };
+      } catch (e: any) {
+        console.error('[Admin] Add user error:', e);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: e.message || 'Failed to add user' });
+      }
+    }),
+    updateUser: adminProcedure.input(z.object({
+      userId: z.number(),
+      name: z.string().optional(),
+      email: z.string().optional(),
+      plan: z.enum(['free', 'pro', 'premium']).optional(),
+      role: z.enum(['user', 'admin']).optional(),
+      validityDays: z.number().min(0).optional(),
+      notes: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      const { getDb } = await import('./db');
+      const dbInstance = await getDb();
+      if (!dbInstance) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      try {
+        const updates: string[] = [];
+        const values: any[] = [];
+        if (input.name !== undefined) { updates.push('name = ?'); values.push(input.name); }
+        if (input.email !== undefined) { updates.push('email = ?'); values.push(input.email); }
+        if (input.plan !== undefined) { updates.push('plan = ?'); values.push(input.plan); }
+        if (input.role !== undefined) { updates.push('role = ?'); values.push(input.role); }
+        if (input.validityDays !== undefined) {
+          if (input.validityDays === 0) {
+            updates.push('trialActive = 0', 'trialEndDate = NULL');
+          } else {
+            const trialEnd = new Date(Date.now() + input.validityDays * 24 * 60 * 60 * 1000);
+            updates.push('trialActive = 1', 'trialStartDate = NOW()', 'trialEndDate = ?');
+            values.push(trialEnd);
+          }
+        }
+        updates.push('updatedAt = NOW()');
+        if (updates.length > 1) {
+          values.push(input.userId);
+          await dbInstance.execute(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
+          console.log(`[Admin] User updated: id=${input.userId}`);
+        }
+        return { success: true };
+      } catch (e: any) {
+        console.error('[Admin] Update user error:', e);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: e.message || 'Failed to update user' });
+      }
+    }),
+    deleteUser: adminProcedure.input(z.object({
+      userId: z.number(),
+    })).mutation(async ({ input }) => {
+      const { getDb } = await import('./db');
+      const dbInstance = await getDb();
+      if (!dbInstance) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      try {
+        await dbInstance.execute(`DELETE FROM users WHERE id = ?`, [input.userId]);
+        console.log(`[Admin] User deleted: id=${input.userId}`);
+        return { success: true };
+      } catch (e: any) {
+        console.error('[Admin] Delete user error:', e);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: e.message || 'Failed to delete user' });
+      }
+    }),
   }),
 });
 
