@@ -35,15 +35,32 @@ export const appRouter = router({
 
     createCheckout: protectedProcedure
       .input(z.object({ 
-        planId: z.enum(["pro"]),
+        planId: z.enum(["estudante", "medico", "professor", "pro"]),
         interval: z.enum(["monthly", "yearly"]).default("monthly"),
+        partnershipCode: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const stripe = getStripe();
-        const plan = PLANS[input.planId];
+        // Map 'pro' to 'estudante' for backwards compatibility
+        const effectivePlanId = input.planId === 'pro' ? 'estudante' : input.planId;
+        const plan = PLANS[effectivePlanId as keyof typeof PLANS] || PLANS.estudante;
         const origin = ctx.req.headers.origin || process.env.APP_URL || "https://medfocus-app-969630653332.southamerica-east1.run.app";
         const isYearly = input.interval === 'yearly';
-        const unitAmount = isYearly ? plan.yearlyPrice : plan.price;
+        const isPartnership = !!input.partnershipCode;
+        
+        // Calculate price based on plan, interval, and partnership
+        let unitAmount: number;
+        let planDescription: string;
+        if (isPartnership && isYearly && 'partnershipYearlyPrice' in plan) {
+          unitAmount = (plan as any).partnershipYearlyPrice;
+          planDescription = `${plan.description} - Parceria Universitária (40% desc)`;
+        } else if (isYearly) {
+          unitAmount = plan.yearlyPrice;
+          planDescription = `${plan.description} - Plano Anual (20% desc)`;
+        } else {
+          unitAmount = plan.price;
+          planDescription = `${plan.description} - R$ ${(plan.price / 100).toFixed(2)}/mês`;
+        }
         const recurringInterval = isYearly ? 'year' as const : 'month' as const;
 
         const session = await stripe.checkout.sessions.create({
@@ -59,8 +76,9 @@ export const appRouter = router({
             user_id: ctx.user.id.toString(),
             customer_email: ctx.user.email || "",
             customer_name: ctx.user.name || "",
-            plan: input.planId,
+            plan: effectivePlanId,
             interval: input.interval,
+            partnership_code: input.partnershipCode || "",
           },
           line_items: [
             {
@@ -68,9 +86,7 @@ export const appRouter = router({
                 currency: plan.currency,
                 product_data: {
                   name: `${plan.name} (${isYearly ? 'Anual' : 'Mensal'})`,
-                  description: isYearly 
-                    ? `${plan.description} - Pagamento anual de R$ 250,00` 
-                    : `${plan.description} - R$ 29,90/mês`,
+                  description: planDescription,
                 },
                 unit_amount: unitAmount,
                 recurring: { interval: recurringInterval },

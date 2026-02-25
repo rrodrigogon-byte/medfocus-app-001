@@ -26,6 +26,7 @@ import { analyticsRouter } from "./routes/analytics.js";
 import { quizzesRouter } from "./routes/quizzes.js";
 import { discussionsRouter } from "./routes/discussions.js";
 import { scrapingRouter } from "./routes/scraping.js";
+import { aiRouter } from "./routes/ai.js";
 
 // Import middleware
 import { authenticateToken } from "./middleware/auth.js";
@@ -90,6 +91,7 @@ async function startServer() {
   app.use("/api/quizzes", authenticateToken, quizzesRouter);
   app.use("/api/discussions", authenticateToken, discussionsRouter);
   app.use("/api/scraping", authenticateToken, scrapingRouter);
+  app.use("/api/ai", aiRouter);
 
   // Error handler
   app.use(errorHandler);
