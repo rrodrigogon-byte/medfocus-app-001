@@ -17,6 +17,9 @@ RUN corepack enable && corepack prepare pnpm@10.4.1 --activate && \
 # Copy source code
 COPY . .
 
+# Set Stripe publishable key for Vite build (embedded at build time)
+ENV VITE_STRIPE_PUBLISHABLE_KEY=pk_test_51T4VwhEQ029hke8QjOO6dtKjt6NH4EMGBk7cJPU5UZI55V7LjiSmtki0dmkIr7AzYwxbl6nzL3i3LnIeoFvNjPQe00KzrbXhW4
+
 # Build frontend (Vite) and backend (esbuild)
 RUN npx vite build && \
     npx esbuild server/_core/index.ts --bundle --platform=node --target=node20 \
