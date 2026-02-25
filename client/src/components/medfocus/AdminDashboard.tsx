@@ -40,7 +40,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ userName }) => {
       (filterStatus === 'active' && sub.plan !== 'free' && !sub.trialActive) ||
       (filterStatus === 'trial' && sub.trialActive) ||
       (filterStatus === 'free' && sub.plan === 'free' && !sub.trialActive) ||
-      (filterStatus === 'expired' && sub.accessExpiry && new Date(sub.accessExpiry) < new Date());
+      (filterStatus === 'expired' && (sub.accessExpiry || sub.trialEndDate) && new Date(sub.accessExpiry || sub.trialEndDate) < new Date());
     return matchSearch && matchPlan && matchStatus;
   });
 
@@ -100,7 +100,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ userName }) => {
     setEditData({
       name: sub.name || '', email: sub.email || '', plan: sub.plan || 'free',
       role: sub.role || 'user',
-      validityDays: sub.accessExpiry ? Math.max(0, Math.ceil((new Date(sub.accessExpiry).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0,
+      validityDays: (sub.accessExpiry || sub.trialEndDate) ? Math.max(0, Math.ceil((new Date(sub.accessExpiry || sub.trialEndDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0,
       notes: sub.adminNotes || '',
     });
     setShowEditUser(sub);

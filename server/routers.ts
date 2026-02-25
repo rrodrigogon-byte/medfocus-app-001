@@ -3088,7 +3088,7 @@ AVISO: Sugestão de apoio — prescrição final é responsabilidade do médico.
       const dbInstance = await getDb();
       if (!dbInstance) return [];
       try {
-        const [rows] = await dbInstance.execute(`SELECT id, openId, name, email, role, plan, trialActive, trialStartDate, trialEndDate, createdAt, lastSignedIn, stripeCustomerId, billingInterval FROM users ORDER BY createdAt DESC LIMIT 500`) as any;
+        const [rows] = await dbInstance.execute(`SELECT id, openId, name, email, role, plan, trialActive, trialStartDate, trialEndDate, trialEndDate as accessExpiry, createdAt, lastSignedIn, stripeCustomerId, billingInterval FROM users ORDER BY createdAt DESC LIMIT 500`) as any;
         return rows || [];
       } catch (e) {
         console.error('[Admin] Subscribers error:', e);

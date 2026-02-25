@@ -62,6 +62,9 @@ import ProfessorPortal from '../components/medfocus/ProfessorPortal';
 import PharmaBible from '../components/medfocus/PharmaBible';
 import AdminDashboard from '../components/medfocus/AdminDashboard';
 import ProPaywall from '../components/medfocus/ProPaywall';
+import MedicalDisciplines from '../components/medfocus/MedicalDisciplines';
+import VideoAulas from '../components/medfocus/VideoAulas';
+import AtlasAnalytics from '../components/medfocus/AtlasAnalytics';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
 import { useGamification } from '../hooks/useGamification';
@@ -73,6 +76,7 @@ const PRO_MODULES = new Set([
   'drugInteractions', 'classroom', 'analytics', 'professor',
   'validated-library', 'reports', 'flashcardStudy', 'lectureTranscription',
   'myContent', 'pharmaBible', 'pubmedResearch', 'studyRooms', 'socialFeed',
+  'disciplines', 'videoAulas', 'atlasAnalytics',
 ]);
 
 const MODULE_NAMES: Record<string, string> = {
@@ -99,6 +103,9 @@ const MODULE_NAMES: Record<string, string> = {
   studyRooms: 'Salas de Estudo',
   socialFeed: 'Feed Social',
   professorPortal: 'Portal do Professor',
+  disciplines: 'Disciplinas Médicas',
+  videoAulas: 'Vídeo-Aulas',
+  atlasAnalytics: 'Atlas Analytics',
 };
 
 export default function Home() {
@@ -274,6 +281,9 @@ export default function Home() {
       case 'professorPortal': return <ProfessorPortal />;
       case 'pharmaBible': return <PharmaBible />;
       case 'adminDashboard': return <AdminDashboard userName={localUser?.name} />;
+      case 'disciplines': return <MedicalDisciplines />;
+      case 'videoAulas': return <VideoAulas />;
+      case 'atlasAnalytics': return <AtlasAnalytics />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{
