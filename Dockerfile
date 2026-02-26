@@ -48,6 +48,9 @@ COPY --from=builder /app/dist ./dist
 # Copy drizzle migrations
 COPY --from=builder /app/drizzle ./drizzle
 
+# Copy CMED medicine database (2304+ substances from ANVISA)
+COPY --from=builder /app/server/data ./server/data
+
 # Environment
 ENV NODE_ENV=production
 ENV PORT=8080

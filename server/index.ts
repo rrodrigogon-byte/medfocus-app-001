@@ -111,10 +111,42 @@ async function startServer() {
 
   const port = process.env.PORT || 3000;
 
+  // ─── Daily CMED/ANVISA Price Refresh ─────────────────────────────
+  // Runs every 24 hours to fetch latest medicine prices from ANVISA
+  const CMED_REFRESH_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
+  async function runCMEDRefresh() {
+    try {
+      const { refreshCMEDData } = await import('./services/cmedService');
+      console.log('[CMED] Starting scheduled daily refresh...');
+      const result = await refreshCMEDData();
+      console.log(`[CMED] Refresh result: ${result.message}`);
+    } catch (err) {
+      console.error('[CMED] Scheduled refresh failed:', err);
+    }
+  }
+  // Schedule daily refresh (first run after 1 hour, then every 24h)
+  setTimeout(() => {
+    runCMEDRefresh();
+    setInterval(runCMEDRefresh, CMED_REFRESH_INTERVAL);
+  }, 60 * 60 * 1000);
+  console.log('[CMED] Daily price refresh scheduled (every 24h)');
+
+  // Also expose a direct HTTP endpoint for Cloud Scheduler
+  app.get('/api/cmed/refresh', async (_req, res) => {
+    try {
+      const { refreshCMEDData } = await import('./services/cmedService');
+      const result = await refreshCMEDData();
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
   server.listen(port, () => {
     console.log(`🚀 MedFocus Server running on http://localhost:${port}/`);
     console.log(`📊 API endpoints available at http://localhost:${port}/api/`);
     console.log(`🔌 WebSocket server ready for real-time updates`);
+    console.log(`💊 CMED Medicine Database: 2304+ substances loaded`);
   });
 
   // Graceful shutdown

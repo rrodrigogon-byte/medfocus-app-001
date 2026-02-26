@@ -1,1494 +1,232 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { trpc } from '../../lib/trpc';
 
 // ============================================================
-// BANCO DE DADOS DE MEDICAMENTOS — Genéricos vs Referência
-// Fonte: CMED/ANVISA, Consulta Remédios, Procon-SP (2024/2025)
+// COMPARADOR DE MEDICAMENTOS — Dados ANVISA/CMED (2304+ substâncias)
+// Fonte: https://dados.anvisa.gov.br/dados/TA_PRECO_MEDICAMENTO.csv
+// Atualização diária automática via Cloud Function
 // ============================================================
 
-interface Medicamento {
-  id: string;
-  principioAtivo: string;
-  categoria: string;
-  indicacao: string;
-  referencia: {
-    nome: string;
-    laboratorio: string;
-    preco: number; // PMC médio (ICMS 18%)
-  };
-  genericos: {
-    laboratorio: string;
-    preco: number;
-  }[];
-  similar?: {
-    nome: string;
-    laboratorio: string;
-    preco: number;
-  }[];
-  apresentacao: string;
-  classeTerap: string;
-  retencaoReceita: string;
-  observacoes?: string;
-}
+const formatBRL = (v: number | null) => {
+  if (v === null || v === undefined) return '—';
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+};
 
-const MEDICAMENTOS_DB: Medicamento[] = [
-  // ===== ANALGÉSICOS E ANTI-INFLAMATÓRIOS =====
-  {
-    id: 'paracetamol-750',
-    principioAtivo: 'Paracetamol',
-    categoria: 'Analgésico / Antipirético',
-    indicacao: 'Dor leve a moderada, febre',
-    referencia: { nome: 'Tylenol', laboratorio: 'Johnson & Johnson', preco: 22.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 7.50 },
-      { laboratorio: 'Medley', preco: 8.20 },
-      { laboratorio: 'Cimed', preco: 6.90 },
-      { laboratorio: 'Prati-Donaduzzi', preco: 7.10 },
-    ],
-    similar: [{ nome: 'Dôrico', laboratorio: 'Sanofi', preco: 14.50 }],
-    apresentacao: '750mg - 20 comprimidos',
-    classeTerap: 'Analgésico não opioide',
-    retencaoReceita: 'Venda livre',
-  },
-  {
-    id: 'ibuprofeno-600',
-    principioAtivo: 'Ibuprofeno',
-    categoria: 'Anti-inflamatório / Analgésico',
-    indicacao: 'Dor, inflamação, febre, artrite',
-    referencia: { nome: 'Advil', laboratorio: 'Pfizer', preco: 28.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 9.80 },
-      { laboratorio: 'Medley', preco: 10.50 },
-      { laboratorio: 'Neo Química', preco: 8.90 },
-      { laboratorio: 'Cimed', preco: 9.20 },
-    ],
-    similar: [{ nome: 'Alivium', laboratorio: 'Hypera', preco: 19.90 }],
-    apresentacao: '600mg - 20 comprimidos',
-    classeTerap: 'AINE',
-    retencaoReceita: 'Venda livre',
-  },
-  {
-    id: 'dipirona-500',
-    principioAtivo: 'Dipirona Sódica',
-    categoria: 'Analgésico / Antipirético',
-    indicacao: 'Dor e febre',
-    referencia: { nome: 'Novalgina', laboratorio: 'Sanofi', preco: 18.50 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 5.90 },
-      { laboratorio: 'Medley', preco: 6.40 },
-      { laboratorio: 'Prati-Donaduzzi', preco: 5.50 },
-      { laboratorio: 'Neo Química', preco: 6.10 },
-    ],
-    apresentacao: '500mg - 30 comprimidos',
-    classeTerap: 'Analgésico / Antipirético',
-    retencaoReceita: 'Venda livre',
-  },
-  {
-    id: 'diclofenaco-50',
-    principioAtivo: 'Diclofenaco Sódico',
-    categoria: 'Anti-inflamatório',
-    indicacao: 'Dor, inflamação, artrite, tendinite',
-    referencia: { nome: 'Voltaren', laboratorio: 'Novartis', preco: 32.50 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 8.90 },
-      { laboratorio: 'Medley', preco: 9.50 },
-      { laboratorio: 'Cimed', preco: 8.20 },
-    ],
-    similar: [{ nome: 'Cataflan', laboratorio: 'Novartis', preco: 26.90 }],
-    apresentacao: '50mg - 20 comprimidos',
-    classeTerap: 'AINE',
-    retencaoReceita: 'Venda livre',
-  },
-  {
-    id: 'nimesulida-100',
-    principioAtivo: 'Nimesulida',
-    categoria: 'Anti-inflamatório',
-    indicacao: 'Dor, inflamação, febre',
-    referencia: { nome: 'Nisulid', laboratorio: 'Aché', preco: 35.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 11.50 },
-      { laboratorio: 'Medley', preco: 12.80 },
-      { laboratorio: 'Neo Química', preco: 10.90 },
-    ],
-    apresentacao: '100mg - 12 comprimidos',
-    classeTerap: 'AINE seletivo COX-2',
-    retencaoReceita: 'Venda livre',
-  },
-  // ===== ANTIBIÓTICOS =====
-  {
-    id: 'amoxicilina-500',
-    principioAtivo: 'Amoxicilina',
-    categoria: 'Antibiótico',
-    indicacao: 'Infecções bacterianas (respiratórias, urinárias, otite)',
-    referencia: { nome: 'Amoxil', laboratorio: 'GSK', preco: 45.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 15.90 },
-      { laboratorio: 'Medley', preco: 16.50 },
-      { laboratorio: 'Prati-Donaduzzi', preco: 14.80 },
-      { laboratorio: 'Neo Química', preco: 15.20 },
-    ],
-    apresentacao: '500mg - 21 cápsulas',
-    classeTerap: 'Penicilina de amplo espectro',
-    retencaoReceita: 'Receita simples (retenção)',
-  },
-  {
-    id: 'azitromicina-500',
-    principioAtivo: 'Azitromicina',
-    categoria: 'Antibiótico',
-    indicacao: 'Infecções respiratórias, sinusite, otite, faringite',
-    referencia: { nome: 'Zitromax', laboratorio: 'Pfizer', preco: 52.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 18.90 },
-      { laboratorio: 'Medley', preco: 19.50 },
-      { laboratorio: 'Cimed', preco: 17.80 },
-      { laboratorio: 'Eurofarma', preco: 20.10 },
-    ],
-    apresentacao: '500mg - 3 comprimidos',
-    classeTerap: 'Macrolídeo',
-    retencaoReceita: 'Receita simples (retenção)',
-  },
-  {
-    id: 'cefalexina-500',
-    principioAtivo: 'Cefalexina',
-    categoria: 'Antibiótico',
-    indicacao: 'Infecções de pele, urinárias, respiratórias',
-    referencia: { nome: 'Keflex', laboratorio: 'Bagó', preco: 58.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 22.90 },
-      { laboratorio: 'Medley', preco: 24.50 },
-      { laboratorio: 'Prati-Donaduzzi', preco: 21.80 },
-    ],
-    apresentacao: '500mg - 8 cápsulas',
-    classeTerap: 'Cefalosporina 1ª geração',
-    retencaoReceita: 'Receita simples (retenção)',
-  },
-  {
-    id: 'ciprofloxacino-500',
-    principioAtivo: 'Ciprofloxacino',
-    categoria: 'Antibiótico',
-    indicacao: 'Infecções urinárias, respiratórias, gastrointestinais',
-    referencia: { nome: 'Cipro', laboratorio: 'Bayer', preco: 62.50 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 19.90 },
-      { laboratorio: 'Medley', preco: 21.50 },
-      { laboratorio: 'Cimed', preco: 18.90 },
-    ],
-    apresentacao: '500mg - 14 comprimidos',
-    classeTerap: 'Fluoroquinolona',
-    retencaoReceita: 'Receita simples (retenção)',
-  },
-  // ===== CARDIOVASCULAR =====
-  {
-    id: 'losartana-50',
-    principioAtivo: 'Losartana Potássica',
-    categoria: 'Anti-hipertensivo',
-    indicacao: 'Hipertensão arterial, insuficiência cardíaca',
-    referencia: { nome: 'Cozaar', laboratorio: 'MSD', preco: 68.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 14.90 },
-      { laboratorio: 'Medley', preco: 15.80 },
-      { laboratorio: 'Neo Química', preco: 13.90 },
-      { laboratorio: 'Prati-Donaduzzi', preco: 14.20 },
-    ],
-    apresentacao: '50mg - 30 comprimidos',
-    classeTerap: 'Antagonista do receptor AT1 da angiotensina II',
-    retencaoReceita: 'Receita simples',
-  },
-  {
-    id: 'enalapril-10',
-    principioAtivo: 'Maleato de Enalapril',
-    categoria: 'Anti-hipertensivo',
-    indicacao: 'Hipertensão arterial, insuficiência cardíaca',
-    referencia: { nome: 'Renitec', laboratorio: 'MSD', preco: 42.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 11.90 },
-      { laboratorio: 'Medley', preco: 12.50 },
-      { laboratorio: 'Cimed', preco: 10.90 },
-    ],
-    apresentacao: '10mg - 30 comprimidos',
-    classeTerap: 'Inibidor da ECA',
-    retencaoReceita: 'Receita simples',
-  },
-  {
-    id: 'anlodipino-5',
-    principioAtivo: 'Besilato de Anlodipino',
-    categoria: 'Anti-hipertensivo',
-    indicacao: 'Hipertensão arterial, angina',
-    referencia: { nome: 'Norvasc', laboratorio: 'Pfizer', preco: 55.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 12.90 },
-      { laboratorio: 'Medley', preco: 13.50 },
-      { laboratorio: 'Neo Química', preco: 11.90 },
-      { laboratorio: 'Eurofarma', preco: 13.20 },
-    ],
-    apresentacao: '5mg - 30 comprimidos',
-    classeTerap: 'Bloqueador de canal de cálcio',
-    retencaoReceita: 'Receita simples',
-  },
-  {
-    id: 'atenolol-50',
-    principioAtivo: 'Atenolol',
-    categoria: 'Anti-hipertensivo',
-    indicacao: 'Hipertensão, arritmias, angina',
-    referencia: { nome: 'Atenol', laboratorio: 'Aché', preco: 38.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 9.90 },
-      { laboratorio: 'Medley', preco: 10.50 },
-      { laboratorio: 'Cimed', preco: 9.20 },
-    ],
-    apresentacao: '50mg - 30 comprimidos',
-    classeTerap: 'Betabloqueador seletivo',
-    retencaoReceita: 'Receita simples',
-  },
-  {
-    id: 'sinvastatina-20',
-    principioAtivo: 'Sinvastatina',
-    categoria: 'Antilipêmico',
-    indicacao: 'Colesterol alto, prevenção cardiovascular',
-    referencia: { nome: 'Zocor', laboratorio: 'MSD', preco: 72.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 15.90 },
-      { laboratorio: 'Medley', preco: 16.80 },
-      { laboratorio: 'Neo Química', preco: 14.90 },
-      { laboratorio: 'Prati-Donaduzzi', preco: 15.20 },
-    ],
-    apresentacao: '20mg - 30 comprimidos',
-    classeTerap: 'Estatina (inibidor da HMG-CoA redutase)',
-    retencaoReceita: 'Receita simples',
-  },
-  {
-    id: 'atorvastatina-20',
-    principioAtivo: 'Atorvastatina Cálcica',
-    categoria: 'Antilipêmico',
-    indicacao: 'Colesterol alto, prevenção cardiovascular',
-    referencia: { nome: 'Lipitor', laboratorio: 'Pfizer', preco: 89.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 25.90 },
-      { laboratorio: 'Medley', preco: 27.50 },
-      { laboratorio: 'Eurofarma', preco: 24.90 },
-    ],
-    apresentacao: '20mg - 30 comprimidos',
-    classeTerap: 'Estatina (inibidor da HMG-CoA redutase)',
-    retencaoReceita: 'Receita simples',
-  },
-  {
-    id: 'aas-100',
-    principioAtivo: 'Ácido Acetilsalicílico',
-    categoria: 'Antiagregante plaquetário',
-    indicacao: 'Prevenção de trombose, infarto, AVC',
-    referencia: { nome: 'Aspirina Prevent', laboratorio: 'Bayer', preco: 28.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 8.90 },
-      { laboratorio: 'Medley', preco: 9.50 },
-      { laboratorio: 'Neo Química', preco: 8.20 },
-    ],
-    apresentacao: '100mg - 30 comprimidos',
-    classeTerap: 'Antiagregante plaquetário',
-    retencaoReceita: 'Venda livre',
-  },
-  // ===== DIABETES =====
-  {
-    id: 'metformina-850',
-    principioAtivo: 'Cloridrato de Metformina',
-    categoria: 'Antidiabético',
-    indicacao: 'Diabetes mellitus tipo 2',
-    referencia: { nome: 'Glifage', laboratorio: 'Merck', preco: 35.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 10.90 },
-      { laboratorio: 'Medley', preco: 11.50 },
-      { laboratorio: 'Prati-Donaduzzi', preco: 9.90 },
-      { laboratorio: 'Neo Química', preco: 10.20 },
-    ],
-    apresentacao: '850mg - 30 comprimidos',
-    classeTerap: 'Biguanida',
-    retencaoReceita: 'Receita simples',
-  },
-  {
-    id: 'glibenclamida-5',
-    principioAtivo: 'Glibenclamida',
-    categoria: 'Antidiabético',
-    indicacao: 'Diabetes mellitus tipo 2',
-    referencia: { nome: 'Daonil', laboratorio: 'Sanofi', preco: 18.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 5.90 },
-      { laboratorio: 'Medley', preco: 6.50 },
-      { laboratorio: 'Prati-Donaduzzi', preco: 5.20 },
-    ],
-    apresentacao: '5mg - 30 comprimidos',
-    classeTerap: 'Sulfonilureia',
-    retencaoReceita: 'Receita simples',
-  },
-  // ===== GASTRO =====
-  {
-    id: 'omeprazol-20',
-    principioAtivo: 'Omeprazol',
-    categoria: 'Antiulceroso',
-    indicacao: 'Úlcera gástrica, refluxo, gastrite',
-    referencia: { nome: 'Losec', laboratorio: 'AstraZeneca', preco: 58.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 12.90 },
-      { laboratorio: 'Medley', preco: 13.50 },
-      { laboratorio: 'Neo Química', preco: 11.90 },
-      { laboratorio: 'Prati-Donaduzzi', preco: 12.20 },
-    ],
-    similar: [{ nome: 'Peprazol', laboratorio: 'Libbs', preco: 32.90 }],
-    apresentacao: '20mg - 28 cápsulas',
-    classeTerap: 'Inibidor de bomba de prótons (IBP)',
-    retencaoReceita: 'Venda livre',
-  },
-  {
-    id: 'pantoprazol-40',
-    principioAtivo: 'Pantoprazol Sódico',
-    categoria: 'Antiulceroso',
-    indicacao: 'Úlcera, refluxo gastroesofágico, Zollinger-Ellison',
-    referencia: { nome: 'Pantozol', laboratorio: 'Takeda', preco: 65.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 22.90 },
-      { laboratorio: 'Medley', preco: 24.50 },
-      { laboratorio: 'Eurofarma', preco: 21.90 },
-    ],
-    apresentacao: '40mg - 28 comprimidos',
-    classeTerap: 'Inibidor de bomba de prótons (IBP)',
-    retencaoReceita: 'Receita simples',
-  },
-  // ===== PSIQUIATRIA / SNC =====
-  {
-    id: 'fluoxetina-20',
-    principioAtivo: 'Cloridrato de Fluoxetina',
-    categoria: 'Antidepressivo',
-    indicacao: 'Depressão, TOC, bulimia, ansiedade',
-    referencia: { nome: 'Prozac', laboratorio: 'Eli Lilly', preco: 78.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 18.90 },
-      { laboratorio: 'Medley', preco: 19.50 },
-      { laboratorio: 'Neo Química', preco: 17.90 },
-      { laboratorio: 'Eurofarma', preco: 20.50 },
-    ],
-    apresentacao: '20mg - 30 cápsulas',
-    classeTerap: 'ISRS (Inibidor Seletivo da Recaptação de Serotonina)',
-    retencaoReceita: 'Receita C1 (branca, 2 vias, retenção)',
-  },
-  {
-    id: 'sertralina-50',
-    principioAtivo: 'Cloridrato de Sertralina',
-    categoria: 'Antidepressivo',
-    indicacao: 'Depressão, TOC, pânico, TEPT, fobia social',
-    referencia: { nome: 'Zoloft', laboratorio: 'Pfizer', preco: 85.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 22.90 },
-      { laboratorio: 'Medley', preco: 24.50 },
-      { laboratorio: 'Eurofarma', preco: 21.90 },
-      { laboratorio: 'Torrent', preco: 20.90 },
-    ],
-    apresentacao: '50mg - 30 comprimidos',
-    classeTerap: 'ISRS',
-    retencaoReceita: 'Receita C1 (branca, 2 vias, retenção)',
-  },
-  {
-    id: 'escitalopram-10',
-    principioAtivo: 'Oxalato de Escitalopram',
-    categoria: 'Antidepressivo',
-    indicacao: 'Depressão, ansiedade generalizada, pânico',
-    referencia: { nome: 'Lexapro', laboratorio: 'Lundbeck', preco: 115.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 35.90 },
-      { laboratorio: 'Medley', preco: 38.50 },
-      { laboratorio: 'Eurofarma', preco: 34.90 },
-    ],
-    apresentacao: '10mg - 30 comprimidos',
-    classeTerap: 'ISRS',
-    retencaoReceita: 'Receita C1 (branca, 2 vias, retenção)',
-  },
-  {
-    id: 'clonazepam-2',
-    principioAtivo: 'Clonazepam',
-    categoria: 'Ansiolítico / Anticonvulsivante',
-    indicacao: 'Ansiedade, epilepsia, pânico',
-    referencia: { nome: 'Rivotril', laboratorio: 'Roche', preco: 22.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 8.90 },
-      { laboratorio: 'Medley', preco: 9.50 },
-      { laboratorio: 'Prati-Donaduzzi', preco: 8.20 },
-    ],
-    apresentacao: '2mg - 30 comprimidos',
-    classeTerap: 'Benzodiazepínico',
-    retencaoReceita: 'Receita B (azul, notificação especial)',
-    observacoes: 'Controlado — pode causar dependência. Uso sob orientação médica.',
-  },
-  // ===== ALERGIA =====
-  {
-    id: 'loratadina-10',
-    principioAtivo: 'Loratadina',
-    categoria: 'Antialérgico',
-    indicacao: 'Rinite alérgica, urticária, alergias',
-    referencia: { nome: 'Claritin', laboratorio: 'Bayer', preco: 38.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 10.90 },
-      { laboratorio: 'Medley', preco: 11.50 },
-      { laboratorio: 'Neo Química', preco: 9.90 },
-      { laboratorio: 'Cimed', preco: 10.20 },
-    ],
-    apresentacao: '10mg - 12 comprimidos',
-    classeTerap: 'Anti-histamínico H1 (2ª geração)',
-    retencaoReceita: 'Venda livre',
-  },
-  // ===== HORMONAL / TIREOIDE =====
-  {
-    id: 'levotiroxina-50',
-    principioAtivo: 'Levotiroxina Sódica',
-    categoria: 'Hormônio tireoidiano',
-    indicacao: 'Hipotireoidismo',
-    referencia: { nome: 'Puran T4', laboratorio: 'Sanofi', preco: 22.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 10.90 },
-      { laboratorio: 'Merck', preco: 11.50 },
-    ],
-    similar: [{ nome: 'Euthyrox', laboratorio: 'Merck', preco: 18.90 }],
-    apresentacao: '50mcg - 30 comprimidos',
-    classeTerap: 'Hormônio tireoidiano sintético',
-    retencaoReceita: 'Receita simples',
-  },
-  // ===== CONTRACEPTIVOS =====
-  {
-    id: 'etinilestradiol-levonorgestrel',
-    principioAtivo: 'Etinilestradiol + Levonorgestrel',
-    categoria: 'Contraceptivo oral',
-    indicacao: 'Contracepção, regulação do ciclo menstrual',
-    referencia: { nome: 'Ciclo 21', laboratorio: 'Biolab', preco: 8.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 4.90 },
-      { laboratorio: 'Medley', preco: 5.20 },
-    ],
-    similar: [{ nome: 'Microvlar', laboratorio: 'Bayer', preco: 7.50 }],
-    apresentacao: '0,03mg + 0,15mg - 21 comprimidos',
-    classeTerap: 'Contraceptivo hormonal combinado',
-    retencaoReceita: 'Receita simples',
-  },
-  // ===== DISFUNÇÃO ERÉTIL =====
-  {
-    id: 'sildenafila-50',
-    principioAtivo: 'Citrato de Sildenafila',
-    categoria: 'Disfunção erétil',
-    indicacao: 'Disfunção erétil, hipertensão pulmonar',
-    referencia: { nome: 'Viagra', laboratorio: 'Pfizer', preco: 89.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 18.90 },
-      { laboratorio: 'Medley', preco: 20.50 },
-      { laboratorio: 'Neo Química', preco: 17.90 },
-      { laboratorio: 'Eurofarma', preco: 19.50 },
-    ],
-    apresentacao: '50mg - 4 comprimidos',
-    classeTerap: 'Inibidor da PDE-5',
-    retencaoReceita: 'Receita simples',
-  },
-  {
-    id: 'tadalafila-20',
-    principioAtivo: 'Tadalafila',
-    categoria: 'Disfunção erétil',
-    indicacao: 'Disfunção erétil, hiperplasia prostática benigna',
-    referencia: { nome: 'Cialis', laboratorio: 'Eli Lilly', preco: 145.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 28.90 },
-      { laboratorio: 'Medley', preco: 32.50 },
-      { laboratorio: 'Neo Química', preco: 26.90 },
-      { laboratorio: 'Eurofarma', preco: 30.50 },
-    ],
-    apresentacao: '20mg - 4 comprimidos',
-    classeTerap: 'Inibidor da PDE-5',
-    retencaoReceita: 'Receita simples',
-    observacoes: 'Variação de até 1551% entre genéricos mais baratos e referência (Procon-SP 2025).',
-  },
-  // ===== RESPIRATÓRIO =====
-  {
-    id: 'salbutamol-spray',
-    principioAtivo: 'Sulfato de Salbutamol',
-    categoria: 'Broncodilatador',
-    indicacao: 'Asma, broncoespasmo, DPOC',
-    referencia: { nome: 'Aerolin Spray', laboratorio: 'GSK', preco: 32.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 15.90 },
-      { laboratorio: 'Biosintética', preco: 16.50 },
-    ],
-    apresentacao: '100mcg/dose - 200 doses',
-    classeTerap: 'Agonista beta-2 adrenérgico de curta duração',
-    retencaoReceita: 'Receita simples',
-  },
-  // ===== DERMATOLOGIA =====
-  {
-    id: 'cetoconazol-creme',
-    principioAtivo: 'Cetoconazol',
-    categoria: 'Antifúngico tópico',
-    indicacao: 'Micoses de pele, dermatite seborreica',
-    referencia: { nome: 'Nizoral Creme', laboratorio: 'Johnson & Johnson', preco: 42.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 12.90 },
-      { laboratorio: 'Medley', preco: 13.50 },
-      { laboratorio: 'Neo Química', preco: 11.90 },
-    ],
-    apresentacao: '20mg/g - 30g creme',
-    classeTerap: 'Antifúngico imidazólico',
-    retencaoReceita: 'Venda livre',
-  },
-  // ===== CORTICOIDES =====
-  {
-    id: 'prednisona-20',
-    principioAtivo: 'Prednisona',
-    categoria: 'Corticosteroide',
-    indicacao: 'Inflamações, alergias graves, doenças autoimunes',
-    referencia: { nome: 'Meticorten', laboratorio: 'MSD', preco: 28.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 8.90 },
-      { laboratorio: 'Medley', preco: 9.50 },
-      { laboratorio: 'Prati-Donaduzzi', preco: 8.20 },
-    ],
-    apresentacao: '20mg - 10 comprimidos',
-    classeTerap: 'Glicocorticoide',
-    retencaoReceita: 'Receita simples',
-  },
-  // ===== ANTICOAGULANTE =====
-  {
-    id: 'varfarina-5',
-    principioAtivo: 'Varfarina Sódica',
-    categoria: 'Anticoagulante',
-    indicacao: 'Prevenção de trombose, embolia pulmonar, fibrilação atrial',
-    referencia: { nome: 'Marevan', laboratorio: 'Farmoquímica', preco: 18.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 7.90 },
-      { laboratorio: 'Medley', preco: 8.50 },
-    ],
-    apresentacao: '5mg - 30 comprimidos',
-    classeTerap: 'Antagonista da vitamina K',
-    retencaoReceita: 'Receita simples',
-    observacoes: 'Requer monitoramento regular do INR.',
-  },
-  // ===== PRÓSTATA =====
-  {
-    id: 'finasterida-5',
-    principioAtivo: 'Finasterida',
-    categoria: 'Inibidor da 5-alfa-redutase',
-    indicacao: 'Hiperplasia prostática benigna, alopecia androgenética',
-    referencia: { nome: 'Proscar', laboratorio: 'MSD', preco: 95.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 28.90 },
-      { laboratorio: 'Medley', preco: 30.50 },
-      { laboratorio: 'Neo Química', preco: 26.90 },
-    ],
-    apresentacao: '5mg - 30 comprimidos',
-    classeTerap: 'Inibidor da 5-alfa-redutase',
-    retencaoReceita: 'Receita simples',
-  },
-  // ===== ANTIPARASITÁRIO =====
-  {
-    id: 'ivermectina-6',
-    principioAtivo: 'Ivermectina',
-    categoria: 'Antiparasitário',
-    indicacao: 'Verminoses, escabiose, pediculose',
-    referencia: { nome: 'Revectina', laboratorio: 'Abbott', preco: 28.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 9.90 },
-      { laboratorio: 'Medley', preco: 10.50 },
-      { laboratorio: 'Vitamedic', preco: 8.90 },
-    ],
-    apresentacao: '6mg - 4 comprimidos',
-    classeTerap: 'Antiparasitário de amplo espectro',
-    retencaoReceita: 'Venda livre',
-  },
-  // ===== ANTIFÚNGICO ORAL =====
-  {
-    id: 'fluconazol-150',
-    principioAtivo: 'Fluconazol',
-    categoria: 'Antifúngico',
-    indicacao: 'Candidíase vaginal, oral, sistêmica',
-    referencia: { nome: 'Zoltec', laboratorio: 'Pfizer', preco: 32.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 8.90 },
-      { laboratorio: 'Medley', preco: 9.50 },
-      { laboratorio: 'Neo Química', preco: 7.90 },
-    ],
-    apresentacao: '150mg - 2 cápsulas',
-    classeTerap: 'Antifúngico triazólico',
-    retencaoReceita: 'Receita simples',
-  },
-  // ===== RELAXANTE MUSCULAR =====
-  {
-    id: 'ciclobenzaprina-10',
-    principioAtivo: 'Cloridrato de Ciclobenzaprina',
-    categoria: 'Relaxante muscular',
-    indicacao: 'Espasmos musculares, dor lombar, torcicolo',
-    referencia: { nome: 'Miosan', laboratorio: 'Apsen', preco: 42.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 14.90 },
-      { laboratorio: 'Medley', preco: 15.50 },
-      { laboratorio: 'Neo Química', preco: 13.90 },
-    ],
-    apresentacao: '10mg - 15 comprimidos',
-    classeTerap: 'Relaxante muscular de ação central',
-    retencaoReceita: 'Receita simples',
-  },
-  // ===== ANTICOAGULANTES NOVOS (DOACs) =====
-  {
-    id: 'rivaroxabana-20',
-    principioAtivo: 'Rivaroxabana',
-    categoria: 'Anticoagulante oral',
-    indicacao: 'Prevenção de AVC em FA, TVP, TEP',
-    referencia: { nome: 'Xarelto', laboratorio: 'Bayer', preco: 189.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 89.90 },
-      { laboratorio: 'Eurofarma', preco: 95.50 },
-      { laboratorio: 'Sandoz', preco: 92.00 },
-    ],
-    apresentacao: '20mg - 28 comprimidos',
-    classeTerap: 'Inibidor direto do fator Xa',
-    retencaoReceita: 'Receita simples',
-    observacoes: 'Tomar com alimentos. Sem necessidade de monitorar INR.',
-  },
-  {
-    id: 'apixabana-5',
-    principioAtivo: 'Apixabana',
-    categoria: 'Anticoagulante oral',
-    indicacao: 'Prevenção de AVC em FA, TVP, TEP',
-    referencia: { nome: 'Eliquis', laboratorio: 'BMS/Pfizer', preco: 215.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 109.90 },
-      { laboratorio: 'Eurofarma', preco: 115.00 },
-    ],
-    apresentacao: '5mg - 60 comprimidos',
-    classeTerap: 'Inibidor direto do fator Xa',
-    retencaoReceita: 'Receita simples',
-  },
-  // ===== INSULINAS =====
-  {
-    id: 'insulina-nph',
-    principioAtivo: 'Insulina NPH',
-    categoria: 'Insulina',
-    indicacao: 'Diabetes mellitus tipo 1 e 2',
-    referencia: { nome: 'Humulin N', laboratorio: 'Lilly', preco: 52.90 },
-    genericos: [
-      { laboratorio: 'Biomm (Basaglar)', preco: 45.00 },
-    ],
-    similar: [{ nome: 'Novolin N', laboratorio: 'Novo Nordisk', preco: 49.90 }],
-    apresentacao: '100UI/mL - 10mL frasco',
-    classeTerap: 'Insulina de ação intermediária',
-    retencaoReceita: 'Receita simples',
-    observacoes: 'Disponível gratuitamente pelo SUS (Farmácia Popular).',
-  },
-  {
-    id: 'insulina-glargina',
-    principioAtivo: 'Insulina Glargina',
-    categoria: 'Insulina',
-    indicacao: 'Diabetes mellitus tipo 1 e 2',
-    referencia: { nome: 'Lantus', laboratorio: 'Sanofi', preco: 125.90 },
-    genericos: [
-      { laboratorio: 'Biomm (Basaglar)', preco: 89.90 },
-    ],
-    apresentacao: '100UI/mL - caneta 3mL',
-    classeTerap: 'Insulina basal de longa duração',
-    retencaoReceita: 'Receita simples',
-  },
-  // ===== ANTIDEPRESSIVOS ADICIONAIS =====
-  {
-    id: 'venlafaxina-75',
-    principioAtivo: 'Venlafaxina',
-    categoria: 'Antidepressivo',
-    indicacao: 'Depressão, ansiedade generalizada, fobia social',
-    referencia: { nome: 'Efexor XR', laboratorio: 'Pfizer', preco: 98.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 42.90 },
-      { laboratorio: 'Medley', preco: 45.50 },
-      { laboratorio: 'Eurofarma', preco: 44.00 },
-    ],
-    apresentacao: '75mg - 28 cápsulas LP',
-    classeTerap: 'IRSN (Inibidor de Recaptação de Serotonina e Noradrenalina)',
-    retencaoReceita: 'Receita C1 (branca 2 vias)',
-  },
-  {
-    id: 'bupropiona-150',
-    principioAtivo: 'Cloridrato de Bupropiona',
-    categoria: 'Antidepressivo',
-    indicacao: 'Depressão, cessação do tabagismo',
-    referencia: { nome: 'Wellbutrin XL', laboratorio: 'GSK', preco: 135.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 55.90 },
-      { laboratorio: 'Medley', preco: 58.00 },
-      { laboratorio: 'Eurofarma', preco: 52.90 },
-    ],
-    apresentacao: '150mg - 30 comprimidos XL',
-    classeTerap: 'Inibidor de recaptação de dopamina e noradrenalina',
-    retencaoReceita: 'Receita C1 (branca 2 vias)',
-  },
-  // ===== ANSIOLÍTICOS =====
-  {
-    id: 'alprazolam-05',
-    principioAtivo: 'Alprazolam',
-    categoria: 'Ansiolítico',
-    indicacao: 'Ansiedade, transtorno do pânico',
-    referencia: { nome: 'Frontal', laboratorio: 'Pfizer', preco: 42.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 18.90 },
-      { laboratorio: 'Medley', preco: 19.50 },
-      { laboratorio: 'Neo Química', preco: 17.90 },
-    ],
-    apresentacao: '0,5mg - 30 comprimidos',
-    classeTerap: 'Benzodiazepínico',
-    retencaoReceita: 'Receita B1 (azul) - Controlado',
-    observacoes: 'Risco de dependência. Uso por tempo limitado.',
-  },
-  // ===== ANTI-HIPERTENSIVOS ADICIONAIS =====
-  {
-    id: 'valsartana-160',
-    principioAtivo: 'Valsartana',
-    categoria: 'Anti-hipertensivo',
-    indicacao: 'Hipertensão, insuficiência cardíaca, pós-IAM',
-    referencia: { nome: 'Diovan', laboratorio: 'Novartis', preco: 78.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 32.90 },
-      { laboratorio: 'Medley', preco: 35.00 },
-      { laboratorio: 'Eurofarma', preco: 33.50 },
-    ],
-    apresentacao: '160mg - 28 comprimidos',
-    classeTerap: 'BRA (Bloqueador do Receptor de Angiotensina)',
-    retencaoReceita: 'Receita simples',
-  },
-  {
-    id: 'hidroclorotiazida-25',
-    principioAtivo: 'Hidroclorotiazida',
-    categoria: 'Anti-hipertensivo',
-    indicacao: 'Hipertensão, edema',
-    referencia: { nome: 'Clorana', laboratorio: 'Sanofi', preco: 15.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 5.90 },
-      { laboratorio: 'Medley', preco: 6.20 },
-      { laboratorio: 'Prati-Donaduzzi', preco: 5.50 },
-    ],
-    apresentacao: '25mg - 30 comprimidos',
-    classeTerap: 'Diurético tiazídico',
-    retencaoReceita: 'Receita simples',
-  },
-  {
-    id: 'furosemida-40',
-    principioAtivo: 'Furosemida',
-    categoria: 'Diurético',
-    indicacao: 'Edema, insuficiência cardíaca, hipertensão',
-    referencia: { nome: 'Lasix', laboratorio: 'Sanofi', preco: 18.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 6.90 },
-      { laboratorio: 'Medley', preco: 7.50 },
-      { laboratorio: 'Cimed', preco: 6.50 },
-    ],
-    apresentacao: '40mg - 20 comprimidos',
-    classeTerap: 'Diurético de alça',
-    retencaoReceita: 'Receita simples',
-  },
-  {
-    id: 'espironolactona-25',
-    principioAtivo: 'Espironolactona',
-    categoria: 'Diurético',
-    indicacao: 'ICC, hiperaldosteronismo, edema, ascite',
-    referencia: { nome: 'Aldactone', laboratorio: 'Pfizer', preco: 28.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 12.90 },
-      { laboratorio: 'Medley', preco: 13.50 },
-    ],
-    apresentacao: '25mg - 30 comprimidos',
-    classeTerap: 'Diurético poupador de potássio',
-    retencaoReceita: 'Receita simples',
-  },
-  // ===== CARDIOVASCULAR =====
-  {
-    id: 'carvedilol-625',
-    principioAtivo: 'Carvedilol',
-    categoria: 'Anti-hipertensivo',
-    indicacao: 'ICC, hipertensão, pós-IAM',
-    referencia: { nome: 'Coreg', laboratorio: 'GSK', preco: 52.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 18.90 },
-      { laboratorio: 'Medley', preco: 19.90 },
-      { laboratorio: 'Eurofarma', preco: 17.90 },
-    ],
-    apresentacao: '6,25mg - 30 comprimidos',
-    classeTerap: 'Betabloqueador não seletivo com ação alfa',
-    retencaoReceita: 'Receita simples',
-  },
-  {
-    id: 'clopidogrel-75',
-    principioAtivo: 'Clopidogrel',
-    categoria: 'Antiagregante plaquetário',
-    indicacao: 'Prevenção de eventos aterotrombóticos, pós-stent',
-    referencia: { nome: 'Plavix', laboratorio: 'Sanofi', preco: 125.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 35.90 },
-      { laboratorio: 'Medley', preco: 38.00 },
-      { laboratorio: 'Eurofarma', preco: 36.50 },
-    ],
-    apresentacao: '75mg - 28 comprimidos',
-    classeTerap: 'Inibidor de ADP plaquetário',
-    retencaoReceita: 'Receita simples',
-  },
-  // ===== GASTRO ADICIONAIS =====
-  {
-    id: 'lansoprazol-30',
-    principioAtivo: 'Lansoprazol',
-    categoria: 'Antiulceroso',
-    indicacao: 'DRGE, úlcera péptica, H. pylori',
-    referencia: { nome: 'Prazol', laboratorio: 'Medley', preco: 42.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 18.90 },
-      { laboratorio: 'Cimed', preco: 19.50 },
-      { laboratorio: 'Neo Química', preco: 17.90 },
-    ],
-    apresentacao: '30mg - 28 cápsulas',
-    classeTerap: 'Inibidor da bomba de prótons',
-    retencaoReceita: 'Receita simples',
-  },
-  {
-    id: 'domperidona-10',
-    principioAtivo: 'Domperidona',
-    categoria: 'Antiemético / Procinético',
-    indicacao: 'Náuseas, vômitos, dispepsia',
-    referencia: { nome: 'Motilium', laboratorio: 'Janssen', preco: 32.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 12.90 },
-      { laboratorio: 'Medley', preco: 13.50 },
-      { laboratorio: 'Cimed', preco: 11.90 },
-    ],
-    apresentacao: '10mg - 30 comprimidos',
-    classeTerap: 'Antagonista dopaminérgico periférico',
-    retencaoReceita: 'Receita simples',
-  },
-  // ===== RESPIRATÓRIO =====
-  {
-    id: 'budesonida-200',
-    principioAtivo: 'Budesonida',
-    categoria: 'Corticosteroide inalatório',
-    indicacao: 'Asma, DPOC',
-    referencia: { nome: 'Pulmicort', laboratorio: 'AstraZeneca', preco: 89.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 42.90 },
-      { laboratorio: 'Eurofarma', preco: 45.00 },
-    ],
-    apresentacao: '200mcg - 120 doses',
-    classeTerap: 'Corticosteroide inalatório',
-    retencaoReceita: 'Receita simples',
-    observacoes: 'Enxaguar a boca após uso para prevenir candidose oral.',
-  },
-  {
-    id: 'formoterol-budesonida',
-    principioAtivo: 'Formoterol + Budesonida',
-    categoria: 'Broncodilatador + Corticosteroide',
-    indicacao: 'Asma, DPOC',
-    referencia: { nome: 'Symbicort', laboratorio: 'AstraZeneca', preco: 145.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 75.90 },
-      { laboratorio: 'Eurofarma', preco: 79.00 },
-    ],
-    apresentacao: '6/200mcg - 60 doses',
-    classeTerap: 'LABA + Corticosteroide inalatório',
-    retencaoReceita: 'Receita simples',
-  },
-  // ===== NEUROLÓGICO =====
-  {
-    id: 'gabapentina-300',
-    principioAtivo: 'Gabapentina',
-    categoria: 'Anticonvulsivante / Dor neuropática',
-    indicacao: 'Epilepsia, dor neuropática, fibromialgia',
-    referencia: { nome: 'Neurontin', laboratorio: 'Pfizer', preco: 85.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 35.90 },
-      { laboratorio: 'Medley', preco: 38.00 },
-      { laboratorio: 'Eurofarma', preco: 36.50 },
-    ],
-    apresentacao: '300mg - 30 cápsulas',
-    classeTerap: 'Anticonvulsivante / Analgésico neuropático',
-    retencaoReceita: 'Receita C1 (branca 2 vias)',
-  },
-  {
-    id: 'pregabalina-75',
-    principioAtivo: 'Pregabalina',
-    categoria: 'Anticonvulsivante / Dor neuropática',
-    indicacao: 'Dor neuropática, fibromialgia, epilepsia, ansiedade generalizada',
-    referencia: { nome: 'Lyrica', laboratorio: 'Pfizer', preco: 145.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 55.90 },
-      { laboratorio: 'Medley', preco: 58.00 },
-      { laboratorio: 'Eurofarma', preco: 52.90 },
-    ],
-    apresentacao: '75mg - 28 cápsulas',
-    classeTerap: 'Anticonvulsivante / Analgésico neuropático',
-    retencaoReceita: 'Receita C1 (branca 2 vias)',
-    observacoes: 'Controlado pela Portaria 344. Risco de dependência.',
-  },
-  // ===== DERMATOLÓGICO =====
-  {
-    id: 'isotretinoina-20',
-    principioAtivo: 'Isotretinoína',
-    categoria: 'Dermatológico',
-    indicacao: 'Acne grave, acne cistica',
-    referencia: { nome: 'Roacutan', laboratorio: 'Roche', preco: 125.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 55.90 },
-      { laboratorio: 'Germed', preco: 52.90 },
-      { laboratorio: 'Ranbaxy', preco: 58.00 },
-    ],
-    apresentacao: '20mg - 30 cápsulas',
-    classeTerap: 'Retinoide sistêmico',
-    retencaoReceita: 'Receita C2 (amarela) - Controlado',
-    observacoes: 'Teratogênico! Obrigatório teste de gravidez. Monitorar lipídios e TGO/TGP.',
-  },
-  // ===== ENDOCRINOLÓGICO =====
-  {
-    id: 'dapagliflozina-10',
-    principioAtivo: 'Dapagliflozina',
-    categoria: 'Antidiabético',
-    indicacao: 'DM2, insuficiência cardíaca, doença renal crônica',
-    referencia: { nome: 'Forxiga', laboratorio: 'AstraZeneca', preco: 165.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 85.90 },
-      { laboratorio: 'Eurofarma', preco: 89.00 },
-    ],
-    apresentacao: '10mg - 30 comprimidos',
-    classeTerap: 'Inibidor de SGLT2',
-    retencaoReceita: 'Receita simples',
-    observacoes: 'Benefício cardiovascular e renal comprovado. Risco de cetoacidose.',
-  },
-  {
-    id: 'empagliflozina-25',
-    principioAtivo: 'Empagliflozina',
-    categoria: 'Antidiabético',
-    indicacao: 'DM2, insuficiência cardíaca',
-    referencia: { nome: 'Jardiance', laboratorio: 'Boehringer', preco: 175.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 95.90 },
-      { laboratorio: 'Eurofarma', preco: 99.00 },
-    ],
-    apresentacao: '25mg - 30 comprimidos',
-    classeTerap: 'Inibidor de SGLT2',
-    retencaoReceita: 'Receita simples',
-  },
-  {
-    id: 'liraglutida-18',
-    principioAtivo: 'Liraglutida',
-    categoria: 'Antidiabético / Antiobesidade',
-    indicacao: 'DM2, obesidade',
-    referencia: { nome: 'Victoza / Saxenda', laboratorio: 'Novo Nordisk', preco: 485.90 },
-    genericos: [
-      { laboratorio: 'Biomm', preco: 350.00 },
-    ],
-    apresentacao: '6mg/mL - caneta 3mL',
-    classeTerap: 'Agonista de GLP-1',
-    retencaoReceita: 'Receita simples',
-    observacoes: 'Saxenda (3mg/dia) para obesidade. Victoza (1.8mg/dia) para DM2.',
-  },
-  // ===== REUMATOLÓGICO =====
-  {
-    id: 'metotrexato-25',
-    principioAtivo: 'Metotrexato',
-    categoria: 'Imunossupressor / Antireumático',
-    indicacao: 'Artrite reumatoide, psoríase, lúpus',
-    referencia: { nome: 'Metrexato', laboratorio: 'Pfizer', preco: 35.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 15.90 },
-      { laboratorio: 'Eurofarma', preco: 16.50 },
-    ],
-    apresentacao: '2,5mg - 24 comprimidos',
-    classeTerap: 'DMARD (Droga modificadora de doença)',
-    retencaoReceita: 'Receita C1 (branca 2 vias)',
-    observacoes: 'Suplementar ácido fólico. Monitorar hemograma e função hepática.',
-  },
-  {
-    id: 'alopurinol-300',
-    principioAtivo: 'Alopurinol',
-    categoria: 'Antigotoso',
-    indicacao: 'Gota, hiperuricemia',
-    referencia: { nome: 'Zyloric', laboratorio: 'GSK', preco: 32.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 12.90 },
-      { laboratorio: 'Medley', preco: 13.50 },
-      { laboratorio: 'Cimed', preco: 11.90 },
-    ],
-    apresentacao: '300mg - 30 comprimidos',
-    classeTerap: 'Inibidor da xantina oxidase',
-    retencaoReceita: 'Receita simples',
-  },
-  // ===== ANTIBIÓTICOS ADICIONAIS =====
-  {
-    id: 'levofloxacino-500',
-    principioAtivo: 'Levofloxacino',
-    categoria: 'Antibiótico',
-    indicacao: 'Pneumonia, sinusite, ITU complicada',
-    referencia: { nome: 'Levaquin', laboratorio: 'Sanofi', preco: 85.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 35.90 },
-      { laboratorio: 'Medley', preco: 38.00 },
-      { laboratorio: 'Eurofarma', preco: 36.50 },
-    ],
-    apresentacao: '500mg - 7 comprimidos',
-    classeTerap: 'Fluoroquinolona',
-    retencaoReceita: 'Receita simples (retenção)',
-    observacoes: 'Risco de tendinite e ruptura tendínea. Evitar em idosos.',
-  },
-  {
-    id: 'metronidazol-400',
-    principioAtivo: 'Metronidazol',
-    categoria: 'Antibiótico / Antiparasitário',
-    indicacao: 'Infecções anaeróbias, giardíase, amebíase, vaginose',
-    referencia: { nome: 'Flagyl', laboratorio: 'Sanofi', preco: 28.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 9.90 },
-      { laboratorio: 'Medley', preco: 10.50 },
-      { laboratorio: 'Prati-Donaduzzi', preco: 9.20 },
-    ],
-    apresentacao: '400mg - 24 comprimidos',
-    classeTerap: 'Nitroimidazólico',
-    retencaoReceita: 'Receita simples (retenção)',
-    observacoes: 'NÃO consumir álcool (efeito dissulfiram).',
-  },
-  {
-    id: 'sulfametoxazol-trimetoprima',
-    principioAtivo: 'Sulfametoxazol + Trimetoprima',
-    categoria: 'Antibiótico',
-    indicacao: 'ITU, otite, sinusite, pneumocistose',
-    referencia: { nome: 'Bactrim', laboratorio: 'Roche', preco: 22.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 8.90 },
-      { laboratorio: 'Medley', preco: 9.50 },
-      { laboratorio: 'Neo Química', preco: 8.20 },
-    ],
-    apresentacao: '400/80mg - 20 comprimidos',
-    classeTerap: 'Sulfonamida + Trimetoprima',
-    retencaoReceita: 'Receita simples (retenção)',
-  },
-  // ===== OFTALMOLÓGICO =====
-  {
-    id: 'timolol-05',
-    principioAtivo: 'Maleato de Timolol',
-    categoria: 'Antiglaucomatoso',
-    indicacao: 'Glaucoma de ângulo aberto, hipertensão ocular',
-    referencia: { nome: 'Timoptol', laboratorio: 'MSD', preco: 35.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 15.90 },
-      { laboratorio: 'Allergan', preco: 18.00 },
-    ],
-    apresentacao: '0,5% - colírio 5mL',
-    classeTerap: 'Betabloqueador oftálmico',
-    retencaoReceita: 'Receita simples',
-  },
-  // ===== UROLÓGICO =====
-  {
-    id: 'tansulosina-04',
-    principioAtivo: 'Cloridrato de Tansulosina',
-    categoria: 'Urológico',
-    indicacao: 'Hiperplasia prostática benigna (HPB)',
-    referencia: { nome: 'Secotex', laboratorio: 'Boehringer', preco: 85.90 },
-    genericos: [
-      { laboratorio: 'EMS', preco: 35.90 },
-      { laboratorio: 'Medley', preco: 38.00 },
-      { laboratorio: 'Eurofarma', preco: 36.50 },
-    ],
-    apresentacao: '0,4mg - 30 cápsulas',
-    classeTerap: 'Bloqueador alfa-1 adrenérgico seletivo',
-    retencaoReceita: 'Receita simples',
-  },
-];
+const TARJAS = ['Todas', 'Venda Livre', 'Tarja Vermelha', 'Tarja Preta', 'Receita Amarela'];
+const FORMAS = ['Todas', 'Comprimido', 'Cápsula', 'Injetável', 'Solução Oral', 'Tópico', 'Colírio', 'Inalatório', 'Ampola', 'Solução', 'Pó', 'Adesivo', 'Nasal', 'Supositório', 'Outro'];
 
-// ============================================================
-// CATEGORIAS
-// ============================================================
-const CATEGORIAS = [
-  'Todas',
-  'Analgésico / Antipirético',
-  'Anti-inflamatório',
-  'Anti-inflamatório / Analgésico',
-  'Antibiótico',
-  'Antibiótico / Antiparasitário',
-  'Anti-hipertensivo',
-  'Anticoagulante',
-  'Anticoagulante oral',
-  'Antiagregante plaquetário',
-  'Anticonvulsivante / Dor neuropática',
-  'Antidepressivo',
-  'Antidiabético',
-  'Antidiabético / Antiobesidade',
-  'Antiemético / Procinético',
-  'Antifúngico',
-  'Antifúngico tópico',
-  'Antiglaucomatoso',
-  'Antigotoso',
-  'Antilipêmico',
-  'Antiparasitário',
-  'Antiulceroso',
-  'Antialérgico',
-  'Ansiolítico',
-  'Ansiolítico / Anticonvulsivante',
-  'Broncodilatador',
-  'Broncodilatador + Corticosteroide',
-  'Contraceptivo oral',
-  'Corticosteroide',
-  'Corticosteroide inalatório',
-  'Dermatológico',
-  'Disfunção erétil',
-  'Diurético',
-  'Hormônio tireoidiano',
-  'Imunossupressor / Antireumático',
-  'Inibidor da 5-alfa-redutase',
-  'Insulina',
-  'Relaxante muscular',
-  'Urológico',
-];
-
-// ============================================================
-// COMPONENTE PRINCIPAL
-// ============================================================
 export default function MedicineComparator() {
   const [busca, setBusca] = useState('');
+  const [buscaDebounced, setBuscaDebounced] = useState('');
   const [categoriaFiltro, setCategoriaFiltro] = useState('Todas');
-  const [selecionado, setSelecionado] = useState<Medicamento | null>(null);
-  const [ordenacao, setOrdenacao] = useState<'economia' | 'nome' | 'preco'>('economia');
-  const [mostrarSoVendaLivre, setMostrarSoVendaLivre] = useState(false);
+  const [tarjaFiltro, setTarjaFiltro] = useState('Todas');
+  const [formaFiltro, setFormaFiltro] = useState('Todas');
+  const [soComGenerico, setSoComGenerico] = useState(false);
+  const [ordenacao, setOrdenacao] = useState<'name' | 'price' | 'savings'>('savings');
+  const [ordemDir, setOrdemDir] = useState<'asc' | 'desc'>('desc');
+  const [page, setPage] = useState(1);
+  const [selecionado, setSelecionado] = useState<any | null>(null);
+  const [pageSize] = useState(30);
 
-  const calcEconomia = useCallback((m: Medicamento) => {
-    const menor = Math.min(...m.genericos.map((g) => g.preco));
-    return ((m.referencia.preco - menor) / m.referencia.preco) * 100;
-  }, []);
+  // Debounce search
+  const [debounceTimer, setDebounceTimer] = useState<any>(null);
+  const handleBuscaChange = useCallback((value: string) => {
+    setBusca(value);
+    if (debounceTimer) clearTimeout(debounceTimer);
+    const timer = setTimeout(() => {
+      setBuscaDebounced(value);
+      setPage(1);
+    }, 400);
+    setDebounceTimer(timer);
+  }, [debounceTimer]);
 
-  const menorGenerico = useCallback((m: Medicamento) => {
-    return Math.min(...m.genericos.map((g) => g.preco));
-  }, []);
+  // tRPC queries
+  const statsQuery = trpc.cmed.stats.useQuery();
+  const categoriesQuery = trpc.cmed.categories.useQuery();
+  const searchQuery = trpc.cmed.search.useQuery({
+    query: buscaDebounced || undefined,
+    category: categoriaFiltro !== 'Todas' ? categoriaFiltro : undefined,
+    tarja: tarjaFiltro !== 'Todas' ? tarjaFiltro : undefined,
+    forma: formaFiltro !== 'Todas' ? formaFiltro : undefined,
+    onlyWithGenerics: soComGenerico || undefined,
+    page,
+    pageSize,
+    sortBy: ordenacao,
+    sortOrder: ordemDir,
+  });
+  const topSavingsQuery = trpc.cmed.topSavings.useQuery({ limit: 10 });
 
-  const medicamentosFiltrados = useMemo(() => {
-    let lista = [...MEDICAMENTOS_DB];
-
-    if (busca.trim()) {
-      const q = busca.toLowerCase();
-      lista = lista.filter(
-        (m) =>
-          m.principioAtivo.toLowerCase().includes(q) ||
-          m.referencia.nome.toLowerCase().includes(q) ||
-          m.indicacao.toLowerCase().includes(q) ||
-          m.categoria.toLowerCase().includes(q)
-      );
-    }
-
-    if (categoriaFiltro !== 'Todas') {
-      lista = lista.filter((m) => m.categoria === categoriaFiltro);
-    }
-
-    if (mostrarSoVendaLivre) {
-      lista = lista.filter((m) => m.retencaoReceita === 'Venda livre');
-    }
-
-    // Ordenação
-    lista.sort((a, b) => {
-      if (ordenacao === 'economia') {
-        const econA = calcEconomia(a);
-        const econB = calcEconomia(b);
-        return econB - econA;
-      }
-      if (ordenacao === 'nome') return a.principioAtivo.localeCompare(b.principioAtivo);
-      if (ordenacao === 'preco') return menorGenerico(a) - menorGenerico(b);
-      return 0;
-    });
-
-    return lista;
-  }, [busca, categoriaFiltro, ordenacao, mostrarSoVendaLivre, calcEconomia, menorGenerico]);
-
-  const formatBRL = (v: number) =>
-    v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-  // Estatísticas gerais
-  const stats = useMemo(() => {
-    const economias = MEDICAMENTOS_DB.map((m) => calcEconomia(m));
-    const mediaEcon = economias.reduce((a, b) => a + b, 0) / economias.length;
-    const maxEcon = Math.max(...economias);
-    const medMaxEcon = MEDICAMENTOS_DB.find((m) => calcEconomia(m) === maxEcon);
-    return {
-      total: MEDICAMENTOS_DB.length,
-      mediaEconomia: mediaEcon.toFixed(1),
-      maxEconomia: maxEcon.toFixed(1),
-      medMaxEconomia: medMaxEcon?.principioAtivo || '',
-    };
-  }, [calcEconomia]);
+  const stats = statsQuery.data;
+  const categories = categoriesQuery.data || [];
+  const searchResult = searchQuery.data;
+  const medicines = searchResult?.medicines || [];
+  const pagination = searchResult?.pagination;
+  const topSavings = topSavingsQuery.data || [];
 
   // ============================================================
-  // RENDER — DETALHE DO MEDICAMENTO
+  // DETAIL VIEW
   // ============================================================
   if (selecionado) {
     const m = selecionado;
-    const menorG = Math.min(...m.genericos.map((g) => g.preco));
-    const economia = ((m.referencia.preco - menorG) / m.referencia.preco) * 100;
-    const economiaValor = m.referencia.preco - menorG;
+    const refPrice = m.referencia?.preco;
+    const cheapestGeneric = m.genericos?.find((g: any) => g.preco !== null);
+    const savings = refPrice && cheapestGeneric?.preco
+      ? ((refPrice - cheapestGeneric.preco) / refPrice * 100).toFixed(1)
+      : null;
 
     return (
       <div style={{ padding: '24px', maxWidth: 900, margin: '0 auto' }}>
-        {/* Header */}
         <button
           onClick={() => setSelecionado(null)}
           style={{
-            background: 'rgba(16,185,129,0.15)',
-            border: '1px solid rgba(16,185,129,0.3)',
-            color: '#10b981',
-            padding: '8px 16px',
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.15)',
             borderRadius: 8,
+            padding: '8px 16px',
+            color: 'inherit',
             cursor: 'pointer',
-            marginBottom: 20,
+            marginBottom: 24,
             fontSize: 14,
           }}
         >
           ← Voltar à lista
         </button>
 
-        <div
-          style={{
-            background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(59,130,246,0.1))',
-            borderRadius: 16,
-            padding: 24,
-            marginBottom: 24,
-            border: '1px solid rgba(16,185,129,0.2)',
-          }}
-        >
-          <h2 style={{ margin: 0, fontSize: 28, color: '#10b981' }}>{m.principioAtivo}</h2>
-          <p style={{ margin: '8px 0 0', opacity: 0.7, fontSize: 14 }}>
-            {m.categoria} — {m.apresentacao}
-          </p>
-          <p style={{ margin: '4px 0 0', opacity: 0.8, fontSize: 15 }}>
-            <strong>Indicação:</strong> {m.indicacao}
-          </p>
-          <p style={{ margin: '4px 0 0', opacity: 0.7, fontSize: 13 }}>
-            <strong>Classe terapêutica:</strong> {m.classeTerap}
-          </p>
-          <p style={{ margin: '4px 0 0', opacity: 0.7, fontSize: 13 }}>
-            <strong>Receita:</strong> {m.retencaoReceita}
-          </p>
-          {m.observacoes && (
-            <p
-              style={{
-                margin: '8px 0 0',
-                padding: '8px 12px',
-                background: 'rgba(245,158,11,0.15)',
-                borderRadius: 8,
-                fontSize: 13,
-                color: '#f59e0b',
-              }}
-            >
-              ⚠ {m.observacoes}
-            </p>
-          )}
-        </div>
-
-        {/* Economia destaque */}
-        <div
-          style={{
-            background: 'linear-gradient(135deg, #10b981, #059669)',
-            borderRadius: 16,
-            padding: 24,
-            textAlign: 'center',
-            marginBottom: 24,
-            color: '#fff',
-          }}
-        >
-          <div style={{ fontSize: 14, opacity: 0.9 }}>Economia com Genérico</div>
-          <div style={{ fontSize: 48, fontWeight: 800, lineHeight: 1.1 }}>
-            {economia.toFixed(0)}%
-          </div>
-          <div style={{ fontSize: 16, opacity: 0.9 }}>
-            Você economiza até <strong>{formatBRL(economiaValor)}</strong> por compra
-          </div>
-        </div>
-
-        {/* Comparação visual */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
-          {/* Referência */}
-          <div
-            style={{
-              background: 'rgba(239,68,68,0.1)',
-              border: '1px solid rgba(239,68,68,0.3)',
-              borderRadius: 12,
-              padding: 20,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 11,
-                textTransform: 'uppercase',
-                letterSpacing: 1,
-                color: '#ef4444',
-                marginBottom: 8,
-              }}
-            >
-              Referência (Marca)
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 700 }}>{m.referencia.nome}</div>
-            <div style={{ fontSize: 13, opacity: 0.6, marginBottom: 12 }}>
-              {m.referencia.laboratorio}
-            </div>
-            <div style={{ fontSize: 32, fontWeight: 800, color: '#ef4444' }}>
-              {formatBRL(m.referencia.preco)}
-            </div>
-          </div>
-
-          {/* Genérico mais barato */}
-          <div
-            style={{
-              background: 'rgba(16,185,129,0.1)',
-              border: '1px solid rgba(16,185,129,0.3)',
-              borderRadius: 12,
-              padding: 20,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 11,
-                textTransform: 'uppercase',
-                letterSpacing: 1,
-                color: '#10b981',
-                marginBottom: 8,
-              }}
-            >
-              Genérico Mais Barato
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 700 }}>
-              {m.genericos.find((g) => g.preco === menorG)?.laboratorio}
-            </div>
-            <div style={{ fontSize: 13, opacity: 0.6, marginBottom: 12 }}>
-              Genérico — {m.principioAtivo}
-            </div>
-            <div style={{ fontSize: 32, fontWeight: 800, color: '#10b981' }}>
-              {formatBRL(menorG)}
-            </div>
-          </div>
-        </div>
-
-        {/* Barra de economia visual */}
+        {/* Header */}
         <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 13, marginBottom: 8, opacity: 0.7 }}>
-            Comparação visual de preço
+          <h2 style={{ fontSize: 26, fontWeight: 800, margin: 0 }}>{m.substancia}</h2>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+            <span style={{
+              fontSize: 11, padding: '3px 10px', borderRadius: 6,
+              background: 'rgba(59,130,246,0.15)', color: '#3b82f6'
+            }}>
+              {m.classeNome || m.classeFull}
+            </span>
+            <span style={{
+              fontSize: 11, padding: '3px 10px', borderRadius: 6,
+              background: m.tarja?.includes('Preta') ? 'rgba(239,68,68,0.15)' :
+                         m.tarja?.includes('Vermelha') ? 'rgba(245,158,11,0.15)' :
+                         'rgba(16,185,129,0.15)',
+              color: m.tarja?.includes('Preta') ? '#ef4444' :
+                     m.tarja?.includes('Vermelha') ? '#f59e0b' : '#10b981'
+            }}>
+              {m.tarja}
+            </span>
+            <span style={{
+              fontSize: 11, padding: '3px 10px', borderRadius: 6,
+              background: 'rgba(168,85,247,0.15)', color: '#a855f7'
+            }}>
+              {m.formaFarmaceutica}
+            </span>
           </div>
-          <div style={{ position: 'relative', height: 40, borderRadius: 8, overflow: 'hidden' }}>
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                background: 'rgba(239,68,68,0.2)',
-                borderRadius: 8,
-              }}
-            />
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: `${(menorG / m.referencia.preco) * 100}%`,
-                height: '100%',
-                background: 'linear-gradient(90deg, #10b981, #059669)',
-                borderRadius: 8,
-                display: 'flex',
-                alignItems: 'center',
-                paddingLeft: 12,
-                fontSize: 13,
-                fontWeight: 600,
-                color: '#fff',
-              }}
-            >
-              Genérico: {formatBRL(menorG)}
+        </div>
+
+        {/* Reference Product */}
+        <div style={{
+          background: 'rgba(59,130,246,0.08)',
+          border: '1px solid rgba(59,130,246,0.2)',
+          borderRadius: 12, padding: 20, marginBottom: 16
+        }}>
+          <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
+            Medicamento de Referência
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 20, fontWeight: 700 }}>{m.referencia.nome}</div>
+              <div style={{ fontSize: 13, opacity: 0.7 }}>{m.referencia.laboratorio}</div>
+              <div style={{ fontSize: 12, opacity: 0.5, marginTop: 4 }}>{m.referencia.apresentacao}</div>
+              <div style={{ fontSize: 11, opacity: 0.4, marginTop: 2 }}>
+                Tipo: {m.referencia.tipo} | EAN: {m.referencia.ean || '—'} | Reg: {m.referencia.registro || '—'}
+              </div>
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: '#3b82f6' }}>
+              {formatBRL(refPrice)}
             </div>
           </div>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              fontSize: 12,
-              marginTop: 4,
-              opacity: 0.5,
-            }}
-          >
-            <span>R$ 0</span>
-            <span>Referência: {formatBRL(m.referencia.preco)}</span>
+        </div>
+
+        {/* Savings banner */}
+        {savings && (
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05))',
+            border: '1px solid rgba(16,185,129,0.3)',
+            borderRadius: 12, padding: 16, marginBottom: 16, textAlign: 'center'
+          }}>
+            <div style={{ fontSize: 36, fontWeight: 900, color: '#10b981' }}>{savings}%</div>
+            <div style={{ fontSize: 14, opacity: 0.8 }}>
+              de economia com o genérico mais barato
+              {refPrice && cheapestGeneric?.preco && (
+                <span style={{ color: '#10b981', fontWeight: 700 }}>
+                  {' '}(economize {formatBRL(refPrice - cheapestGeneric.preco)})
+                </span>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Todos os genéricos */}
-        <h3 style={{ fontSize: 18, marginBottom: 12 }}>
-          Todos os Genéricos Disponíveis ({m.genericos.length})
-        </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
-          {[...m.genericos]
-            .sort((a, b) => a.preco - b.preco)
-            .map((g, i) => {
-              const econ = ((m.referencia.preco - g.preco) / m.referencia.preco) * 100;
-              return (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '12px 16px',
-                    background: i === 0 ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.05)',
-                    borderRadius: 10,
-                    border: i === 0 ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(255,255,255,0.1)',
-                  }}
-                >
-                  <div>
-                    <div style={{ fontWeight: 600 }}>
-                      {g.laboratorio}
-                      {i === 0 && (
-                        <span
-                          style={{
-                            marginLeft: 8,
-                            fontSize: 11,
-                            background: '#10b981',
-                            color: '#fff',
-                            padding: '2px 8px',
-                            borderRadius: 4,
-                          }}
-                        >
-                          MELHOR PREÇO
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ fontSize: 12, opacity: 0.6 }}>
-                      Economia de {econ.toFixed(1)}% vs referência
-                    </div>
-                  </div>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: '#10b981' }}>
-                    {formatBRL(g.preco)}
-                  </div>
-                </div>
-              );
-            })}
-        </div>
-
-        {/* Similares */}
-        {m.similar && m.similar.length > 0 && (
+        {/* Generics */}
+        {m.genericos && m.genericos.length > 0 && (
           <>
-            <h3 style={{ fontSize: 18, marginBottom: 12 }}>Similares Intercambiáveis</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
-              {m.similar.map((s, i) => {
-                const econ = ((m.referencia.preco - s.preco) / m.referencia.preco) * 100;
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: '#10b981' }}>
+              Genéricos ({m.genericos.length})
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+              {m.genericos.map((g: any, i: number) => {
+                const econ = refPrice && g.preco ? ((refPrice - g.preco) / refPrice * 100) : 0;
                 return (
-                  <div
-                    key={i}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '12px 16px',
-                      background: 'rgba(59,130,246,0.1)',
-                      borderRadius: 10,
-                      border: '1px solid rgba(59,130,246,0.2)',
-                    }}
-                  >
+                  <div key={i} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.15)',
+                    borderRadius: 10, padding: '12px 16px', flexWrap: 'wrap', gap: 8
+                  }}>
                     <div>
                       <div style={{ fontWeight: 600 }}>
-                        {s.nome}{' '}
-                        <span style={{ fontSize: 12, opacity: 0.6 }}>({s.laboratorio})</span>
+                        {g.nome} <span style={{ fontSize: 12, opacity: 0.6 }}>({g.laboratorio})</span>
                       </div>
-                      <div style={{ fontSize: 12, opacity: 0.6 }}>
-                        Economia de {econ.toFixed(1)}% vs referência
-                      </div>
+                      <div style={{ fontSize: 12, opacity: 0.5 }}>{g.apresentacao}</div>
+                      {econ > 0 && (
+                        <div style={{ fontSize: 12, color: '#10b981' }}>
+                          Economia de {econ.toFixed(1)}% vs referência
+                        </div>
+                      )}
                     </div>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: '#3b82f6' }}>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: '#10b981' }}>
+                      {formatBRL(g.preco)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* Similars */}
+        {m.similares && m.similares.length > 0 && (
+          <>
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: '#f59e0b' }}>
+              Similares ({m.similares.length})
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+              {m.similares.map((s: any, i: number) => {
+                const econ = refPrice && s.preco ? ((refPrice - s.preco) / refPrice * 100) : 0;
+                return (
+                  <div key={i} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.15)',
+                    borderRadius: 10, padding: '12px 16px', flexWrap: 'wrap', gap: 8
+                  }}>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>
+                        {s.nome} <span style={{ fontSize: 12, opacity: 0.6 }}>({s.laboratorio})</span>
+                      </div>
+                      <div style={{ fontSize: 12, opacity: 0.5 }}>{s.apresentacao}</div>
+                      {econ > 0 && (
+                        <div style={{ fontSize: 12, color: '#f59e0b' }}>
+                          {econ > 0 ? `Economia de ${econ.toFixed(1)}%` : `${Math.abs(econ).toFixed(1)}% mais caro`}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: '#f59e0b' }}>
                       {formatBRL(s.preco)}
                     </div>
                   </div>
@@ -1498,212 +236,214 @@ export default function MedicineComparator() {
           </>
         )}
 
+        {m.genericos?.length === 0 && m.similares?.length === 0 && (
+          <div style={{ textAlign: 'center', padding: 32, opacity: 0.5 }}>
+            Nenhum genérico ou similar registrado na ANVISA para esta substância.
+          </div>
+        )}
+
         {/* Disclaimer */}
-        <div
-          style={{
-            background: 'rgba(245,158,11,0.1)',
-            border: '1px solid rgba(245,158,11,0.2)',
-            borderRadius: 12,
-            padding: 16,
-            fontSize: 12,
-            opacity: 0.8,
-          }}
-        >
-          <strong>Aviso importante:</strong> Os preços são valores médios de referência (PMC com ICMS
-          18%) e podem variar conforme a região, farmácia e estado. Consulte sempre um médico ou
-          farmacêutico antes de substituir medicamentos. Dados baseados na tabela CMED/ANVISA e
-          pesquisas Procon-SP 2024/2025.
+        <div style={{
+          background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.15)',
+          borderRadius: 12, padding: 16, fontSize: 12, opacity: 0.8, marginTop: 16
+        }}>
+          <strong>Aviso importante:</strong> Preços são PMC (Preço Máximo ao Consumidor) com ICMS 18%,
+          conforme tabela oficial CMED/ANVISA. Preços reais podem variar conforme farmácia, região e promoções.
+          Consulte sempre um médico ou farmacêutico antes de substituir medicamentos.
         </div>
       </div>
     );
   }
 
   // ============================================================
-  // RENDER — LISTA PRINCIPAL
+  // MAIN LIST VIEW
   // ============================================================
   return (
-    <div style={{ padding: '24px', maxWidth: 1000, margin: '0 auto' }}>
+    <div style={{ padding: '24px', maxWidth: 1100, margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: 32 }}>
-        <div style={{ fontSize: 40, marginBottom: 8 }}>💊</div>
+      <div style={{ textAlign: 'center', marginBottom: 28 }}>
         <h1 style={{ fontSize: 28, margin: 0, fontWeight: 800 }}>
           Comparador de Medicamentos
         </h1>
-        <p style={{ opacity: 0.7, fontSize: 15, marginTop: 8 }}>
-          Compare preços de medicamentos genéricos vs. referência (marca) e descubra quanto você
-          pode economizar
+        <p style={{ opacity: 0.7, fontSize: 14, marginTop: 6 }}>
+          Base oficial ANVISA/CMED com {stats?.totalMedicines?.toLocaleString() || '2.300+'} substâncias ativas,
+          preços de referência, genéricos e similares
         </p>
+        {stats?.lastUpdate && (
+          <p style={{ opacity: 0.4, fontSize: 12, marginTop: 4 }}>
+            Última atualização: {stats.lastUpdate} | Fonte: {stats.source}
+          </p>
+        )}
       </div>
 
-      {/* Stats */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: 12,
-          marginBottom: 24,
-        }}
-      >
-        <div
-          style={{
-            background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05))',
-            borderRadius: 12,
-            padding: 16,
-            textAlign: 'center',
-            border: '1px solid rgba(16,185,129,0.2)',
-          }}
-        >
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#10b981' }}>{stats.total}</div>
-          <div style={{ fontSize: 12, opacity: 0.7 }}>Medicamentos</div>
-        </div>
-        <div
-          style={{
-            background: 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.05))',
-            borderRadius: 12,
-            padding: 16,
-            textAlign: 'center',
-            border: '1px solid rgba(59,130,246,0.2)',
-          }}
-        >
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#3b82f6' }}>
-            {stats.mediaEconomia}%
+      {/* Stats Cards */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+        gap: 10, marginBottom: 20
+      }}>
+        {[
+          { value: stats?.totalMedicines?.toLocaleString() || '—', label: 'Substâncias', color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
+          { value: stats?.totalWithGenerics?.toLocaleString() || '—', label: 'Com Genéricos', color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' },
+          { value: stats?.totalWithSimilars?.toLocaleString() || '—', label: 'Com Similares', color: '#a855f7', bg: 'rgba(168,85,247,0.12)' },
+          { value: stats?.totalCategories?.toLocaleString() || '—', label: 'Classes Terapêuticas', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
+          { value: stats?.avgPrice ? formatBRL(stats.avgPrice) : '—', label: 'Preço Médio', color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
+        ].map((s, i) => (
+          <div key={i} style={{
+            background: s.bg, borderRadius: 10, padding: '14px 12px', textAlign: 'center',
+            border: `1px solid ${s.color}22`
+          }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: s.color }}>{s.value}</div>
+            <div style={{ fontSize: 11, opacity: 0.7 }}>{s.label}</div>
           </div>
-          <div style={{ fontSize: 12, opacity: 0.7 }}>Economia Média</div>
-        </div>
-        <div
-          style={{
-            background: 'linear-gradient(135deg, rgba(168,85,247,0.15), rgba(168,85,247,0.05))',
-            borderRadius: 12,
-            padding: 16,
-            textAlign: 'center',
-            border: '1px solid rgba(168,85,247,0.2)',
-          }}
-        >
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#a855f7' }}>
-            {stats.maxEconomia}%
+        ))}
+      </div>
+
+      {/* Top Savings Banner */}
+      {topSavings.length > 0 && !buscaDebounced && categoriaFiltro === 'Todas' && (
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(59,130,246,0.08))',
+          borderRadius: 12, padding: 16, marginBottom: 20,
+          border: '1px solid rgba(16,185,129,0.2)'
+        }}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>
+            Maiores Economias com Genéricos
           </div>
-          <div style={{ fontSize: 12, opacity: 0.7 }}>Maior Economia</div>
+          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
+            {topSavings.slice(0, 8).map((m: any, i: number) => (
+              <div key={i} onClick={() => setSelecionado(m)} style={{
+                minWidth: 140, background: 'rgba(0,0,0,0.2)', borderRadius: 8,
+                padding: '10px 12px', cursor: 'pointer', flexShrink: 0,
+                border: '1px solid rgba(16,185,129,0.15)',
+                transition: 'all 0.2s'
+              }}>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#10b981' }}>
+                  {m.savingsPercent}%
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 600, marginTop: 2 }}>
+                  {m.substancia.length > 20 ? m.substancia.substring(0, 20) + '...' : m.substancia}
+                </div>
+                <div style={{ fontSize: 10, opacity: 0.5 }}>{m.referencia?.nome}</div>
+              </div>
+            ))}
+          </div>
         </div>
-        <div
-          style={{
-            background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05))',
-            borderRadius: 12,
-            padding: 16,
-            textAlign: 'center',
-            border: '1px solid rgba(245,158,11,0.2)',
-          }}
-        >
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#f59e0b' }}>ANVISA</div>
-          <div style={{ fontSize: 12, opacity: 0.7 }}>Fonte: CMED 2025</div>
-        </div>
-      </div>
+      )}
 
-      {/* Info banner */}
-      <div
-        style={{
-          background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(59,130,246,0.1))',
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 24,
-          border: '1px solid rgba(16,185,129,0.2)',
-          fontSize: 14,
-        }}
-      >
-        <strong>Você sabia?</strong> Segundo o Conselho Federal de Farmácia (CFF), medicamentos
-        genéricos são em média <strong style={{ color: '#10b981' }}>66,83% mais baratos</strong> que
-        os de referência. A ANVISA garante que genéricos têm a mesma eficácia, segurança e qualidade
-        do medicamento de marca.
-      </div>
-
-      {/* Busca e filtros */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+      {/* Search */}
+      <div style={{ marginBottom: 12 }}>
         <input
           type="text"
-          placeholder="Buscar por nome, princípio ativo ou indicação..."
           value={busca}
-          onChange={(e) => setBusca(e.target.value)}
+          onChange={(e) => handleBuscaChange(e.target.value)}
+          placeholder="Buscar por substância, marca, laboratório ou classe terapêutica..."
           style={{
-            flex: 1,
-            minWidth: 250,
-            padding: '12px 16px',
-            borderRadius: 10,
+            width: '100%', padding: '12px 16px', borderRadius: 10,
             border: '1px solid rgba(255,255,255,0.15)',
-            background: 'rgba(255,255,255,0.05)',
-            color: 'inherit',
-            fontSize: 14,
-            outline: 'none',
+            background: 'rgba(255,255,255,0.05)', color: 'inherit',
+            fontSize: 15, outline: 'none', boxSizing: 'border-box'
           }}
         />
+      </div>
+
+      {/* Filters */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
         <select
           value={categoriaFiltro}
-          onChange={(e) => setCategoriaFiltro(e.target.value)}
+          onChange={(e) => { setCategoriaFiltro(e.target.value); setPage(1); }}
           style={{
-            padding: '12px 16px',
-            borderRadius: 10,
+            padding: '8px 12px', borderRadius: 8,
             border: '1px solid rgba(255,255,255,0.15)',
-            background: 'rgba(255,255,255,0.05)',
-            color: 'inherit',
-            fontSize: 14,
-            cursor: 'pointer',
+            background: '#1a1a2e', color: 'inherit', fontSize: 13,
+            maxWidth: 280
           }}
         >
-          {CATEGORIAS.map((c) => (
-            <option key={c} value={c} style={{ background: '#1a1a2e' }}>
-              {c}
-            </option>
+          <option value="Todas">Todas as Classes</option>
+          {categories.map((c: string) => (
+            <option key={c} value={c}>{c}</option>
           ))}
+        </select>
+
+        <select
+          value={tarjaFiltro}
+          onChange={(e) => { setTarjaFiltro(e.target.value); setPage(1); }}
+          style={{
+            padding: '8px 12px', borderRadius: 8,
+            border: '1px solid rgba(255,255,255,0.15)',
+            background: '#1a1a2e', color: 'inherit', fontSize: 13
+          }}
+        >
+          {TARJAS.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+
+        <select
+          value={formaFiltro}
+          onChange={(e) => { setFormaFiltro(e.target.value); setPage(1); }}
+          style={{
+            padding: '8px 12px', borderRadius: 8,
+            border: '1px solid rgba(255,255,255,0.15)',
+            background: '#1a1a2e', color: 'inherit', fontSize: 13
+          }}
+        >
+          {FORMAS.map(f => <option key={f} value={f}>{f}</option>)}
         </select>
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {(['economia', 'nome', 'preco'] as const).map((o) => (
+      {/* Sort & Filter toggles */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {([
+            { key: 'savings' as const, label: '% Economia', dir: 'desc' as const },
+            { key: 'name' as const, label: 'A-Z', dir: 'asc' as const },
+            { key: 'price' as const, label: 'Menor Preço', dir: 'asc' as const },
+          ]).map(o => (
             <button
-              key={o}
-              onClick={() => setOrdenacao(o)}
+              key={o.key}
+              onClick={() => { setOrdenacao(o.key); setOrdemDir(o.dir); setPage(1); }}
               style={{
-                padding: '6px 14px',
-                borderRadius: 8,
-                border: ordenacao === o ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.15)',
-                background: ordenacao === o ? 'rgba(16,185,129,0.2)' : 'transparent',
-                color: ordenacao === o ? '#10b981' : 'inherit',
-                cursor: 'pointer',
-                fontSize: 13,
+                padding: '6px 12px', borderRadius: 8, fontSize: 12,
+                border: ordenacao === o.key ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.12)',
+                background: ordenacao === o.key ? 'rgba(16,185,129,0.2)' : 'transparent',
+                color: ordenacao === o.key ? '#10b981' : 'inherit', cursor: 'pointer'
               }}
             >
-              {o === 'economia' ? '% Economia' : o === 'nome' ? 'A-Z' : 'Menor Preço'}
+              {o.label}
             </button>
           ))}
         </div>
-        <label
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            fontSize: 13,
-            cursor: 'pointer',
-            opacity: 0.8,
-          }}
-        >
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer', opacity: 0.8 }}>
           <input
             type="checkbox"
-            checked={mostrarSoVendaLivre}
-            onChange={(e) => setMostrarSoVendaLivre(e.target.checked)}
+            checked={soComGenerico}
+            onChange={(e) => { setSoComGenerico(e.target.checked); setPage(1); }}
             style={{ accentColor: '#10b981' }}
           />
-          Somente venda livre (sem receita)
+          Somente com genéricos
         </label>
-        <span style={{ fontSize: 13, opacity: 0.5, marginLeft: 'auto' }}>
-          {medicamentosFiltrados.length} resultado(s)
+
+        <span style={{ fontSize: 12, opacity: 0.4, marginLeft: 'auto' }}>
+          {pagination ? `${pagination.total.toLocaleString()} resultado(s)` : '...'}
         </span>
       </div>
 
-      {/* Lista de medicamentos */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {medicamentosFiltrados.map((m) => {
-          const menorG = Math.min(...m.genericos.map((g) => g.preco));
-          const economia = ((m.referencia.preco - menorG) / m.referencia.preco) * 100;
-          const economiaValor = m.referencia.preco - menorG;
+      {/* Loading */}
+      {searchQuery.isLoading && (
+        <div style={{ textAlign: 'center', padding: 40, opacity: 0.5 }}>
+          <div style={{ fontSize: 24, marginBottom: 8 }}>Carregando...</div>
+        </div>
+      )}
+
+      {/* Medicine List */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {medicines.map((m: any) => {
+          const refPrice = m.referencia?.preco;
+          const cheapestGeneric = m.genericos?.find((g: any) => g.preco !== null);
+          const economia = refPrice && cheapestGeneric?.preco
+            ? ((refPrice - cheapestGeneric.preco) / refPrice * 100)
+            : 0;
+          const economiaValor = refPrice && cheapestGeneric?.preco
+            ? refPrice - cheapestGeneric.preco
+            : 0;
 
           return (
             <div
@@ -1711,118 +451,184 @@ export default function MedicineComparator() {
               onClick={() => setSelecionado(m)}
               style={{
                 background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 12,
-                padding: '16px 20px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                display: 'grid',
-                gridTemplateColumns: '1fr auto',
-                gap: 16,
-                alignItems: 'center',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 12, padding: '14px 18px', cursor: 'pointer',
+                transition: 'all 0.15s',
+                display: 'grid', gridTemplateColumns: '1fr auto', gap: 12, alignItems: 'center'
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(16,185,129,0.4)';
-                (e.currentTarget as HTMLDivElement).style.background = 'rgba(16,185,129,0.05)';
+                (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(16,185,129,0.3)';
+                (e.currentTarget as HTMLDivElement).style.background = 'rgba(16,185,129,0.04)';
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.1)';
+                (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.08)';
                 (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.03)';
               }}
             >
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 18, fontWeight: 700 }}>{m.principioAtivo}</span>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      padding: '2px 8px',
-                      borderRadius: 4,
-                      background: 'rgba(59,130,246,0.15)',
-                      color: '#3b82f6',
-                    }}
-                  >
-                    {m.referencia.nome}
+                  <span style={{ fontSize: 16, fontWeight: 700 }}>{m.substancia}</span>
+                  <span style={{
+                    fontSize: 10, padding: '2px 8px', borderRadius: 4,
+                    background: 'rgba(59,130,246,0.15)', color: '#3b82f6'
+                  }}>
+                    {m.referencia?.nome}
                   </span>
-                  {m.retencaoReceita === 'Venda livre' && (
-                    <span
-                      style={{
-                        fontSize: 10,
-                        padding: '2px 6px',
-                        borderRadius: 4,
-                        background: 'rgba(16,185,129,0.15)',
-                        color: '#10b981',
-                      }}
-                    >
+                  {m.tarja?.includes('Venda Livre') && (
+                    <span style={{
+                      fontSize: 9, padding: '2px 6px', borderRadius: 4,
+                      background: 'rgba(16,185,129,0.15)', color: '#10b981'
+                    }}>
                       SEM RECEITA
                     </span>
                   )}
-                </div>
-                <div style={{ fontSize: 13, opacity: 0.6, marginTop: 4 }}>
-                  {m.indicacao} — {m.apresentacao}
-                </div>
-                <div style={{ display: 'flex', gap: 16, marginTop: 8, fontSize: 13 }}>
-                  <span>
-                    Referência:{' '}
-                    <span style={{ textDecoration: 'line-through', color: '#ef4444' }}>
-                      {formatBRL(m.referencia.preco)}
+                  {m.genericos?.length > 0 && (
+                    <span style={{
+                      fontSize: 9, padding: '2px 6px', borderRadius: 4,
+                      background: 'rgba(168,85,247,0.15)', color: '#a855f7'
+                    }}>
+                      {m.genericos.length} genérico{m.genericos.length > 1 ? 's' : ''}
                     </span>
-                  </span>
+                  )}
+                  {m.similares?.length > 0 && (
+                    <span style={{
+                      fontSize: 9, padding: '2px 6px', borderRadius: 4,
+                      background: 'rgba(245,158,11,0.15)', color: '#f59e0b'
+                    }}>
+                      {m.similares.length} similar{m.similares.length > 1 ? 'es' : ''}
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: 12, opacity: 0.5, marginTop: 3 }}>
+                  {m.classeNome || m.classeFull} — {m.formaFarmaceutica}
+                </div>
+                <div style={{ display: 'flex', gap: 14, marginTop: 6, fontSize: 12 }}>
                   <span>
-                    Genérico:{' '}
-                    <strong style={{ color: '#10b981' }}>{formatBRL(menorG)}</strong>
+                    Ref: <span style={{ color: refPrice ? '#3b82f6' : undefined }}>{formatBRL(refPrice)}</span>
                   </span>
-                  <span style={{ opacity: 0.6 }}>{m.genericos.length} opções</span>
+                  {cheapestGeneric && (
+                    <span>
+                      Genérico: <strong style={{ color: '#10b981' }}>{formatBRL(cheapestGeneric.preco)}</strong>
+                    </span>
+                  )}
+                  <span style={{ opacity: 0.4 }}>{m.totalApresentacoes} apresentações</span>
                 </div>
               </div>
 
-              <div style={{ textAlign: 'center', minWidth: 100 }}>
-                <div
-                  style={{
-                    fontSize: 28,
-                    fontWeight: 800,
-                    color: economia > 60 ? '#10b981' : economia > 40 ? '#3b82f6' : '#f59e0b',
-                    lineHeight: 1,
-                  }}
-                >
-                  {economia.toFixed(0)}%
+              {economia > 0 ? (
+                <div style={{ textAlign: 'center', minWidth: 80 }}>
+                  <div style={{
+                    fontSize: 24, fontWeight: 800, lineHeight: 1,
+                    color: economia > 60 ? '#10b981' : economia > 30 ? '#3b82f6' : '#f59e0b'
+                  }}>
+                    {economia.toFixed(0)}%
+                  </div>
+                  <div style={{ fontSize: 10, opacity: 0.5 }}>economia</div>
+                  <div style={{ fontSize: 11, color: '#10b981', fontWeight: 600, marginTop: 2 }}>
+                    -{formatBRL(economiaValor)}
+                  </div>
                 </div>
-                <div style={{ fontSize: 11, opacity: 0.6 }}>economia</div>
-                <div style={{ fontSize: 12, color: '#10b981', fontWeight: 600, marginTop: 2 }}>
-                  -{formatBRL(economiaValor)}
+              ) : (
+                <div style={{ textAlign: 'center', minWidth: 80, opacity: 0.3, fontSize: 12 }}>
+                  {m.genericos?.length === 0 ? 'Sem genérico' : '—'}
                 </div>
-              </div>
+              )}
             </div>
           );
         })}
       </div>
 
-      {medicamentosFiltrados.length === 0 && (
+      {/* Empty state */}
+      {!searchQuery.isLoading && medicines.length === 0 && (
         <div style={{ textAlign: 'center', padding: 40, opacity: 0.5 }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>🔍</div>
+          <div style={{ fontSize: 32, marginBottom: 8 }}>🔍</div>
           <p>Nenhum medicamento encontrado com os filtros selecionados.</p>
           <p style={{ fontSize: 13 }}>Tente buscar por outro nome ou altere os filtros.</p>
         </div>
       )}
 
+      {/* Pagination */}
+      {pagination && pagination.totalPages > 1 && (
+        <div style={{
+          display: 'flex', justifyContent: 'center', alignItems: 'center',
+          gap: 8, marginTop: 24, flexWrap: 'wrap'
+        }}>
+          <button
+            onClick={() => setPage(Math.max(1, page - 1))}
+            disabled={page <= 1}
+            style={{
+              padding: '8px 16px', borderRadius: 8, cursor: page <= 1 ? 'default' : 'pointer',
+              border: '1px solid rgba(255,255,255,0.15)',
+              background: 'rgba(255,255,255,0.05)', color: 'inherit',
+              opacity: page <= 1 ? 0.3 : 1, fontSize: 13
+            }}
+          >
+            ← Anterior
+          </button>
+
+          <div style={{ display: 'flex', gap: 4 }}>
+            {Array.from({ length: Math.min(7, pagination.totalPages) }, (_, i) => {
+              let pageNum: number;
+              if (pagination.totalPages <= 7) {
+                pageNum = i + 1;
+              } else if (page <= 4) {
+                pageNum = i + 1;
+              } else if (page >= pagination.totalPages - 3) {
+                pageNum = pagination.totalPages - 6 + i;
+              } else {
+                pageNum = page - 3 + i;
+              }
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  style={{
+                    width: 36, height: 36, borderRadius: 8,
+                    border: pageNum === page ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.1)',
+                    background: pageNum === page ? 'rgba(16,185,129,0.2)' : 'transparent',
+                    color: pageNum === page ? '#10b981' : 'inherit',
+                    cursor: 'pointer', fontSize: 13, fontWeight: pageNum === page ? 700 : 400
+                  }}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={() => setPage(Math.min(pagination.totalPages, page + 1))}
+            disabled={page >= pagination.totalPages}
+            style={{
+              padding: '8px 16px', borderRadius: 8,
+              cursor: page >= pagination.totalPages ? 'default' : 'pointer',
+              border: '1px solid rgba(255,255,255,0.15)',
+              background: 'rgba(255,255,255,0.05)', color: 'inherit',
+              opacity: page >= pagination.totalPages ? 0.3 : 1, fontSize: 13
+            }}
+          >
+            Próxima →
+          </button>
+
+          <span style={{ fontSize: 12, opacity: 0.4, marginLeft: 8 }}>
+            Página {page} de {pagination.totalPages}
+          </span>
+        </div>
+      )}
+
       {/* Footer disclaimer */}
-      <div
-        style={{
-          marginTop: 32,
-          padding: 16,
-          background: 'rgba(245,158,11,0.08)',
-          borderRadius: 12,
-          fontSize: 12,
-          opacity: 0.7,
-          border: '1px solid rgba(245,158,11,0.15)',
-        }}
-      >
-        <strong>Aviso legal:</strong> Este comparador é uma ferramenta informativa. Os preços são
-        valores médios de referência (PMC com ICMS 18%) baseados na tabela CMED/ANVISA e pesquisas
-        do Procon-SP (2024/2025). Preços reais podem variar conforme farmácia, região e promoções.
-        Nunca substitua um medicamento sem orientação do seu médico ou farmacêutico. Medicamentos
-        genéricos são aprovados pela ANVISA com testes de bioequivalência que garantem a mesma
-        eficácia do medicamento de referência.
+      <div style={{
+        marginTop: 28, padding: 14,
+        background: 'rgba(245,158,11,0.06)', borderRadius: 12,
+        fontSize: 11, opacity: 0.7,
+        border: '1px solid rgba(245,158,11,0.12)'
+      }}>
+        <strong>Aviso legal:</strong> Este comparador utiliza dados oficiais da tabela CMED/ANVISA
+        (Câmara de Regulação do Mercado de Medicamentos). Os preços são PMC (Preço Máximo ao Consumidor)
+        com ICMS 18% e são atualizados diariamente. Preços reais podem variar conforme farmácia, região
+        e promoções. Nunca substitua um medicamento sem orientação do seu médico ou farmacêutico.
+        Medicamentos genéricos são aprovados pela ANVISA com testes de bioequivalência que garantem
+        a mesma eficácia do medicamento de referência.
       </div>
     </div>
   );

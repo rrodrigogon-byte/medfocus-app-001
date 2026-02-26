@@ -3206,6 +3206,62 @@ AVISO: Sugestão de apoio — prescrição final é responsabilidade do médico.
       }
     }),
   }),
+
+  // ─── CMED Medicine Database API ────────────────────────────────────
+  cmed: router({
+    stats: publicProcedure.query(async () => {
+      const { getStats } = await import('./services/cmedService');
+      return getStats();
+    }),
+
+    categories: publicProcedure.query(async () => {
+      const { getCMEDCategories } = await import('./services/cmedService');
+      return getCMEDCategories();
+    }),
+
+    search: publicProcedure
+      .input(z.object({
+        query: z.string().optional(),
+        category: z.string().optional(),
+        tarja: z.string().optional(),
+        forma: z.string().optional(),
+        onlyWithGenerics: z.boolean().optional(),
+        page: z.number().optional(),
+        pageSize: z.number().optional(),
+        sortBy: z.enum(['name', 'price', 'savings']).optional(),
+        sortOrder: z.enum(['asc', 'desc']).optional(),
+      }))
+      .query(async ({ input }) => {
+        const { searchMedicines } = await import('./services/cmedService');
+        return searchMedicines(input);
+      }),
+
+    byId: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const { getMedicineById } = await import('./services/cmedService');
+        return getMedicineById(input.id);
+      }),
+
+    bySubstance: publicProcedure
+      .input(z.object({ substance: z.string() }))
+      .query(async ({ input }) => {
+        const { getMedicineBySubstance } = await import('./services/cmedService');
+        return getMedicineBySubstance(input.substance);
+      }),
+
+    topSavings: publicProcedure
+      .input(z.object({ limit: z.number().optional() }))
+      .query(async ({ input }) => {
+        const { getTopSavings } = await import('./services/cmedService');
+        return getTopSavings(input.limit || 20);
+      }),
+
+    refresh: adminProcedure.mutation(async () => {
+      const { refreshCMEDData } = await import('./services/cmedService');
+      return await refreshCMEDData();
+    }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
