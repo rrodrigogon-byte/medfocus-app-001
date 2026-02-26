@@ -3142,17 +3142,21 @@ AVISO: Sugestão de apoio — prescrição final é responsabilidade do médico.
         if (input.role !== undefined) { updates.push('role = ?'); values.push(input.role); }
         if (input.validityDays !== undefined) {
           if (input.validityDays === 0) {
-            updates.push('trialActive = 0', 'trialEndDate = NULL');
+            updates.push('trialActive = ?'); values.push(0);
+            updates.push('trialEndDate = ?'); values.push(null);
           } else {
             const trialEnd = new Date(Date.now() + input.validityDays * 24 * 60 * 60 * 1000);
-            updates.push('trialActive = 1', 'trialStartDate = NOW()', 'trialEndDate = ?');
-            values.push(trialEnd);
+            updates.push('trialActive = ?'); values.push(1);
+            updates.push('trialStartDate = NOW()');
+            updates.push('trialEndDate = ?'); values.push(trialEnd);
           }
         }
         updates.push('updatedAt = NOW()');
         if (updates.length > 1) {
           values.push(input.userId);
-          await dbInstance.execute(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
+          const query = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
+          console.log(`[Admin] Executing update query: ${query}`, 'params count:', values.length);
+          await dbInstance.execute(query, values);
           console.log(`[Admin] User updated: id=${input.userId}`);
         }
         return { success: true };
