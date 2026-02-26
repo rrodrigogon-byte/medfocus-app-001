@@ -242,6 +242,53 @@ export default function MedicineComparator() {
           </div>
         )}
 
+        {/* Where to Buy — Inline pharmacy info */}
+        <div style={{
+          background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)',
+          borderRadius: 12, padding: 20, marginBottom: 16, marginTop: 16
+        }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: '#8b5cf6' }}>
+            Onde Comprar
+          </h3>
+          <p style={{ fontSize: 13, opacity: 0.7, marginBottom: 12 }}>
+            Pesquise o preço real nas principais farmácias do Brasil:
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
+            {[
+              { nome: 'Drogasil', cor: '#e53e3e', tel: '0800 770 0012', url: `https://www.drogasil.com.br/search?w=${encodeURIComponent(m.substancia)}` },
+              { nome: 'Droga Raia', cor: '#3182ce', tel: '0800 770 0012', url: `https://www.drogaraia.com.br/search?w=${encodeURIComponent(m.substancia)}` },
+              { nome: 'Pague Menos', cor: '#38a169', tel: '0800 275 1313', url: `https://www.paguemenos.com.br/busca?q=${encodeURIComponent(m.substancia)}` },
+              { nome: 'Ultrafarma', cor: '#dd6b20', tel: '0800 771 1137', url: `https://www.ultrafarma.com.br/busca?q=${encodeURIComponent(m.substancia)}` },
+              { nome: 'Farmácia Popular', cor: '#319795', tel: '136 (Disque Saúde)', url: 'https://www.gov.br/saude/pt-br/composicao/sctie/daf/programa-farmacia-popular' },
+              { nome: 'Consulta Remédios', cor: '#805ad5', tel: '', url: `https://consultaremedios.com.br/busca?q=${encodeURIComponent(m.substancia)}` },
+            ].map((f, i) => (
+              <div key={i} style={{
+                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 8, padding: 12,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: f.cor, flexShrink: 0 }} />
+                  <span style={{ fontWeight: 600, fontSize: 13 }}>{f.nome}</span>
+                </div>
+                {f.tel && (
+                  <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 4 }}>
+                    📞 {f.tel}
+                  </div>
+                )}
+                <a href={f.url} target="_blank" rel="noopener noreferrer" style={{
+                  display: 'inline-block', fontSize: 11, color: '#8b5cf6',
+                  textDecoration: 'none', marginTop: 2,
+                }}>
+                  Buscar preço →
+                </a>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, opacity: 0.5, marginTop: 12 }}>
+            📱 <strong>WhatsApp Farmácia Popular:</strong> (61) 99425-0000 | 📞 <strong>Disque Saúde:</strong> 136
+          </div>
+        </div>
+
         {/* Disclaimer */}
         <div style={{
           background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.15)',

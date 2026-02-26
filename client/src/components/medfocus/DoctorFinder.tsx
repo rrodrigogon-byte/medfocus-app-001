@@ -8,6 +8,7 @@ import React, { useState, useMemo } from 'react';
 interface Doctor {
   id: string; nome: string; crm: string; especialidade: string;
   cidade: string; estado: string; telefone: string;
+  whatsapp?: string; endereco?: string;
   convenios: string[]; telemedicina: boolean; avaliacao: number;
   precoConsulta?: number;
 }
@@ -15,11 +16,11 @@ interface Doctor {
 // Base local completa para SP, MT, RJ, MG, GO, PA
 const DOCTORS_DB: Doctor[] = [
   // === SÃO PAULO ===
-  { id:'sp1', nome:'Dr. Carlos Alberto Silva', crm:'CRM/SP 123456', especialidade:'Cardiologia', cidade:'São Paulo', estado:'SP', telefone:'(11) 3456-7890', convenios:['Unimed','SulAmérica','Bradesco Saúde'], telemedicina:true, avaliacao:4.8, precoConsulta:350 },
-  { id:'sp2', nome:'Dra. Maria Fernanda Costa', crm:'CRM/SP 234567', especialidade:'Dermatologia', cidade:'São Paulo', estado:'SP', telefone:'(11) 2345-6789', convenios:['Amil','Unimed','Porto Seguro'], telemedicina:true, avaliacao:4.9, precoConsulta:400 },
-  { id:'sp3', nome:'Dr. Ricardo Moreira', crm:'CRM/SP 345678', especialidade:'Ortopedia', cidade:'São Paulo', estado:'SP', telefone:'(11) 3567-8901', convenios:['Unimed','Bradesco Saúde','Amil'], telemedicina:false, avaliacao:4.7, precoConsulta:380 },
-  { id:'sp4', nome:'Dra. Luciana Pereira', crm:'CRM/SP 456789', especialidade:'Ginecologia', cidade:'São Paulo', estado:'SP', telefone:'(11) 4567-8901', convenios:['SulAmérica','Amil'], telemedicina:true, avaliacao:4.8, precoConsulta:320 },
-  { id:'sp5', nome:'Dr. André Nascimento', crm:'CRM/SP 567890', especialidade:'Neurologia', cidade:'São Paulo', estado:'SP', telefone:'(11) 5678-9012', convenios:['Unimed','Bradesco Saúde'], telemedicina:true, avaliacao:4.6, precoConsulta:450 },
+  { id:'sp1', nome:'Dr. Carlos Alberto Silva', crm:'CRM/SP 123456', especialidade:'Cardiologia', cidade:'São Paulo', estado:'SP', telefone:'(11) 3456-7890', whatsapp:'(11) 99456-7890', endereco:'Av. Paulista, 1578 - Sala 1204, Bela Vista, São Paulo - SP', convenios:['Unimed','SulAmérica','Bradesco Saúde'], telemedicina:true, avaliacao:4.8, precoConsulta:350 },
+  { id:'sp2', nome:'Dra. Maria Fernanda Costa', crm:'CRM/SP 234567', especialidade:'Dermatologia', cidade:'São Paulo', estado:'SP', telefone:'(11) 2345-6789', whatsapp:'(11) 98345-6789', endereco:'Rua Oscar Freire, 379 - Sala 502, Jardins, São Paulo - SP', convenios:['Amil','Unimed','Porto Seguro'], telemedicina:true, avaliacao:4.9, precoConsulta:400 },
+  { id:'sp3', nome:'Dr. Ricardo Moreira', crm:'CRM/SP 345678', especialidade:'Ortopedia', cidade:'São Paulo', estado:'SP', telefone:'(11) 3567-8901', whatsapp:'(11) 97567-8901', endereco:'Rua Itapeva, 490 - Sala 801, Bela Vista, São Paulo - SP', convenios:['Unimed','Bradesco Saúde','Amil'], telemedicina:false, avaliacao:4.7, precoConsulta:380 },
+  { id:'sp4', nome:'Dra. Luciana Pereira', crm:'CRM/SP 456789', especialidade:'Ginecologia', cidade:'São Paulo', estado:'SP', telefone:'(11) 4567-8901', whatsapp:'(11) 96567-8901', endereco:'Rua Haddock Lobo, 585 - Sala 301, Cerqueira César, São Paulo - SP', convenios:['SulAmérica','Amil'], telemedicina:true, avaliacao:4.8, precoConsulta:320 },
+  { id:'sp5', nome:'Dr. André Nascimento', crm:'CRM/SP 567890', especialidade:'Neurologia', cidade:'São Paulo', estado:'SP', telefone:'(11) 5678-9012', whatsapp:'(11) 95678-9012', endereco:'Rua Cubatão, 726 - Sala 1102, Vila Mariana, São Paulo - SP', convenios:['Unimed','Bradesco Saúde'], telemedicina:true, avaliacao:4.6, precoConsulta:450 },
   { id:'sp6', nome:'Dra. Beatriz Almeida', crm:'CRM/SP 678901', especialidade:'Pediatria', cidade:'Campinas', estado:'SP', telefone:'(19) 3456-7890', convenios:['Unimed','SulAmérica'], telemedicina:true, avaliacao:4.9, precoConsulta:280 },
   { id:'sp7', nome:'Dr. Paulo Henrique Dias', crm:'CRM/SP 789012', especialidade:'Endocrinologia', cidade:'Campinas', estado:'SP', telefone:'(19) 4567-8901', convenios:['Amil','Unimed'], telemedicina:false, avaliacao:4.7, precoConsulta:350 },
   { id:'sp8', nome:'Dra. Fernanda Souza', crm:'CRM/SP 890123', especialidade:'Psiquiatria', cidade:'Ribeirão Preto', estado:'SP', telefone:'(16) 3456-7890', convenios:['Unimed','Bradesco Saúde'], telemedicina:true, avaliacao:4.8, precoConsulta:400 },
@@ -44,12 +45,12 @@ const DOCTORS_DB: Doctor[] = [
   { id:'mg5', nome:'Dra. Gabriela Pinto', crm:'CRM/MG 890123', especialidade:'Ginecologia', cidade:'Juiz de Fora', estado:'MG', telefone:'(32) 3456-7890', convenios:['Unimed','Bradesco Saúde'], telemedicina:true, avaliacao:4.8, precoConsulta:280 },
   { id:'mg6', nome:'Dr. Henrique Moura', crm:'CRM/MG 901234', especialidade:'Clínica Geral', cidade:'Contagem', estado:'MG', telefone:'(31) 6789-0123', convenios:['Hapvida','Unimed'], telemedicina:true, avaliacao:4.5, precoConsulta:180 },
   // === MATO GROSSO ===
-  { id:'mt1', nome:'Dr. Marcelo Ribeiro', crm:'CRM/MT 123456', especialidade:'Cardiologia', cidade:'Cuiabá', estado:'MT', telefone:'(65) 3456-7890', convenios:['Unimed','Hapvida'], telemedicina:true, avaliacao:4.7, precoConsulta:300 },
-  { id:'mt2', nome:'Dra. Aline Barros', crm:'CRM/MT 234567', especialidade:'Dermatologia', cidade:'Cuiabá', estado:'MT', telefone:'(65) 4567-8901', convenios:['Unimed'], telemedicina:false, avaliacao:4.6, precoConsulta:280 },
-  { id:'mt3', nome:'Dr. Diego Ferraz', crm:'CRM/MT 345678', especialidade:'Ortopedia', cidade:'Rondonópolis', estado:'MT', telefone:'(66) 3456-7890', convenios:['Unimed','Hapvida'], telemedicina:false, avaliacao:4.5, precoConsulta:250 },
-  { id:'mt4', nome:'Dra. Vanessa Lopes', crm:'CRM/MT 456789', especialidade:'Pediatria', cidade:'Cuiabá', estado:'MT', telefone:'(65) 5678-9012', convenios:['Unimed','SulAmérica'], telemedicina:true, avaliacao:4.8, precoConsulta:250 },
-  { id:'mt5', nome:'Dr. Rafael Cunha', crm:'CRM/MT 567890', especialidade:'Clínica Geral', cidade:'Sinop', estado:'MT', telefone:'(66) 4567-8901', convenios:['Unimed'], telemedicina:true, avaliacao:4.4, precoConsulta:180 },
-  { id:'mt6', nome:'Dra. Juliana Matos', crm:'CRM/MT 678901', especialidade:'Ginecologia', cidade:'Várzea Grande', estado:'MT', telefone:'(65) 6789-0123', convenios:['Hapvida','Unimed'], telemedicina:false, avaliacao:4.6, precoConsulta:250 },
+  { id:'mt1', nome:'Dr. Marcelo Ribeiro', crm:'CRM/MT 123456', especialidade:'Cardiologia', cidade:'Cuiabá', estado:'MT', telefone:'(65) 3456-7890', whatsapp:'(65) 99456-7890', endereco:'Av. Historiador Rubens de Mendonça, 1500 - Sala 405, Bosque da Saúde, Cuiabá - MT', convenios:['Unimed','Hapvida'], telemedicina:true, avaliacao:4.7, precoConsulta:300 },
+  { id:'mt2', nome:'Dra. Aline Barros', crm:'CRM/MT 234567', especialidade:'Dermatologia', cidade:'Cuiabá', estado:'MT', telefone:'(65) 4567-8901', whatsapp:'(65) 98567-8901', endereco:'Rua Barão de Melgaço, 2754 - Centro Sul, Cuiabá - MT', convenios:['Unimed'], telemedicina:false, avaliacao:4.6, precoConsulta:280 },
+  { id:'mt3', nome:'Dr. Diego Ferraz', crm:'CRM/MT 345678', especialidade:'Ortopedia', cidade:'Rondonópolis', estado:'MT', telefone:'(66) 3456-7890', whatsapp:'(66) 99456-7890', endereco:'Av. Lions Internacional, 1200 - Sala 12, Vila Aurora, Rondonópolis - MT', convenios:['Unimed','Hapvida'], telemedicina:false, avaliacao:4.5, precoConsulta:250 },
+  { id:'mt4', nome:'Dra. Vanessa Lopes', crm:'CRM/MT 456789', especialidade:'Pediatria', cidade:'Cuiabá', estado:'MT', telefone:'(65) 5678-9012', whatsapp:'(65) 97678-9012', endereco:'Av. do CPA, 3456 - CPA III, Cuiabá - MT', convenios:['Unimed','SulAmérica'], telemedicina:true, avaliacao:4.8, precoConsulta:250 },
+  { id:'mt5', nome:'Dr. Rafael Cunha', crm:'CRM/MT 567890', especialidade:'Clínica Geral', cidade:'Sinop', estado:'MT', telefone:'(66) 4567-8901', whatsapp:'(66) 98567-8901', endereco:'Av. das Itaúbas, 3890 - Setor Comercial, Sinop - MT', convenios:['Unimed'], telemedicina:true, avaliacao:4.4, precoConsulta:180 },
+  { id:'mt6', nome:'Dra. Juliana Matos', crm:'CRM/MT 678901', especialidade:'Ginecologia', cidade:'Várzea Grande', estado:'MT', telefone:'(65) 6789-0123', whatsapp:'(65) 96789-0123', endereco:'Av. Júlio Campos, 1890 - Centro, Várzea Grande - MT', convenios:['Hapvida','Unimed'], telemedicina:false, avaliacao:4.6, precoConsulta:250 },
   // === GOIÁS ===
   { id:'go1', nome:'Dr. Lucas Barbosa', crm:'CRM/GO 112233', especialidade:'Urologia', cidade:'Goiânia', estado:'GO', telefone:'(62) 3456-7890', convenios:['Unimed','Hapvida'], telemedicina:false, avaliacao:4.6, precoConsulta:300 },
   { id:'go2', nome:'Dra. Patrícia Vieira', crm:'CRM/GO 223344', especialidade:'Cardiologia', cidade:'Goiânia', estado:'GO', telefone:'(62) 4567-8901', convenios:['Unimed','Bradesco Saúde'], telemedicina:true, avaliacao:4.7, precoConsulta:320 },
@@ -104,6 +105,7 @@ export default function DoctorFinder() {
   const [tele, setTele] = useState(false);
   const [tab, setTab] = useState<'buscar' | 'precos' | 'contribuir'>('buscar');
   const [showCRM, setShowCRM] = useState(false);
+  const [expandedDoctor, setExpandedDoctor] = useState<string | null>(null);
   const [crmInput, setCrmInput] = useState('');
   const [crmEstado, setCrmEstado] = useState('SP');
 
@@ -246,8 +248,13 @@ export default function DoctorFinder() {
 
           {/* Results */}
           <div className="space-y-3">
-            {filtered.map(d => (
-              <div key={d.id} className="bg-gray-800/60 border border-gray-700/50 rounded-xl p-4 hover:border-emerald-500/30 transition-all">
+            {filtered.map(d => {
+              const isExpanded = expandedDoctor === d.id;
+              const phoneDigits = d.telefone.replace(/\D/g, '');
+              const whatsDigits = (d.whatsapp || d.telefone).replace(/\D/g, '');
+              return (
+              <div key={d.id} className={`bg-gray-800/60 border rounded-xl p-4 transition-all cursor-pointer ${isExpanded ? 'border-emerald-500/60' : 'border-gray-700/50 hover:border-emerald-500/30'}`}
+                onClick={() => setExpandedDoctor(isExpanded ? null : d.id)}>
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <h3 className="font-semibold text-white">{d.nome}</h3>
@@ -256,24 +263,63 @@ export default function DoctorFinder() {
                   <div className="flex items-center gap-2">
                     <span className="text-yellow-400 text-xs">★</span>
                     <span className="text-sm font-medium text-white">{d.avaliacao}</span>
+                    {d.precoConsulta && (
+                      <span className="text-sm font-bold text-amber-400 ml-2">R$ {d.precoConsulta}</span>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-4 text-sm mb-2">
+                <div className="flex items-center gap-4 text-sm mb-2 flex-wrap">
                   <span className="text-emerald-400 font-medium">{d.especialidade}</span>
                   <span className="text-gray-400">📍 {d.cidade}, {d.estado}</span>
-                  <span className="text-gray-400">📞 {d.telefone}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-wrap gap-1">
-                    {d.convenios.map(c => <span key={c} className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[10px]">{c}</span>)}
-                    {d.telemedicina && <span className="px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 text-[10px]">📹 Telemedicina</span>}
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {d.convenios.map(c => <span key={c} className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[10px]">{c}</span>)}
+                  {d.telemedicina && <span className="px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 text-[10px]">📹 Telemedicina</span>}
+                </div>
+
+                {/* Expanded contact details */}
+                {isExpanded && (
+                  <div className="mt-3 pt-3 border-t border-gray-700/50 space-y-2" onClick={e => e.stopPropagation()}>
+                    <h4 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2">Contato Completo</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <div className="flex items-center gap-2 bg-gray-900/50 rounded-lg p-2">
+                        <span className="text-lg">📞</span>
+                        <div>
+                          <p className="text-[10px] text-gray-500 uppercase">Telefone</p>
+                          <a href={`tel:${phoneDigits}`} className="text-sm text-white hover:text-emerald-400 transition-colors">{d.telefone}</a>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 bg-gray-900/50 rounded-lg p-2">
+                        <span className="text-lg">📱</span>
+                        <div>
+                          <p className="text-[10px] text-gray-500 uppercase">WhatsApp</p>
+                          <a href={`https://wa.me/55${whatsDigits}`} target="_blank" rel="noopener noreferrer" className="text-sm text-green-400 hover:text-green-300 transition-colors">{d.whatsapp || d.telefone}</a>
+                        </div>
+                      </div>
+                      {d.endereco && (
+                        <div className="flex items-start gap-2 bg-gray-900/50 rounded-lg p-2 md:col-span-2">
+                          <span className="text-lg">📍</span>
+                          <div>
+                            <p className="text-[10px] text-gray-500 uppercase">Endereço</p>
+                            <p className="text-sm text-white">{d.endereco}</p>
+                            <a href={`https://www.google.com/maps/search/${encodeURIComponent(d.endereco)}`} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:underline mt-1 inline-block">Ver no Google Maps →</a>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      <a href={`tel:${phoneDigits}`} className="flex-1 text-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg transition-colors">Ligar</a>
+                      <a href={`https://wa.me/55${whatsDigits}`} target="_blank" rel="noopener noreferrer" className="flex-1 text-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs rounded-lg transition-colors">WhatsApp</a>
+                      <a href={`https://portal.cfm.org.br/busca-medicos/?crm=${d.crm.replace(/\D/g, '')}&uf=${d.estado}`} target="_blank" rel="noopener noreferrer" className="flex-1 text-center px-3 py-2 bg-gray-600 hover:bg-gray-500 text-white text-xs rounded-lg transition-colors">Verificar CRM</a>
+                    </div>
                   </div>
-                  {d.precoConsulta && (
-                    <span className="text-sm font-bold text-amber-400">R$ {d.precoConsulta}</span>
-                  )}
-                </div>
+                )}
+                {!isExpanded && (
+                  <p className="text-[10px] text-gray-500 mt-1">Clique para ver contato completo</p>
+                )}
               </div>
-            ))}
+              );
+            })}
             {filtered.length === 0 && (
               <div className="text-center py-12 text-gray-500">
                 <p className="text-lg">Nenhum médico encontrado.</p>

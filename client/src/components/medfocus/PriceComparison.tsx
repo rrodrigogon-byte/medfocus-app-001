@@ -13,17 +13,20 @@ interface Farmacia {
   urlBusca: (termo: string) => string;
 }
 
+// Redes nacionais: presentes em todas as capitais e cidades médias do Brasil
+const REDE_NACIONAL = '__NACIONAL__';
+
 const FARMACIAS: Farmacia[] = [
-  { id: 'drogasil', nome: 'Drogasil', cor: '#e53e3e', cidades: ['São Paulo','Rio de Janeiro','Belo Horizonte','Curitiba','Brasília','Goiânia','Cuiabá','Belém','Manaus','Salvador','Recife','Fortaleza','Porto Alegre','Campinas','Ribeirão Preto','Uberlândia','Sorocaba','Santos'], urlBusca: (t) => `https://www.drogasil.com.br/search?w=${encodeURIComponent(t)}` },
-  { id: 'drogaraia', nome: 'Droga Raia', cor: '#3182ce', cidades: ['São Paulo','Rio de Janeiro','Belo Horizonte','Curitiba','Brasília','Goiânia','Cuiabá','Campinas','Ribeirão Preto','Santos','Sorocaba','Uberlândia','Porto Alegre','Salvador'], urlBusca: (t) => `https://www.drogaraia.com.br/search?w=${encodeURIComponent(t)}` },
-  { id: 'paguemenos', nome: 'Pague Menos', cor: '#38a169', cidades: ['São Paulo','Rio de Janeiro','Belo Horizonte','Fortaleza','Recife','Salvador','Belém','Manaus','Goiânia','Cuiabá','Brasília','Curitiba','Porto Alegre','Natal','João Pessoa','Teresina','São Luís','Macapá','Palmas'], urlBusca: (t) => `https://www.paguemenos.com.br/busca?q=${encodeURIComponent(t)}` },
-  { id: 'drogariasaopaulo', nome: 'Drogaria São Paulo', cor: '#d69e2e', cidades: ['São Paulo','Campinas','Santos','Sorocaba','Ribeirão Preto','São José dos Campos','Guarulhos','Osasco','Santo André','São Bernardo'], urlBusca: (t) => `https://www.drogariasaopaulo.com.br/search?w=${encodeURIComponent(t)}` },
-  { id: 'panvel', nome: 'Panvel', cor: '#805ad5', cidades: ['Porto Alegre','Curitiba','Florianópolis','Caxias do Sul','Pelotas','Santa Maria','Joinville','Blumenau','Londrina','Maringá'], urlBusca: (t) => `https://www.panvel.com/panvel/buscarProduto.do?termoPesquisa=${encodeURIComponent(t)}` },
-  { id: 'ultrafarma', nome: 'Ultrafarma', cor: '#dd6b20', cidades: ['São Paulo','Rio de Janeiro','Belo Horizonte','Curitiba','Brasília','Goiânia','Campinas','Ribeirão Preto'], urlBusca: (t) => `https://www.ultrafarma.com.br/busca?q=${encodeURIComponent(t)}` },
-  { id: 'farmaciapopular', nome: 'Farmácia Popular', cor: '#319795', cidades: ['São Paulo','Rio de Janeiro','Belo Horizonte','Curitiba','Brasília','Goiânia','Cuiabá','Belém','Manaus','Salvador','Recife','Fortaleza','Porto Alegre','Campinas','Natal','João Pessoa','Teresina','São Luís','Macapá','Palmas','Campo Grande','Vitória','Florianópolis','Aracaju','Maceió','Boa Vista','Rio Branco','Porto Velho'], urlBusca: () => `https://www.gov.br/saude/pt-br/composicao/sctie/daf/programa-farmacia-popular` },
-  { id: 'nissei', nome: 'Nissei', cor: '#e53e3e', cidades: ['Curitiba','Londrina','Maringá','Cascavel','Ponta Grossa','Foz do Iguaçu','Guarapuava'], urlBusca: (t) => `https://www.farmaciasnissei.com.br/busca?q=${encodeURIComponent(t)}` },
-  { id: 'venancio', nome: 'Venâncio', cor: '#2b6cb0', cidades: ['Rio de Janeiro','Niterói','São Gonçalo','Duque de Caxias','Nova Iguaçu','Petrópolis'], urlBusca: (t) => `https://www.drogariavenancio.com.br/busca?q=${encodeURIComponent(t)}` },
-  { id: 'araujo', nome: 'Drogaria Araujo', cor: '#c53030', cidades: ['Belo Horizonte','Contagem','Betim','Uberlândia','Juiz de Fora','Uberaba','Montes Claros','Governador Valadares'], urlBusca: (t) => `https://www.araujo.com.br/busca?q=${encodeURIComponent(t)}` },
+  { id: 'drogasil', nome: 'Drogasil', cor: '#e53e3e', cidades: [REDE_NACIONAL], urlBusca: (t) => `https://www.drogasil.com.br/search?w=${encodeURIComponent(t)}` },
+  { id: 'drogaraia', nome: 'Droga Raia', cor: '#3182ce', cidades: [REDE_NACIONAL], urlBusca: (t) => `https://www.drogaraia.com.br/search?w=${encodeURIComponent(t)}` },
+  { id: 'paguemenos', nome: 'Pague Menos', cor: '#38a169', cidades: [REDE_NACIONAL], urlBusca: (t) => `https://www.paguemenos.com.br/busca?q=${encodeURIComponent(t)}` },
+  { id: 'drogariasaopaulo', nome: 'Drogaria São Paulo', cor: '#d69e2e', cidades: ['São Paulo','Campinas','Santos','Sorocaba','Ribeirão Preto','São José dos Campos','Guarulhos','Osasco','Santo André','São Bernardo','Jundiaí','Piracicaba','Bauru','Limeira','Franca'], urlBusca: (t) => `https://www.drogariasaopaulo.com.br/search?w=${encodeURIComponent(t)}` },
+  { id: 'panvel', nome: 'Panvel', cor: '#805ad5', cidades: ['Porto Alegre','Curitiba','Florianópolis','Caxias do Sul','Pelotas','Santa Maria','Joinville','Blumenau','Londrina','Maringá','Canoas','Chapecó','Ponta Grossa'], urlBusca: (t) => `https://www.panvel.com/panvel/buscarProduto.do?termoPesquisa=${encodeURIComponent(t)}` },
+  { id: 'ultrafarma', nome: 'Ultrafarma', cor: '#dd6b20', cidades: [REDE_NACIONAL], urlBusca: (t) => `https://www.ultrafarma.com.br/busca?q=${encodeURIComponent(t)}` },
+  { id: 'farmaciapopular', nome: 'Farmácia Popular', cor: '#319795', cidades: [REDE_NACIONAL], urlBusca: () => `https://www.gov.br/saude/pt-br/composicao/sctie/daf/programa-farmacia-popular` },
+  { id: 'nissei', nome: 'Nissei', cor: '#e53e3e', cidades: ['Curitiba','Londrina','Maringá','Cascavel','Ponta Grossa','Foz do Iguaçu','Guarapuava','Campo Mourão'], urlBusca: (t) => `https://www.farmaciasnissei.com.br/busca?q=${encodeURIComponent(t)}` },
+  { id: 'venancio', nome: 'Venâncio', cor: '#2b6cb0', cidades: ['Rio de Janeiro','Niterói','São Gonçalo','Duque de Caxias','Nova Iguaçu','Petrópolis','Campos dos Goytacazes'], urlBusca: (t) => `https://www.drogariavenancio.com.br/busca?q=${encodeURIComponent(t)}` },
+  { id: 'araujo', nome: 'Drogaria Araujo', cor: '#c53030', cidades: ['Belo Horizonte','Contagem','Betim','Uberlândia','Juiz de Fora','Uberaba','Montes Claros','Governador Valadares','Divinópolis','Sete Lagoas'], urlBusca: (t) => `https://www.araujo.com.br/busca?q=${encodeURIComponent(t)}` },
 ];
 
 const MEDICAMENTOS = [
@@ -91,7 +94,10 @@ export default function PriceComparison() {
 
   const farmaciasNaCidade = useMemo(() => {
     if (!cidade) return FARMACIAS;
-    return FARMACIAS.filter(f => f.cidades.some(c => c.toLowerCase() === cidade.toLowerCase()));
+    return FARMACIAS.filter(f => 
+      f.cidades.includes(REDE_NACIONAL) || 
+      f.cidades.some(c => c.toLowerCase() === cidade.toLowerCase())
+    );
   }, [cidade]);
 
   const toggleFarmacia = (id: string) => {

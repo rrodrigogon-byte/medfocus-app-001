@@ -70,6 +70,8 @@ import Bulario from '../components/medfocus/Bulario';
 import DoctorFinder from '../components/medfocus/DoctorFinder';
 import HealthTips from '../components/medfocus/HealthTips';
 import PriceComparison from '../components/medfocus/PriceComparison';
+import LegalProtection from '../components/medfocus/LegalProtection';
+import { LegalAcceptanceModal } from '../components/medfocus/LegalProtection';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
 import { useGamification } from '../hooks/useGamification';
@@ -118,6 +120,9 @@ export default function Home() {
   const { user: authUser, loading: authLoading, isAuthenticated, logout: oauthLogout } = useAuth();
   const [localUser, setLocalUser] = useState<User | null>(null);
   const [currentView, setCurrentView] = useState<View>('dashboard');
+  const [termsAccepted, setTermsAccepted] = useState(() => {
+    return localStorage.getItem('medfocus_terms_accepted') === 'true';
+  });
   const { theme, toggleTheme } = useTheme();
   const gamification = useGamification();
 
@@ -295,6 +300,7 @@ export default function Home() {
       case 'doctorFinder': return <DoctorFinder />;
       case 'healthTips': return <HealthTips />;
       case 'priceComparison': return <PriceComparison />;
+      case 'legalProtection': return <LegalProtection />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{
@@ -322,6 +328,12 @@ export default function Home() {
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
+      {!termsAccepted && (
+        <LegalAcceptanceModal onAccept={() => {
+          localStorage.setItem('medfocus_terms_accepted', 'true');
+          setTermsAccepted(true);
+        }} />
+      )}
       <XPToast />
       <Sidebar 
         currentView={currentView} 
@@ -384,6 +396,7 @@ export default function Home() {
                currentView === 'doctorFinder' ? 'Encontre um Médico' :
                currentView === 'healthTips' ? 'Dicas de Saúde' :
                currentView === 'priceComparison' ? 'Preços de Medicamentos' :
+               currentView === 'legalProtection' ? 'Proteção Legal da Plataforma' :
                currentView === 'medicineComparator' ? 'Comparador de Medicamentos' :
                currentView === 'adminDashboard' ? 'Painel Admin' :
                currentView === 'disciplines' ? 'Disciplinas Médicas' :

@@ -140,7 +140,8 @@ export type View =
   | 'bulario'
   | 'doctorFinder'
   | 'healthTips'
-  | 'priceComparison';
+  | 'priceComparison'
+  | 'legalProtection';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {
