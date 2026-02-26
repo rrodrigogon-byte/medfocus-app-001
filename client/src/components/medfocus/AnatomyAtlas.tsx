@@ -78,11 +78,19 @@ const SKETCHFAB_MODELS: SketchfabModelEntry[] = [
   { id: 'organs1', sketchfabId: 'fe69d7b1ed6f46a3bd0b6933b796092e', name: 'Órgãos Internos', icon: '🫁', system: 'Órgãos Internos', description: 'Pulmões, coração, fígado, estômago, pâncreas, baço, intestinos' },
   { id: 'organs2', sketchfabId: 'd1c0fc2bec0d4ec6ada34f53d68b2392', name: 'Sistema de Órgãos', icon: '🧠', system: 'Órgãos Internos', description: 'Cérebro, coração, pulmão, digestório, respiratório, excretor' },
   { id: 'organs3', sketchfabId: '035316622877438cb62de673b8f19217', name: 'Órgãos Humanos', icon: '🫘', system: 'Órgãos Internos', description: 'Coleção de órgãos humanos detalhados' },
-  { id: 'brain1', sketchfabId: '5765e6e7a5a74a0ab0a2e0e0e2e0e0e0', name: 'Cérebro Completo', icon: '🧠', system: 'Nervoso', description: 'Cérebro com lobos, sulcos e giros detalhados' },
-  { id: 'skeleton1', sketchfabId: '0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b', name: 'Esqueleto Completo', icon: '💀', system: 'Esquelético', description: 'Esqueleto humano com 206 ossos' },
-  { id: 'lungs1', sketchfabId: '1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a', name: 'Pulmões Detalhados', icon: '🫁', system: 'Respiratório', description: 'Pulmões com brônquios e alvéolos' },
-  { id: 'kidney1', sketchfabId: '2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b', name: 'Rim em Corte', icon: '💧', system: 'Urinário', description: 'Rim com néfrons e vascularização' },
-  { id: 'eye1', sketchfabId: '3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c', name: 'Olho Humano', icon: '👁️', system: 'Sensorial', description: 'Olho com todas as estruturas internas' },
+  { id: 'brain1', sketchfabId: '36870e0970f044a8957b0af3a180a7eb', name: 'Cérebro Completo', icon: '🧠', system: 'Nervoso', description: 'Cérebro com lobos, sulcos e giros detalhados — 3D4SCI' },
+  { id: 'brain2', sketchfabId: '2cf6cb1b71034fcf891bba9494bfe74b', name: 'Cérebro 3D Detalhado', icon: '🧠', system: 'Nervoso', description: 'Hemisférios cerebrais, cerebelo e tronco encefálico' },
+  { id: 'skeleton1', sketchfabId: '657a31ed9704423c8c4e752fb2506a74', name: 'Esqueleto Completo HD', icon: '💀', system: 'Esquelético', description: 'Esqueleto humano com 206 ossos — alta resolução' },
+  { id: 'skeleton2', sketchfabId: '911b9df7e7834175b69b4840ea15e054', name: 'Esqueleto (Tomografia)', icon: '🦴', system: 'Esquelético', description: 'Esqueleto segmentado de tomografia computadorizada' },
+  { id: 'lungs1', sketchfabId: 'ce09f4099a68467880f46e61eb9a3531', name: 'Pulmões Realistas', icon: '🫁', system: 'Respiratório', description: 'Pulmões humanos realistas com textura detalhada' },
+  { id: 'lungs2', sketchfabId: '50216e5e7716436c8153ad05a732fecb', name: 'Respiração Animada', icon: '🫁', system: 'Respiratório', description: 'Sistema respiratório com animação de respiração' },
+  { id: 'respiratory1', sketchfabId: '250911151757489da1cf5501b791f363', name: 'Sistema Respiratório', icon: '🫁', system: 'Respiratório', description: 'Sistema respiratório completo esculpido e texturizado' },
+  { id: 'kidney1', sketchfabId: 'a90191bfce254697b2807848695a0230', name: 'Rim Anatomia', icon: '💧', system: 'Urinário', description: 'Rim com artéria, córtex, medula, cálices e ureter' },
+  { id: 'kidney2', sketchfabId: 'fde537a7868b4f8db87450720dc7611f', name: 'Rim em Corte', icon: '💧', system: 'Urinário', description: 'Rim em corte transversal com anatomia interna' },
+  { id: 'kidney3', sketchfabId: 'e1476ceb1e3b4412af5418eee9c5ed08', name: 'Rim Humano', icon: '💧', system: 'Urinário', description: 'Modelo de rim para laboratório digital' },
+  { id: 'eye1', sketchfabId: '5f741793c4654d14aa8257eec1f1a393', name: 'Olho Humano Anatomia', icon: '👁️', system: 'Sensorial', description: 'Olho com todas as estruturas internas — Ebers' },
+  { id: 'eye2', sketchfabId: 'b68ae822b45443edb812950993ece362', name: 'Olho Realista', icon: '👁️', system: 'Sensorial', description: 'Modelo realista do olho humano com texturas PBR' },
+  { id: 'eye3', sketchfabId: '1a23ab8f624e40a9a461d984f312b609', name: 'Olho Anatomia Corte', icon: '👁️', system: 'Sensorial', description: 'Olho com corte mostrando camadas anatômicas' },
 ];
 
 // === DISSECTION SKETCHFAB MODELS (for realistic dissection layers) ===
@@ -110,17 +118,17 @@ const ANIMATION_SKETCHFAB: Record<string, { sketchfabId: string; name: string }>
 // === SYSTEM-SPECIFIC SKETCHFAB MODELS (for explore mode) ===
 const SYSTEM_SKETCHFAB: Record<string, string> = {
   cardiovascular: 'a3f0ea2030214a6bbaa97e7357eebd58',
-  respiratory: 'fe69d7b1ed6f46a3bd0b6933b796092e',
+  respiratory: 'ce09f4099a68467880f46e61eb9a3531',
   digestive: 'd1c0fc2bec0d4ec6ada34f53d68b2392',
-  nervous: '9306344c4b554268a520c72c0d988b5b',
-  skeletal: 'ef9d7351cf2541dd8d81a98852b8a0dc',
-  urinary: 'fe69d7b1ed6f46a3bd0b6933b796092e',
+  nervous: '36870e0970f044a8957b0af3a180a7eb',
+  skeletal: '657a31ed9704423c8c4e752fb2506a74',
+  urinary: 'a90191bfce254697b2807848695a0230',
   endocrine: '9306344c4b554268a520c72c0d988b5b',
   reproductive_m: '15f7ed2eefb244dc94d32b6a7d989355',
   reproductive_f: '15f7ed2eefb244dc94d32b6a7d989355',
   lymphatic: '035316622877438cb62de673b8f19217',
   integumentary: '9b0b079953b840bc9a13f524b60041e4',
-  sensory: '9306344c4b554268a520c72c0d988b5b',
+  sensory: '5f741793c4654d14aa8257eec1f1a393',
 };
 
 // === BODY SYSTEMS DATA ===
@@ -546,7 +554,7 @@ export default function AnatomyAtlas() {
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
             <span className="text-3xl">🧬</span> Atlas de Anatomia 3D
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">v8.0 — 12 sistemas, 40+ orgaos, 16 modelos SketchFab fotorrealistas, quiz SM-2 adaptativo</p>
+          <p className="text-sm text-muted-foreground mt-1">v8.1 — 12 sistemas, 40+ orgaos, 24 modelos SketchFab fotorrealistas verificados, quiz SM-2 adaptativo</p>
         </div>
         <button onClick={() => setShowReferences(!showReferences)} className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-400 text-xs hover:bg-blue-500/30 transition">
           Ref.
@@ -566,7 +574,7 @@ export default function AnatomyAtlas() {
         {([
           { id: 'explore' as const, label: 'Explorar Sistemas', desc: '12 sistemas corporais' },
           { id: 'dissection' as const, label: 'Disseccao 3D', desc: '7 camadas anatomicas realistas' },
-          { id: 'sketchfab' as const, label: 'Modelos Realistas', desc: '16 modelos fotorrealistas' },
+          { id: 'sketchfab' as const, label: 'Modelos Realistas', desc: '24 modelos fotorrealistas' },
           { id: 'animations' as const, label: 'Animacoes', desc: '6 animacoes fisiologicas' },
           { id: 'quiz' as const, label: 'Quiz SM-2', desc: '40 questoes adaptativas' },
         ] as const).map(mode => (

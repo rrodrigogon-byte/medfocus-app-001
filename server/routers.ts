@@ -3061,19 +3061,21 @@ AVISO: Sugestão de apoio — prescrição final é responsabilidade do médico.
   admin: router({
     stats: adminProcedure.query(async ({ ctx }) => {
       const { getDb } = await import('./db');
-      const dbInstance = await getDb();
-      if (!dbInstance) return { totalUsers: 0, activeSubscribers: 0, trialUsers: 0, monthlyRevenue: 0, yearlyRevenue: 0, churnRate: 0, newUsersToday: 0, newUsersWeek: 0 };
+      const { users: usersTable } = await import('../drizzle/schema');
+      const { count: countFn, sql: sqlFn, eq: eqFn, and: andFn } = await import('drizzle-orm');
+      const db = await getDb();
+      if (!db) return { totalUsers: 0, activeSubscribers: 0, trialUsers: 0, monthlyRevenue: 0, yearlyRevenue: 0, churnRate: 0, newUsersToday: 0, newUsersWeek: 0 };
       try {
-        const [totalResult] = await dbInstance.execute(`SELECT COUNT(*) as total FROM users`) as any;
-        const totalUsers = totalResult?.[0]?.total || 0;
-        const [proResult] = await dbInstance.execute(`SELECT COUNT(*) as total FROM users WHERE plan IN ('pro', 'premium')`) as any;
-        const activeSubscribers = proResult?.[0]?.total || 0;
-        const [trialResult] = await dbInstance.execute(`SELECT COUNT(*) as total FROM users WHERE trialActive = 1`) as any;
-        const trialUsers = trialResult?.[0]?.total || 0;
-        const [todayResult] = await dbInstance.execute(`SELECT COUNT(*) as total FROM users WHERE DATE(createdAt) = CURDATE()`) as any;
-        const newUsersToday = todayResult?.[0]?.total || 0;
-        const [weekResult] = await dbInstance.execute(`SELECT COUNT(*) as total FROM users WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)`) as any;
-        const newUsersWeek = weekResult?.[0]?.total || 0;
+        const [totalRow] = await db.select({ total: countFn() }).from(usersTable);
+        const totalUsers = Number(totalRow?.total || 0);
+        const [proRow] = await db.select({ total: countFn() }).from(usersTable).where(sqlFn`${usersTable.plan} IN ('pro', 'premium')`);
+        const activeSubscribers = Number(proRow?.total || 0);
+        const [trialRow] = await db.select({ total: countFn() }).from(usersTable).where(eqFn(usersTable.trialActive, true));
+        const trialUsers = Number(trialRow?.total || 0);
+        const [todayRow] = await db.select({ total: countFn() }).from(usersTable).where(sqlFn`DATE(${usersTable.createdAt}) = CURDATE()`);
+        const newUsersToday = Number(todayRow?.total || 0);
+        const [weekRow] = await db.select({ total: countFn() }).from(usersTable).where(sqlFn`${usersTable.createdAt} >= DATE_SUB(NOW(), INTERVAL 7 DAY)`);
+        const newUsersWeek = Number(weekRow?.total || 0);
         const monthlyRevenue = activeSubscribers * 29.90;
         const yearlyRevenue = monthlyRevenue * 12;
         const churnRate = totalUsers > 0 ? Math.round(((totalUsers - activeSubscribers - trialUsers) / totalUsers) * 100) : 0;
@@ -3085,10 +3087,27 @@ AVISO: Sugestão de apoio — prescrição final é responsabilidade do médico.
     }),
     subscribers: adminProcedure.query(async ({ ctx }) => {
       const { getDb } = await import('./db');
-      const dbInstance = await getDb();
-      if (!dbInstance) return [];
+      const { users: usersTable } = await import('../drizzle/schema');
+      const { desc: descFn } = await import('drizzle-orm');
+      const db = await getDb();
+      if (!db) return [];
       try {
-        const [rows] = await dbInstance.execute(`SELECT id, openId, name, email, role, plan, trialActive, trialStartDate, trialEndDate, trialEndDate as accessExpiry, createdAt, lastSignedIn, stripeCustomerId, billingInterval FROM users ORDER BY createdAt DESC LIMIT 500`) as any;
+        const rows = await db.select({
+          id: usersTable.id,
+          openId: usersTable.openId,
+          name: usersTable.name,
+          email: usersTable.email,
+          role: usersTable.role,
+          plan: usersTable.plan,
+          trialActive: usersTable.trialActive,
+          trialStartDate: usersTable.trialStartDate,
+          trialEndDate: usersTable.trialEndDate,
+          accessExpiry: usersTable.trialEndDate,
+          createdAt: usersTable.createdAt,
+          lastSignedIn: usersTable.lastSignedIn,
+          stripeCustomerId: usersTable.stripeCustomerId,
+          billingInterval: usersTable.billingInterval,
+        }).from(usersTable).orderBy(descFn(usersTable.createdAt)).limit(500);
         return rows || [];
       } catch (e) {
         console.error('[Admin] Subscribers error:', e);
@@ -3104,16 +3123,23 @@ AVISO: Sugestão de apoio — prescrição final é responsabilidade do médico.
       notes: z.string().optional(),
     })).mutation(async ({ input }) => {
       const { getDb } = await import('./db');
-      const dbInstance = await getDb();
-      if (!dbInstance) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      const { users: usersTable } = await import('../drizzle/schema');
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
       try {
         const openId = `admin_invite_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
         const now = new Date();
         const trialEnd = input.validityDays > 0 ? new Date(now.getTime() + input.validityDays * 24 * 60 * 60 * 1000) : null;
-        await dbInstance.execute(
-          `INSERT INTO users (openId, name, email, role, plan, trialActive, trialStartDate, trialEndDate, createdAt, updatedAt, lastSignedIn) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())`,
-          [openId, input.name, input.email, input.role, input.plan, input.validityDays > 0 ? 1 : 0, now, trialEnd]
-        );
+        await db.insert(usersTable).values({
+          openId,
+          name: input.name,
+          email: input.email,
+          role: input.role,
+          plan: input.plan,
+          trialActive: input.validityDays > 0,
+          trialStartDate: now,
+          trialEndDate: trialEnd,
+        });
         console.log(`[Admin] User added: ${input.name} (${input.email}) plan=${input.plan} validity=${input.validityDays}d`);
         return { success: true, openId };
       } catch (e: any) {
@@ -3131,33 +3157,30 @@ AVISO: Sugestão de apoio — prescrição final é responsabilidade do médico.
       notes: z.string().optional(),
     })).mutation(async ({ input }) => {
       const { getDb } = await import('./db');
-      const dbInstance = await getDb();
-      if (!dbInstance) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      const { users: usersTable } = await import('../drizzle/schema');
+      const { eq: eqFn } = await import('drizzle-orm');
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
       try {
-        const updates: string[] = [];
-        const values: any[] = [];
-        if (input.name !== undefined) { updates.push('name = ?'); values.push(input.name); }
-        if (input.email !== undefined) { updates.push('email = ?'); values.push(input.email); }
-        if (input.plan !== undefined) { updates.push('plan = ?'); values.push(input.plan); }
-        if (input.role !== undefined) { updates.push('role = ?'); values.push(input.role); }
+        const updateData: Record<string, any> = {};
+        if (input.name !== undefined) updateData.name = input.name;
+        if (input.email !== undefined) updateData.email = input.email;
+        if (input.plan !== undefined) updateData.plan = input.plan;
+        if (input.role !== undefined) updateData.role = input.role;
         if (input.validityDays !== undefined) {
           if (input.validityDays === 0) {
-            updates.push('trialActive = ?'); values.push(0);
-            updates.push('trialEndDate = ?'); values.push(null);
+            updateData.trialActive = false;
+            updateData.trialEndDate = null;
           } else {
             const trialEnd = new Date(Date.now() + input.validityDays * 24 * 60 * 60 * 1000);
-            updates.push('trialActive = ?'); values.push(1);
-            updates.push('trialStartDate = NOW()');
-            updates.push('trialEndDate = ?'); values.push(trialEnd);
+            updateData.trialActive = true;
+            updateData.trialStartDate = new Date();
+            updateData.trialEndDate = trialEnd;
           }
         }
-        updates.push('updatedAt = NOW()');
-        if (updates.length > 1) {
-          values.push(input.userId);
-          const query = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
-          console.log(`[Admin] Executing update query: ${query}`, 'params count:', values.length);
-          await dbInstance.execute(query, values);
-          console.log(`[Admin] User updated: id=${input.userId}`);
+        if (Object.keys(updateData).length > 0) {
+          await db.update(usersTable).set(updateData).where(eqFn(usersTable.id, input.userId));
+          console.log(`[Admin] User updated via Drizzle ORM: id=${input.userId}`, Object.keys(updateData));
         }
         return { success: true };
       } catch (e: any) {
@@ -3169,11 +3192,13 @@ AVISO: Sugestão de apoio — prescrição final é responsabilidade do médico.
       userId: z.number(),
     })).mutation(async ({ input }) => {
       const { getDb } = await import('./db');
-      const dbInstance = await getDb();
-      if (!dbInstance) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      const { users: usersTable } = await import('../drizzle/schema');
+      const { eq: eqFn } = await import('drizzle-orm');
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
       try {
-        await dbInstance.execute(`DELETE FROM users WHERE id = ?`, [input.userId]);
-        console.log(`[Admin] User deleted: id=${input.userId}`);
+        await db.delete(usersTable).where(eqFn(usersTable.id, input.userId));
+        console.log(`[Admin] User deleted via Drizzle ORM: id=${input.userId}`);
         return { success: true };
       } catch (e: any) {
         console.error('[Admin] Delete user error:', e);
