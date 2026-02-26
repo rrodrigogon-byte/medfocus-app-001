@@ -103,7 +103,7 @@ export default function FDADrugSearch() {
           )}
           {drugInfo.aiAnalysis && (
             <div className="bg-gray-900 rounded-xl p-5 border border-gray-700">
-              <h3 className="text-lg font-bold text-white mb-3">🤖 Análise Farmacológica (Gemini IA)</h3>
+              <h3 className="text-lg font-bold text-white mb-3">🤖 Análise Farmacológica (Dr. Focus IA)</h3>
               <div className="prose prose-invert prose-sm max-w-none text-gray-300 whitespace-pre-wrap">{drugInfo.aiAnalysis}</div>
             </div>
           )}

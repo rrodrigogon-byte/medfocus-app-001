@@ -91,7 +91,7 @@ export default function PubMedResearch() {
               )}
               {analysis && selectedArticle?.pmid === selectedArticle?.pmid && (
                 <div className="mt-4 bg-amber-900/20 border border-amber-700/50 rounded-lg p-4">
-                  <p className="text-xs text-amber-400 font-semibold mb-2">🤖 Análise Crítica (Gemini IA):</p>
+                  <p className="text-xs text-amber-400 font-semibold mb-2">🤖 Análise Crítica (Dr. Focus IA):</p>
                   <div className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">{analysis}</div>
                 </div>
               )}

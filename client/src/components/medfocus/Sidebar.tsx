@@ -38,6 +38,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onLogout, 
     'Estudo': true,
     'IA & Inovação': false,
     'Prática Clínica': false,
+    'Saúde Pública': false,
     'Professor': false,
     'Gestão': false,
     'Conta': true,
@@ -105,6 +106,16 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onLogout, 
         { id: 'cid10', label: 'CID-10', icon: 'M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
         { id: 'clinicalProtocols', label: 'Protocolos', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', badge: 'ai' },
         { id: 'pubmedResearch', label: 'PubMed', icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' },
+      ]
+    },
+    {
+      label: 'Saúde Pública',
+      emoji: '🌍',
+      items: [
+        { id: 'bulario', label: 'Bulário Digital', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', badge: 'new' },
+        { id: 'priceComparison', label: 'Preços Farmácias', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z', badge: 'new' },
+        { id: 'doctorFinder', label: 'Encontre um Médico', icon: 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z', badge: 'new' },
+        { id: 'healthTips', label: 'Dicas de Saúde', icon: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z', badge: 'new' },
       ]
     },
     {

@@ -136,7 +136,11 @@ export type View =
   | 'disciplines'
   | 'videoAulas'
   | 'atlasAnalytics'
-  | 'medicineComparator';
+  | 'medicineComparator'
+  | 'bulario'
+  | 'doctorFinder'
+  | 'healthTips'
+  | 'priceComparison';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {

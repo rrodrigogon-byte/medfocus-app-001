@@ -1,6 +1,6 @@
 /**
  * LectureTranscription — Transcrição de Aulas com IA
- * Usa Gemini para transcrever, resumir e gerar flashcards de áudio/vídeo de aulas
+ * Usa Dr. Focus IA para transcrever, resumir e gerar flashcards de áudio/vídeo de aulas
  */
 import React, { useState, useRef } from 'react';
 import { trpc } from '@/lib/trpc';
@@ -111,7 +111,7 @@ export default function LectureTranscription() {
       // If backend failed, use local fallback
       if (!data || !data.text) {
         data = {
-          text: `[Transcrição — ${file.name}]\n\nO áudio foi recebido e processado. O sistema está analisando o conteúdo com IA Gemini.\n\nPara melhores resultados:\n• Grave áudios com duração mínima de 30 segundos\n• Posicione o microfone próximo ao professor\n• Evite ambientes com muito ruído\n• Use formato MP3 ou WAV para melhor qualidade`,
+          text: `[Transcrição — ${file.name}]\n\nO áudio foi recebido e processado. O sistema está analisando o conteúdo com IA Dr. Focus.\n\nPara melhores resultados:\n• Grave áudios com duração mínima de 30 segundos\n• Posicione o microfone próximo ao professor\n• Evite ambientes com muito ruído\n• Use formato MP3 ou WAV para melhor qualidade`,
           summary: `Áudio "${file.name}" processado. Grave áudios mais longos (>30s) para transcrição completa com IA.`,
           keyPoints: [
             'Áudio recebido e processado pelo sistema',
@@ -122,7 +122,7 @@ export default function LectureTranscription() {
           flashcards: [
             { question: 'Qual a duração mínima recomendada para transcrição?', answer: 'Mínimo de 30 segundos para transcrição completa' },
           ],
-          topics: ['Transcrição de Aulas', 'IA Gemini'],
+          topics: ['Transcrição de Aulas', 'IA Dr. Focus'],
           duration: formatTime(Math.floor(file.size / 16000)),
         };
       }
@@ -251,7 +251,7 @@ export default function LectureTranscription() {
               <div className="w-full bg-muted rounded-full h-2">
                 <div className="bg-primary h-2 rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
               </div>
-              <p className="text-xs text-muted-foreground mt-1">{progress}% — Analisando áudio com Gemini AI</p>
+              <p className="text-xs text-muted-foreground mt-1">{progress}% — Analisando áudio com Dr. Focus AI</p>
             </div>
           )}
         </div>

@@ -6,7 +6,7 @@ import { ProgressiveQuiz, MedicalYear, AcademicReference } from '../types';
 
 /**
  * Generate progressive quizzes based on material and student year
- * Integrates with Gemini AI for intelligent quiz generation
+ * Integrates with Dr. Focus AI for intelligent quiz generation
  */
 export async function generateProgressiveQuiz(
   materialId: string,
@@ -15,7 +15,7 @@ export async function generateProgressiveQuiz(
   subjectId: string,
   count: number = 5
 ): Promise<ProgressiveQuiz[]> {
-  // In production, this would call Gemini AI API
+  // In production, this would call Dr. Focus AI API
   // For now, return mock structure
   
   const difficultyMap: Record<MedicalYear, 'basico' | 'intermediario' | 'avancado' | 'residencia'> = {

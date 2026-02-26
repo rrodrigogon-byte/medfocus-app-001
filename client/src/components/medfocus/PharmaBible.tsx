@@ -160,7 +160,7 @@ export default function PharmaBible() {
             { label: 'Classes Terapêuticas', value: '20', icon: '📂' },
             { label: 'Subclasses', value: '120+', icon: '📁' },
             { label: 'Fármacos Protótipo', value: '200+', icon: '💊' },
-            { label: 'Fontes de Dados', value: 'OpenFDA + Gemini AI', icon: '🔗' },
+            { label: 'Fontes de Dados', value: 'OpenFDA + Dr. Focus AI', icon: '🔗' },
           ].map((s, i) => (
             <div key={i} className="bg-white/15 rounded-xl p-3 text-center">
               <div className="text-2xl">{s.icon}</div>

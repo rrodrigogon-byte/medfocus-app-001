@@ -569,7 +569,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ userName }) => {
                 { label: 'Dominio', value: 'medfocus-app-ul6txuf2eq-rj.a.run.app', color: 'blue' },
                 { label: 'Banco de Dados', value: 'Cloud SQL MySQL', color: 'emerald' },
                 { label: 'Stripe', value: 'Gateway de pagamento (modo teste)', color: 'amber' },
-                { label: 'IA (Gemini)', value: 'Vertex AI — southamerica-east1', color: 'emerald' },
+                { label: 'IA (Dr. Focus)', value: 'Vertex AI — southamerica-east1', color: 'emerald' },
                 { label: 'Storage', value: 'AWS S3 — medfocus-uploads', color: 'emerald' },
               ].map((item, i) => (
                 <div key={i} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">

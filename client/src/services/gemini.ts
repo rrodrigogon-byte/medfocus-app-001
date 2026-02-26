@@ -1,5 +1,5 @@
 /**
- * Legacy gemini.ts — now delegates to tRPC server-side LLM
+ * Legacy gemini.ts (now Dr. Focus) — now delegates to tRPC server-side LLM
  * Kept for backward compatibility with any remaining imports.
  * All AI calls now go through the server via tRPC mutations.
  */

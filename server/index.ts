@@ -5,7 +5,7 @@
  * - SQLite Database (ready for PostgreSQL)
  * - WebSocket for real-time notifications
  * - RESTful API endpoints
- * - Gemini AI integration
+ * - Dr. Focus AI integration
  * - University content scraping
  */
 import express from "express";

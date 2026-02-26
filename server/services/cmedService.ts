@@ -55,15 +55,36 @@ let lastLoadTime = 0;
 const CACHE_TTL = 3600000; // 1 hour
 
 function getDataDir(): string {
-  // In production (bundled by esbuild), dist/server.js runs from /app/dist/
-  // Data is at /app/server/data/
-  // In development, __dirname is server/services/
-  // Data is at server/data/
-  const prodPath = path.join(process.cwd(), 'server', 'data');
-  const devPath = path.join(__dirname, '..', 'data');
-  if (fs.existsSync(path.join(prodPath, 'cmed_medicines.json'))) return prodPath;
-  if (fs.existsSync(path.join(devPath, 'cmed_medicines.json'))) return devPath;
-  return prodPath; // fallback
+  // Try multiple paths to find the CMED data file
+  // In production (Cloud Run): process.cwd() = /app, data at /app/server/data/
+  // In development: process.cwd() = project root, data at server/data/
+  const candidates = [
+    path.join(process.cwd(), 'server', 'data'),
+    path.join(process.cwd(), 'data'),
+    path.resolve('server', 'data'),
+    path.resolve('data'),
+  ];
+  
+  // Also try using import.meta.url if available
+  try {
+    const fileUrl = new URL(import.meta.url);
+    const dir = path.dirname(fileUrl.pathname);
+    candidates.push(path.join(dir, '..', 'server', 'data'));
+    candidates.push(path.join(dir, '..', 'data'));
+    candidates.push(path.join(dir, 'data'));
+  } catch (_) { /* ignore */ }
+
+  for (const candidate of candidates) {
+    try {
+      if (fs.existsSync(path.join(candidate, 'cmed_medicines.json'))) {
+        console.log(`[CMED] Found data directory: ${candidate}`);
+        return candidate;
+      }
+    } catch (_) { /* ignore */ }
+  }
+  
+  console.warn('[CMED] Data directory not found, using default');
+  return candidates[0]; // fallback to first candidate
 }
 
 function loadData(): CMEDData {

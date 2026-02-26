@@ -74,7 +74,7 @@ export default function DiagnosisAssistant() {
           <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-2xl">🩺</div>
           <div>
             <h2 className="text-2xl font-bold text-white">Apoio a Diagnóstico com IA</h2>
-            <p className="text-blue-300 text-sm">Sistema de apoio à decisão clínica baseado em evidências — Powered by Gemini</p>
+            <p className="text-blue-300 text-sm">Sistema de apoio à decisão clínica baseado em evidências — Powered by Dr. Focus</p>
           </div>
         </div>
         <div className="mt-3 bg-yellow-900/30 border border-yellow-700/50 rounded-lg p-3">
@@ -185,7 +185,7 @@ export default function DiagnosisAssistant() {
             {diagnosisMutation.isPending ? (
               <span className="flex items-center justify-center gap-2">
                 <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                Analisando com Gemini IA...
+                Analisando com Dr. Focus IA...
               </span>
             ) : '🔬 Gerar Diagnóstico Diferencial'}
           </button>

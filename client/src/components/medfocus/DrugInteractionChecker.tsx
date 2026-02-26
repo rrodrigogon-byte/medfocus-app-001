@@ -35,7 +35,7 @@ export default function DrugInteractionChecker() {
           <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center text-2xl">⚠️</div>
           <div>
             <h2 className="text-2xl font-bold text-white">Verificador de Interações Medicamentosas</h2>
-            <p className="text-red-300 text-sm">Análise de interações com dados FDA + IA Gemini — Baseado em Micromedex e Stockley's</p>
+            <p className="text-red-300 text-sm">Análise de interações com dados FDA + IA Dr. Focus — Baseado em Micromedex e Stockley's</p>
           </div>
         </div>
       </div>

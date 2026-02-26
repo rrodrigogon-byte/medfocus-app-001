@@ -1,7 +1,7 @@
 /**
  * MedFocus — Conteúdo Pré-carregado por Disciplina
  * Resumos, Flashcards e Quizzes prontos para estudo offline
- * Elimina dependência da API do Gemini para conteúdo básico
+ * Elimina dependência da API do Dr. Focus para conteúdo básico
  */
 
 export interface Flashcard {

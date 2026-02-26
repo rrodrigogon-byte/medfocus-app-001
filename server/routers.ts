@@ -2216,7 +2216,7 @@ Use markdown para formatação.`
   // MÓDULOS PROFISSIONAIS MÉDICOS
   // ═══════════════════════════════════════════════════════════════
 
-  // ─── Apoio a Diagnóstico com IA (Gemini) ────────────────────
+  // ─── Apoio a Diagnóstico com IA (Dr. Focus) ────────────────────
   diagnosis: router({
     differential: publicProcedure
       .input(z.object({
@@ -2780,7 +2780,7 @@ AVISO: Sugestão de apoio — prescrição final é responsabilidade do médico.
       }));
     }),
 
-    // Buscar monografia completa de um fármaco via Gemini AI + OpenFDA
+    // Buscar monografia completa de um fármaco via Dr. Focus AI + OpenFDA
     getDrugMonograph: publicProcedure
       .input(z.object({ drugName: z.string(), userProfile: z.enum(['student', 'professor', 'doctor']).optional() }))
       .mutation(async ({ input }) => {
@@ -2909,7 +2909,7 @@ AVISO: Sugestão de apoio — prescrição final é responsabilidade do médico.
         };
       }),
 
-    // Detalhes de uma classe terapêutica via Gemini AI
+    // Detalhes de uma classe terapêutica via Dr. Focus AI
     getClassDetails: publicProcedure
       .input(z.object({ classId: z.string() }))
       .mutation(async ({ input }) => {

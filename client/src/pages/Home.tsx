@@ -66,6 +66,10 @@ import MedicalDisciplines from '../components/medfocus/MedicalDisciplines';
 import VideoAulas from '../components/medfocus/VideoAulas';
 import AtlasAnalytics from '../components/medfocus/AtlasAnalytics';
 import MedicineComparator from '../components/medfocus/MedicineComparator';
+import Bulario from '../components/medfocus/Bulario';
+import DoctorFinder from '../components/medfocus/DoctorFinder';
+import HealthTips from '../components/medfocus/HealthTips';
+import PriceComparison from '../components/medfocus/PriceComparison';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
 import { useGamification } from '../hooks/useGamification';
@@ -287,6 +291,10 @@ export default function Home() {
       case 'videoAulas': return <VideoAulas />;
       case 'atlasAnalytics': return <AtlasAnalytics />;
       case 'medicineComparator': return <MedicineComparator />;
+      case 'bulario': return <Bulario />;
+      case 'doctorFinder': return <DoctorFinder />;
+      case 'healthTips': return <HealthTips />;
+      case 'priceComparison': return <PriceComparison />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{
@@ -371,7 +379,16 @@ export default function Home() {
                currentView === 'lectureTranscription' ? 'Transcrição de Aulas' :
                currentView === 'myContent' ? 'Meu Conteúdo' :
                currentView === 'professorPortal' ? 'Portal do Professor' :
-               currentView === 'pharmaBible' ? 'Bíblia Farmacológica' : currentView}
+               currentView === 'pharmaBible' ? 'Bíblia Farmacológica' :
+               currentView === 'bulario' ? 'Bulário Digital' :
+               currentView === 'doctorFinder' ? 'Encontre um Médico' :
+               currentView === 'healthTips' ? 'Dicas de Saúde' :
+               currentView === 'priceComparison' ? 'Preços de Medicamentos' :
+               currentView === 'medicineComparator' ? 'Comparador de Medicamentos' :
+               currentView === 'adminDashboard' ? 'Painel Admin' :
+               currentView === 'disciplines' ? 'Disciplinas Médicas' :
+               currentView === 'videoAulas' ? 'Vídeo-Aulas' :
+               currentView === 'atlasAnalytics' ? 'Atlas Analytics' : currentView}
             </h2>
           </div>
           <div className="flex items-center gap-2">
