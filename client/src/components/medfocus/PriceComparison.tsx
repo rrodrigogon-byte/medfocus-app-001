@@ -1,226 +1,63 @@
-/**
- * Comparador de Preços de Farmácias — Busque preços em farmácias online
- * Links diretos para as principais redes de farmácias do Brasil
- */
-import { useState } from 'react';
-
-const FARMACIAS = [
-  { nome: 'Drogasil', url: 'https://www.drogasil.com.br/search?w=', cor: '#e11d48', logo: '💊' },
-  { nome: 'Droga Raia', url: 'https://www.drogaraia.com.br/search?w=', cor: '#2563eb', logo: '💊' },
-  { nome: 'Pague Menos', url: 'https://www.paguemenos.com.br/busca?q=', cor: '#16a34a', logo: '💊' },
-  { nome: 'Drogaria São Paulo', url: 'https://www.drogariasaopaulo.com.br/search?w=', cor: '#dc2626', logo: '💊' },
-  { nome: 'Panvel', url: 'https://www.panvel.com/panvel/buscarProduto.do?termoPesquisa=', cor: '#0d9488', logo: '💊' },
-  { nome: 'Ultrafarma', url: 'https://www.ultrafarma.com.br/busca?q=', cor: '#7c3aed', logo: '💊' },
-  { nome: 'Farmácia Popular', url: 'https://www.gov.br/saude/pt-br/composicao/sctie/daf/programa-farmacia-popular', cor: '#059669', logo: '🏥' },
+import React, { useState, useMemo } from 'react';
+interface MedPrice { id:string; nome:string; pa:string; ap:string; precos:{f:string;p:number}[]; }
+const MEDS:MedPrice[]=[
+  {id:'1',nome:'Paracetamol 750mg',pa:'Paracetamol',ap:'Cx 20 comp',precos:[{f:'Drogasil',p:12.9},{f:'Droga Raia',p:11.5},{f:'Pacheco',p:13.2},{f:'Ultrafarma',p:8.9},{f:'Pague Menos',p:10.5}]},
+  {id:'2',nome:'Dipirona 500mg',pa:'Metamizol',ap:'Cx 30 comp',precos:[{f:'Drogasil',p:15.9},{f:'Droga Raia',p:14.2},{f:'Ultrafarma',p:9.9},{f:'Pague Menos',p:12.5},{f:'Panvel',p:13.8}]},
+  {id:'3',nome:'Losartana 50mg',pa:'Losartana',ap:'Cx 30 comp',precos:[{f:'Drogasil',p:18.9},{f:'Droga Raia',p:17.5},{f:'Ultrafarma',p:12.9},{f:'Pague Menos',p:15.9},{f:'Panvel',p:16.5}]},
+  {id:'4',nome:'Metformina 850mg',pa:'Metformina',ap:'Cx 30 comp',precos:[{f:'Drogasil',p:14.5},{f:'Droga Raia',p:13.9},{f:'Ultrafarma',p:8.5},{f:'Pague Menos',p:11.9},{f:'Panvel',p:12.8}]},
+  {id:'5',nome:'Omeprazol 20mg',pa:'Omeprazol',ap:'Cx 28 cáps',precos:[{f:'Drogasil',p:22.9},{f:'Droga Raia',p:21.5},{f:'Ultrafarma',p:14.9},{f:'Pague Menos',p:18.5},{f:'Panvel',p:19.9}]},
+  {id:'6',nome:'Amoxicilina 500mg',pa:'Amoxicilina',ap:'Cx 21 cáps',precos:[{f:'Drogasil',p:28.9},{f:'Droga Raia',p:26.5},{f:'Ultrafarma',p:18.9},{f:'Pague Menos',p:23.5},{f:'Panvel',p:25.0}]},
+  {id:'7',nome:'Sinvastatina 20mg',pa:'Sinvastatina',ap:'Cx 30 comp',precos:[{f:'Drogasil',p:24.9},{f:'Droga Raia',p:22.5},{f:'Ultrafarma',p:15.9},{f:'Pague Menos',p:19.9},{f:'Panvel',p:21.0}]},
+  {id:'8',nome:'Atenolol 50mg',pa:'Atenolol',ap:'Cx 30 comp',precos:[{f:'Drogasil',p:16.9},{f:'Droga Raia',p:15.5},{f:'Ultrafarma',p:9.9},{f:'Pague Menos',p:13.5},{f:'Panvel',p:14.2}]},
+  {id:'9',nome:'Fluoxetina 20mg',pa:'Fluoxetina',ap:'Cx 30 cáps',precos:[{f:'Drogasil',p:19.9},{f:'Droga Raia',p:18.5},{f:'Ultrafarma',p:11.9},{f:'Pague Menos',p:15.9},{f:'Panvel',p:16.8}]},
+  {id:'10',nome:'Levotiroxina 50mcg',pa:'Levotiroxina',ap:'Cx 30 comp',precos:[{f:'Drogasil',p:21.9},{f:'Droga Raia',p:20.5},{f:'Ultrafarma',p:14.9},{f:'Pague Menos',p:17.9},{f:'Panvel',p:18.5}]},
 ];
-
-const PROGRAMAS_DESCONTO = [
-  {
-    nome: 'Farmácia Popular do Brasil',
-    desc: 'Medicamentos gratuitos ou com até 90% de desconto pelo SUS',
-    medicamentos: 'Hipertensão, diabetes, asma, anticoncepcionais, osteoporose, Parkinson, glaucoma, rinite',
-    como: 'Apresente receita médica e documento com CPF em qualquer farmácia credenciada',
-    icone: '🏥',
-    url: 'https://www.gov.br/saude/pt-br/composicao/sctie/daf/programa-farmacia-popular'
-  },
-  {
-    nome: 'Programa Aqui Tem Farmácia Popular',
-    desc: 'Rede privada credenciada com descontos do governo',
-    medicamentos: 'Hipertensão (6 medicamentos gratuitos), diabetes (3 gratuitos), asma (3 gratuitos)',
-    como: 'Procure farmácias com o selo "Aqui Tem Farmácia Popular"',
-    icone: '💰',
-    url: 'https://www.gov.br/saude/pt-br/composicao/sctie/daf/programa-farmacia-popular'
-  },
-  {
-    nome: 'Programas de Laboratórios',
-    desc: 'Descontos diretos dos fabricantes em medicamentos de marca',
-    medicamentos: 'Diversos — cada laboratório tem seu programa',
-    como: 'Cadastre-se no site do laboratório ou pergunte na farmácia',
-    icone: '🏭',
-    url: ''
-  },
-];
-
-const MEDICAMENTOS_GRATUITOS = [
-  { grupo: 'Hipertensão', medicamentos: ['Captopril 25mg', 'Atenolol 25mg', 'Hidroclorotiazida 25mg', 'Losartana 50mg', 'Anlodipino 5mg', 'Enalapril 5mg'], cor: '#ef4444' },
-  { grupo: 'Diabetes', medicamentos: ['Metformina 500mg/850mg', 'Glibenclamida 5mg', 'Insulina NPH'], cor: '#3b82f6' },
-  { grupo: 'Asma', medicamentos: ['Salbutamol 100mcg (spray)', 'Beclometasona 200mcg/250mcg', 'Brometo de Ipratrópio 0,25mg/ml'], cor: '#10b981' },
-  { grupo: 'Anticoncepcionais', medicamentos: ['Etinilestradiol + Levonorgestrel', 'Noretisterona 0,35mg', 'Medroxiprogesterona 150mg'], cor: '#a855f7' },
-  { grupo: 'Osteoporose', medicamentos: ['Alendronato de Sódio 70mg'], cor: '#f59e0b' },
-  { grupo: 'Parkinson', medicamentos: ['Levodopa + Carbidopa', 'Levodopa + Benserazida'], cor: '#6366f1' },
-];
-
-export default function PriceComparison() {
-  const [busca, setBusca] = useState('');
-  const [abaAtiva, setAbaAtiva] = useState<'busca' | 'gratuitos' | 'programas'>('busca');
-
-  return (
-    <div style={{ padding: 24, maxWidth: 1100, margin: '0 auto' }}>
-      <div style={{ textAlign: 'center', marginBottom: 28 }}>
-        <h1 style={{ fontSize: 28, margin: 0, fontWeight: 800 }}>💰 Preços de Medicamentos</h1>
-        <p style={{ opacity: 0.7, fontSize: 14, marginTop: 6 }}>
-          Compare preços nas principais farmácias e descubra medicamentos gratuitos
-        </p>
-      </div>
-
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-        {([
-          { id: 'busca' as const, label: '🔍 Comparar Preços', },
-          { id: 'gratuitos' as const, label: '🏥 Medicamentos Gratuitos' },
-          { id: 'programas' as const, label: '💰 Programas de Desconto' },
-        ]).map(tab => (
-          <button key={tab.id} onClick={() => setAbaAtiva(tab.id)} style={{
-            padding: '10px 18px', borderRadius: 10, fontSize: 13, cursor: 'pointer', fontWeight: 600,
-            border: abaAtiva === tab.id ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.12)',
-            background: abaAtiva === tab.id ? 'rgba(16,185,129,0.15)' : 'transparent',
-            color: abaAtiva === tab.id ? '#10b981' : 'inherit'
-          }}>{tab.label}</button>
+export default function PriceComparison(){
+  const[search,setSearch]=useState('');const[sel,setSel]=useState<MedPrice|null>(null);const[sortBy,setSortBy]=useState<'preco'|'nome'>('preco');
+  const filtered=useMemo(()=>{const f=MEDS.filter(m=>{const s=search.toLowerCase();return!s||m.nome.toLowerCase().includes(s)||m.pa.toLowerCase().includes(s);});return sortBy==='nome'?[...f].sort((a,b)=>a.nome.localeCompare(b.nome)):f;},[search,sortBy]);
+  const mn=(m:MedPrice)=>Math.min(...m.precos.map(p=>p.p));const mx=(m:MedPrice)=>Math.max(...m.precos.map(p=>p.p));const ec=(m:MedPrice)=>((1-mn(m)/mx(m))*100).toFixed(0);
+  return(
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-6 max-w-6xl mx-auto">
+      <div className="mb-6"><h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3"><span className="text-3xl">💰</span> Comparador de Preços</h1><p className="text-sm text-muted-foreground mt-1">Compare preços entre farmácias e economize</p></div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        {[{v:MEDS.length,l:'Medicamentos',c:'text-primary'},{v:new Set(MEDS.flatMap(m=>m.precos.map(p=>p.f))).size,l:'Farmácias',c:'text-blue-400'},{v:`${Math.max(...MEDS.map(m=>parseInt(ec(m))))}%`,l:'Maior Economia',c:'text-green-400'},{v:`R$ ${(MEDS.reduce((a,m)=>a+mn(m),0)/MEDS.length).toFixed(2)}`,l:'Preço Médio',c:'text-orange-400'}].map((s,i)=>(
+          <div key={i} className="bg-card border border-border rounded-xl p-4 text-center"><div className={`text-2xl font-bold ${s.c}`}>{s.v}</div><div className="text-xs text-muted-foreground">{s.l}</div></div>
         ))}
       </div>
-
-      {abaAtiva === 'busca' && (
-        <>
-          <div style={{ marginBottom: 20 }}>
-            <input type="text" value={busca} onChange={e => setBusca(e.target.value)}
-              placeholder="Digite o nome do medicamento para comparar preços..."
-              style={{
-                width: '100%', padding: '14px 18px', borderRadius: 12,
-                border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)',
-                color: 'inherit', fontSize: 16, outline: 'none', boxSizing: 'border-box'
-              }}
-            />
-          </div>
-
-          {busca.trim() && (
-            <div style={{ marginBottom: 24 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>
-                Comparar "{busca}" nas farmácias:
-              </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
-                {FARMACIAS.map((farm, i) => (
-                  <a key={i} href={`${farm.url}${encodeURIComponent(busca)}`}
-                    target="_blank" rel="noopener noreferrer"
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 10,
-                      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-                      borderRadius: 10, padding: '12px 16px', textDecoration: 'none', color: 'inherit',
-                      transition: 'border-color 0.15s'
-                    }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = farm.cor + '60'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.08)'; }}
-                  >
-                    <span style={{ fontSize: 20 }}>{farm.logo}</span>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: farm.cor }}>{farm.nome}</div>
-                      <div style={{ fontSize: 11, opacity: 0.5 }}>Ver preço →</div>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {!busca.trim() && (
-            <div style={{ textAlign: 'center', padding: 40, opacity: 0.5 }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
-              <p style={{ fontSize: 15 }}>Digite o nome de um medicamento acima para comparar preços</p>
-              <p style={{ fontSize: 12 }}>Exemplos: Dipirona, Losartana, Omeprazol, Amoxicilina</p>
-            </div>
-          )}
-        </>
-      )}
-
-      {abaAtiva === 'gratuitos' && (
-        <>
-          <div style={{
-            background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)',
-            borderRadius: 14, padding: 16, marginBottom: 20
-          }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: '#10b981', marginBottom: 6 }}>
-              🏥 Farmácia Popular — Medicamentos 100% Gratuitos
-            </h3>
-            <p style={{ fontSize: 13, opacity: 0.7, margin: 0 }}>
-              O Programa Farmácia Popular oferece medicamentos gratuitos para hipertensão, diabetes e asma.
-              Basta apresentar receita médica e documento com CPF em qualquer farmácia credenciada.
-            </p>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
-            {MEDICAMENTOS_GRATUITOS.map((grupo, i) => (
-              <div key={i} style={{
-                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 14, padding: 18
-              }}>
-                <h4 style={{
-                  fontSize: 15, fontWeight: 700, marginBottom: 10, display: 'flex',
-                  alignItems: 'center', gap: 8
-                }}>
-                  <span style={{
-                    width: 10, height: 10, borderRadius: '50%', background: grupo.cor, display: 'inline-block'
-                  }}></span>
-                  {grupo.grupo}
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {grupo.medicamentos.map((med, j) => (
-                    <div key={j} style={{
-                      fontSize: 13, padding: '6px 10px', background: 'rgba(16,185,129,0.06)',
-                      borderRadius: 6, display: 'flex', alignItems: 'center', gap: 6
-                    }}>
-                      <span style={{ color: '#10b981', fontWeight: 700, fontSize: 11 }}>GRÁTIS</span>
-                      <span>{med}</span>
-                    </div>
-                  ))}
-                </div>
+      <div className="space-y-3 mb-6">
+        <input type="text" placeholder="Buscar medicamento..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full px-4 py-3 rounded-xl bg-card border border-border text-sm focus:ring-2 focus:ring-primary outline-none"/>
+        <div className="flex gap-2">
+          <button onClick={()=>setSortBy('preco')} className={`px-3 py-1.5 rounded-full text-xs font-medium ${sortBy==='preco'?'bg-primary text-primary-foreground':'bg-card border border-border'}`}>Menor Preço</button>
+          <button onClick={()=>setSortBy('nome')} className={`px-3 py-1.5 rounded-full text-xs font-medium ${sortBy==='nome'?'bg-primary text-primary-foreground':'bg-card border border-border'}`}>A-Z</button>
+        </div>
+      </div>
+      {sel?(
+        <div className="bg-card border border-border rounded-xl p-6">
+          <button onClick={()=>setSel(null)} className="text-primary text-sm mb-4 hover:underline">← Voltar</button>
+          <h2 className="text-xl font-bold mb-1">{sel.nome}</h2><p className="text-sm text-muted-foreground mb-4">{sel.pa} — {sel.ap}</p>
+          <div className="space-y-2">
+            {[...sel.precos].sort((a,b)=>a.p-b.p).map((p,i)=>(
+              <div key={p.f} className={`flex items-center justify-between p-3 rounded-lg ${i===0?'bg-green-500/10 border border-green-500/30':'bg-muted/30'}`}>
+                <div className="flex items-center gap-3">{i===0&&<span className="text-green-400 text-xs font-bold">MENOR</span>}<span className="text-sm font-medium">{p.f}</span></div>
+                <div className="text-right"><span className={`text-lg font-bold ${i===0?'text-green-400':'text-foreground'}`}>R$ {p.p.toFixed(2)}</span>{i>0&&<p className="text-xs text-red-400">+R$ {(p.p-mn(sel)).toFixed(2)}</p>}</div>
               </div>
             ))}
           </div>
-        </>
-      )}
-
-      {abaAtiva === 'programas' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {PROGRAMAS_DESCONTO.map((prog, i) => (
-            <div key={i} style={{
-              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 14, padding: 20
-            }}>
-              <div style={{ display: 'flex', alignItems: 'start', gap: 14 }}>
-                <span style={{ fontSize: 36 }}>{prog.icone}</span>
-                <div style={{ flex: 1 }}>
-                  <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 4 }}>{prog.nome}</h3>
-                  <p style={{ fontSize: 13, opacity: 0.7, marginBottom: 10 }}>{prog.desc}</p>
-                  <div style={{ fontSize: 12, marginBottom: 6 }}>
-                    <strong>Medicamentos:</strong> <span style={{ opacity: 0.7 }}>{prog.medicamentos}</span>
-                  </div>
-                  <div style={{ fontSize: 12, marginBottom: 10 }}>
-                    <strong>Como acessar:</strong> <span style={{ opacity: 0.7 }}>{prog.como}</span>
-                  </div>
-                  {prog.url && (
-                    <a href={prog.url} target="_blank" rel="noopener noreferrer"
-                      style={{
-                        fontSize: 12, color: '#3b82f6', textDecoration: 'none', fontWeight: 600,
-                        padding: '6px 14px', borderRadius: 6, border: '1px solid rgba(59,130,246,0.3)',
-                        background: 'rgba(59,130,246,0.08)', display: 'inline-block'
-                      }}>
-                      Saiba mais →
-                    </a>
-                  )}
-                </div>
-              </div>
-            </div>
+          <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg"><p className="text-sm text-green-400">Economia de até <strong>{ec(sel)}%</strong> (R$ {(mx(sel)-mn(sel)).toFixed(2)})</p></div>
+        </div>
+      ):(
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {filtered.map(m=>(
+            <button key={m.id} onClick={()=>setSel(m)} className="bg-card border border-border rounded-xl p-4 text-left hover:bg-accent transition-all">
+              <div className="flex items-start justify-between"><div><h3 className="font-semibold text-sm">{m.nome}</h3><p className="text-xs text-muted-foreground">{m.pa} — {m.ap}</p></div><span className="px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-xs font-bold">-{ec(m)}%</span></div>
+              <div className="flex items-center justify-between mt-2"><span className="text-lg font-bold text-green-400">R$ {mn(m).toFixed(2)}</span><span className="text-xs text-muted-foreground line-through">R$ {mx(m).toFixed(2)}</span></div>
+              <p className="text-xs text-muted-foreground mt-1">{m.precos.length} farmácias</p>
+            </button>
           ))}
+          {!filtered.length&&<div className="col-span-2 text-center py-12 text-muted-foreground"><p>Nenhum medicamento encontrado.</p></div>}
         </div>
       )}
-
-      <div style={{
-        marginTop: 24, padding: 14, background: 'rgba(245,158,11,0.06)',
-        borderRadius: 12, fontSize: 11, opacity: 0.7, border: '1px solid rgba(245,158,11,0.12)'
-      }}>
-        <strong>Importante:</strong> Os preços podem variar conforme a região e a farmácia. Sempre compare antes de comprar.
-        Medicamentos genéricos têm a mesma eficácia dos de referência e custam até 60% menos.
-        Nunca compre medicamentos sem receita quando exigida.
-      </div>
+      <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl"><p className="text-xs text-blue-400"><strong>Aviso:</strong> Preços referenciais. Consulte a farmácia para valores atualizados.</p></div>
     </div>
   );
 }

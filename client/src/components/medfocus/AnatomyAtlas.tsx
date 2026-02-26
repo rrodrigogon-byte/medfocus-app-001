@@ -14,10 +14,12 @@
  * [10] Drake, R.L. Gray's Anatomy for Students, 4th ed. Elsevier, 2020.
  */
 
-import React, { useState, useRef, useCallback, useMemo, useEffect, Suspense } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect, Suspense, lazy } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Html, Line, Text, Environment } from '@react-three/drei';
 import * as THREE from 'three';
+
+const Interactive3DAtlas = lazy(() => import('./Interactive3DAtlas'));
 
 // === TYPES ===
 interface OrganData {
@@ -491,7 +493,7 @@ function SketchFabViewer({ modelId, height = 500 }: { modelId: string; height?: 
 export default function AnatomyAtlas() {
   const [selectedSystem, setSelectedSystem] = useState<string | null>(null);
   const [selectedOrgan, setSelectedOrgan] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'explore' | 'dissection' | 'quiz' | 'animations' | 'sketchfab'>('explore');
+  const [viewMode, setViewMode] = useState<'explore' | 'dissection' | 'quiz' | 'animations' | 'sketchfab' | 'interactive'>('interactive');
   const [dissectionDepth, setDissectionDepth] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationStep, setAnimationStep] = useState(0);
@@ -554,7 +556,7 @@ export default function AnatomyAtlas() {
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
             <span className="text-3xl">🧬</span> Atlas de Anatomia 3D
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">v8.1 — 12 sistemas, 40+ orgaos, 24 modelos SketchFab fotorrealistas verificados, quiz SM-2 adaptativo</p>
+          <p className="text-sm text-muted-foreground mt-1">v9.0 — Atlas 3D Interativo Nativo + 12 sistemas, 40+ orgaos, 24 modelos fotorrealistas, quiz SM-2</p>
         </div>
         <button onClick={() => setShowReferences(!showReferences)} className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-400 text-xs hover:bg-blue-500/30 transition">
           Ref.
@@ -572,6 +574,7 @@ export default function AnatomyAtlas() {
 
       <div className="flex flex-wrap gap-2 mb-6">
         {([
+          { id: 'interactive' as const, label: 'Atlas Interativo', desc: 'Clique e explore — offline' },
           { id: 'explore' as const, label: 'Explorar Sistemas', desc: '12 sistemas corporais' },
           { id: 'dissection' as const, label: 'Disseccao 3D', desc: '7 camadas anatomicas realistas' },
           { id: 'sketchfab' as const, label: 'Modelos Realistas', desc: '24 modelos fotorrealistas' },
@@ -585,6 +588,13 @@ export default function AnatomyAtlas() {
           </button>
         ))}
       </div>
+
+      {/* === INTERACTIVE 3D MODE === */}
+      {viewMode === 'interactive' && (
+        <Suspense fallback={<div className="flex items-center justify-center h-96"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
+          <Interactive3DAtlas />
+        </Suspense>
+      )}
 
       {/* === EXPLORE MODE === */}
       {viewMode === 'explore' && (
