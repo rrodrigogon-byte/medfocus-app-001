@@ -78,7 +78,7 @@ import { useGamification } from '../hooks/useGamification';
 
 // Módulos que requerem plano Pro
 const PRO_MODULES = new Set([
-  'smartSummary', 'clinicalCases', 'battle', 'quiz', 'atlas',
+  'smartSummary', 'clinicalCases', 'battle', 'quiz',
   'simulado', 'diagnosisAssistant', 'clinicalProtocols', 'fdaDrugs',
   'drugInteractions', 'classroom', 'analytics', 'professor',
   'validated-library', 'reports', 'flashcardStudy', 'lectureTranscription',

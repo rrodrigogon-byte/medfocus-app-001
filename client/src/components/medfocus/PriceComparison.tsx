@@ -2,8 +2,17 @@
  * MedFocus — Preços de Medicamentos
  * Comparativo de preços entre farmácias com filtro por cidade e seleção de redes.
  * Mostra resultados na própria tela com preços lado a lado.
+ * Ao clicar na farmácia, exibe detalhes de contato inline (endereço, telefone, WhatsApp).
  */
 import React, { useState, useMemo } from 'react';
+import { ESTADOS_CIDADES_COMPLETO, ESTADOS_NOMES } from './cidadesBrasil';
+
+interface FarmaciaContato {
+  endereco: string;
+  telefone: string;
+  whatsapp: string;
+  horario: string;
+}
 
 interface Farmacia {
   id: string;
@@ -11,22 +20,79 @@ interface Farmacia {
   cor: string;
   cidades: string[];
   urlBusca: (termo: string) => string;
+  contato: FarmaciaContato;
+  descricao: string;
 }
 
 // Redes nacionais: presentes em todas as capitais e cidades médias do Brasil
 const REDE_NACIONAL = '__NACIONAL__';
 
 const FARMACIAS: Farmacia[] = [
-  { id: 'drogasil', nome: 'Drogasil', cor: '#e53e3e', cidades: [REDE_NACIONAL], urlBusca: (t) => `https://www.drogasil.com.br/search?w=${encodeURIComponent(t)}` },
-  { id: 'drogaraia', nome: 'Droga Raia', cor: '#3182ce', cidades: [REDE_NACIONAL], urlBusca: (t) => `https://www.drogaraia.com.br/search?w=${encodeURIComponent(t)}` },
-  { id: 'paguemenos', nome: 'Pague Menos', cor: '#38a169', cidades: [REDE_NACIONAL], urlBusca: (t) => `https://www.paguemenos.com.br/busca?q=${encodeURIComponent(t)}` },
-  { id: 'drogariasaopaulo', nome: 'Drogaria São Paulo', cor: '#d69e2e', cidades: ['São Paulo','Campinas','Santos','Sorocaba','Ribeirão Preto','São José dos Campos','Guarulhos','Osasco','Santo André','São Bernardo','Jundiaí','Piracicaba','Bauru','Limeira','Franca'], urlBusca: (t) => `https://www.drogariasaopaulo.com.br/search?w=${encodeURIComponent(t)}` },
-  { id: 'panvel', nome: 'Panvel', cor: '#805ad5', cidades: ['Porto Alegre','Curitiba','Florianópolis','Caxias do Sul','Pelotas','Santa Maria','Joinville','Blumenau','Londrina','Maringá','Canoas','Chapecó','Ponta Grossa'], urlBusca: (t) => `https://www.panvel.com/panvel/buscarProduto.do?termoPesquisa=${encodeURIComponent(t)}` },
-  { id: 'ultrafarma', nome: 'Ultrafarma', cor: '#dd6b20', cidades: [REDE_NACIONAL], urlBusca: (t) => `https://www.ultrafarma.com.br/busca?q=${encodeURIComponent(t)}` },
-  { id: 'farmaciapopular', nome: 'Farmácia Popular', cor: '#319795', cidades: [REDE_NACIONAL], urlBusca: () => `https://www.gov.br/saude/pt-br/composicao/sctie/daf/programa-farmacia-popular` },
-  { id: 'nissei', nome: 'Nissei', cor: '#e53e3e', cidades: ['Curitiba','Londrina','Maringá','Cascavel','Ponta Grossa','Foz do Iguaçu','Guarapuava','Campo Mourão'], urlBusca: (t) => `https://www.farmaciasnissei.com.br/busca?q=${encodeURIComponent(t)}` },
-  { id: 'venancio', nome: 'Venâncio', cor: '#2b6cb0', cidades: ['Rio de Janeiro','Niterói','São Gonçalo','Duque de Caxias','Nova Iguaçu','Petrópolis','Campos dos Goytacazes'], urlBusca: (t) => `https://www.drogariavenancio.com.br/busca?q=${encodeURIComponent(t)}` },
-  { id: 'araujo', nome: 'Drogaria Araujo', cor: '#c53030', cidades: ['Belo Horizonte','Contagem','Betim','Uberlândia','Juiz de Fora','Uberaba','Montes Claros','Governador Valadares','Divinópolis','Sete Lagoas'], urlBusca: (t) => `https://www.araujo.com.br/busca?q=${encodeURIComponent(t)}` },
+  {
+    id: 'drogasil', nome: 'Drogasil', cor: '#e53e3e', cidades: [REDE_NACIONAL],
+    urlBusca: (t) => `https://www.drogasil.com.br/search?w=${encodeURIComponent(t)}`,
+    contato: { endereco: 'Presente em mais de 2.400 lojas em todo o Brasil', telefone: '0800 770 5050', whatsapp: '(11) 3003-5050', horario: 'Seg-Sáb: 7h-22h | Dom: 8h-20h' },
+    descricao: 'Maior rede de farmácias do Brasil. Programa de fidelidade com descontos exclusivos.',
+  },
+  {
+    id: 'drogaraia', nome: 'Droga Raia', cor: '#3182ce', cidades: [REDE_NACIONAL],
+    urlBusca: (t) => `https://www.drogaraia.com.br/search?w=${encodeURIComponent(t)}`,
+    contato: { endereco: 'Mais de 2.600 lojas em todo o Brasil', telefone: '0800 770 7222', whatsapp: '(11) 3003-7222', horario: 'Seg-Sáb: 7h-22h | Dom: 8h-20h' },
+    descricao: 'Rede com ampla cobertura nacional. Oferece programa Raia Drogasil com descontos.',
+  },
+  {
+    id: 'paguemenos', nome: 'Pague Menos', cor: '#38a169', cidades: [REDE_NACIONAL],
+    urlBusca: (t) => `https://www.paguemenos.com.br/busca?q=${encodeURIComponent(t)}`,
+    contato: { endereco: 'Mais de 1.600 lojas em todos os estados', telefone: '0800 275 1313', whatsapp: '(85) 3255-7100', horario: 'Seg-Sáb: 7h-22h | Dom: 8h-20h' },
+    descricao: 'Rede com foco em preço baixo. Programa Sempre presente com descontos.',
+  },
+  {
+    id: 'drogariasaopaulo', nome: 'Drogaria São Paulo', cor: '#d69e2e',
+    cidades: ['São Paulo','Campinas','Santos','Sorocaba','Ribeirão Preto','São José dos Campos','Guarulhos','Osasco','Santo André','São Bernardo do Campo','Jundiaí','Piracicaba','Bauru','Limeira','Franca','Mauá','Diadema','Carapicuíba','Mogi das Cruzes','Suzano','Taboão da Serra','Barueri','Cotia','Americana','Indaiatuba','Araraquara','São Carlos','Marília','Presidente Prudente','Rio Claro','Araçatuba','Botucatu','Jaú','Assis','Itapetininga','Taubaté','Jacareí','Bragança Paulista','Atibaia','Itu','Salto','Valinhos','Hortolândia','Sumaré','Santa Bárbara d\'Oeste','Sertãozinho','Catanduva','Birigui','Ourinhos','Leme','Itatiba','Votorantim','Mogi Guaçu','Franco da Rocha','Cajamar','Caieiras','Ferraz de Vasconcelos','Itaquaquecetuba','Praia Grande','São Vicente','Guarujá','Cubatão','Itanhaém','Bertioga','Mongaguá','Peruíbe'],
+    urlBusca: (t) => `https://www.drogariasaopaulo.com.br/search?w=${encodeURIComponent(t)}`,
+    contato: { endereco: 'Mais de 1.000 lojas em SP e RJ', telefone: '0800 770 7766', whatsapp: '(11) 3003-7766', horario: 'Seg-Sáb: 7h-22h | Dom: 8h-20h' },
+    descricao: 'Rede focada em SP e RJ. Programa de fidelidade com cashback.',
+  },
+  {
+    id: 'panvel', nome: 'Panvel', cor: '#805ad5',
+    cidades: ['Porto Alegre','Caxias do Sul','Pelotas','Santa Maria','Canoas','Gravataí','Viamão','Novo Hamburgo','São Leopoldo','Rio Grande','Passo Fundo','Sapucaia do Sul','Cachoeirinha','Uruguaiana','Santa Cruz do Sul','Bagé','Bento Gonçalves','Erechim','Guaíba','Cachoeira do Sul','Lajeado','Ijuí','Alegrete','Santo Ângelo','Santana do Livramento','Cruz Alta','Venâncio Aires','São Borja','São Gabriel','Camaquã','Farroupilha','Vacaria','Montenegro','Curitiba','Londrina','Maringá','Cascavel','Ponta Grossa','São José dos Pinhais','Foz do Iguaçu','Colombo','Guarapuava','Toledo','Apucarana','Arapongas','Umuarama','Campo Mourão','Francisco Beltrão','Pato Branco','Cianorte','Florianópolis','Joinville','Blumenau','Chapecó','Criciúma','Itajaí','Jaraguá do Sul','Lages','Balneário Camboriú','Brusque','Tubarão','São Bento do Sul','Concórdia','Camboriú','Navegantes','Rio do Sul'],
+    urlBusca: (t) => `https://www.panvel.com/panvel/buscarProduto.do?termoPesquisa=${encodeURIComponent(t)}`,
+    contato: { endereco: 'Mais de 580 lojas no Sul do Brasil (RS, PR, SC)', telefone: '0800 051 8100', whatsapp: '(51) 3218-8100', horario: 'Seg-Sáb: 7h30-22h | Dom: 8h-20h' },
+    descricao: 'Maior rede do Sul do Brasil. Programa Panvel Mais com descontos.',
+  },
+  {
+    id: 'ultrafarma', nome: 'Ultrafarma', cor: '#dd6b20', cidades: [REDE_NACIONAL],
+    urlBusca: (t) => `https://www.ultrafarma.com.br/busca?q=${encodeURIComponent(t)}`,
+    contato: { endereco: 'Lojas em SP + Entrega para todo o Brasil via e-commerce', telefone: '0800 771 5522', whatsapp: '(11) 3003-5522', horario: 'Seg-Sex: 8h-20h | Sáb: 8h-14h' },
+    descricao: 'Foco em preços baixos e genéricos. Forte presença online com entrega nacional.',
+  },
+  {
+    id: 'farmaciapopular', nome: 'Farmácia Popular', cor: '#319795', cidades: [REDE_NACIONAL],
+    urlBusca: () => `https://www.gov.br/saude/pt-br/composicao/sctie/daf/programa-farmacia-popular`,
+    contato: { endereco: 'Programa do Governo Federal — disponível em farmácias credenciadas', telefone: '136 (Disque Saúde)', whatsapp: 'Não disponível', horario: 'Conforme horário da farmácia credenciada' },
+    descricao: 'Programa do Governo Federal. Medicamentos gratuitos ou com até 90% de desconto.',
+  },
+  {
+    id: 'nissei', nome: 'Nissei', cor: '#e53e3e',
+    cidades: ['Curitiba','Londrina','Maringá','Cascavel','Ponta Grossa','Foz do Iguaçu','Guarapuava','Campo Mourão','Toledo','Apucarana','Arapongas','Umuarama','Francisco Beltrão','Pato Branco','Cianorte','Paranavaí','Cornélio Procópio','Jacarezinho','Telêmaco Borba','Castro','Rolândia','Ibiporã','Cambé','Sarandi','São José dos Pinhais','Colombo','Araucária','Campo Largo','Pinhais','Almirante Tamandaré','Piraquara','Fazenda Rio Grande'],
+    urlBusca: (t) => `https://www.farmaciasnissei.com.br/busca?q=${encodeURIComponent(t)}`,
+    contato: { endereco: 'Mais de 400 lojas no Paraná', telefone: '0800 643 0019', whatsapp: '(41) 3015-0019', horario: 'Seg-Sáb: 7h-22h | Dom: 8h-20h' },
+    descricao: 'Maior rede de farmácias do Paraná. Programa Nissei Fidelidade.',
+  },
+  {
+    id: 'venancio', nome: 'Venâncio', cor: '#2b6cb0',
+    cidades: ['Rio de Janeiro','Niterói','São Gonçalo','Duque de Caxias','Nova Iguaçu','Petrópolis','Campos dos Goytacazes','Volta Redonda','Barra Mansa','Macaé','Cabo Frio','Teresópolis','Angra dos Reis','Resende','Nova Friburgo','Maricá','Araruama','Rio das Ostras','São Pedro da Aldeia','Itaboraí','Magé','Mesquita','Belford Roxo','São João de Meriti','Nilópolis','Queimados'],
+    urlBusca: (t) => `https://www.drogariavenancio.com.br/busca?q=${encodeURIComponent(t)}`,
+    contato: { endereco: 'Mais de 200 lojas no Rio de Janeiro', telefone: '0800 282 0808', whatsapp: '(21) 3003-0808', horario: 'Seg-Sáb: 7h-22h | Dom: 8h-20h' },
+    descricao: 'Maior rede de farmácias do Rio de Janeiro. Programa Venâncio Fidelidade.',
+  },
+  {
+    id: 'araujo', nome: 'Drogaria Araujo', cor: '#c53030',
+    cidades: ['Belo Horizonte','Contagem','Betim','Uberlândia','Juiz de Fora','Uberaba','Montes Claros','Governador Valadares','Divinópolis','Sete Lagoas','Ipatinga','Ribeirão das Neves','Santa Luzia','Ibirité','Poços de Caldas','Patos de Minas','Teófilo Otoni','Pouso Alegre','Barbacena','Sabará','Varginha','Conselheiro Lafaiete','Araguari','Itabira','Passos','Coronel Fabriciano','Muriaé','Ituiutaba','Araxá','Lavras','Nova Lima','Itaúna','Timóteo','Paracatu','Caratinga','Manhuaçu','Ubá','Curvelo','Patrocínio'],
+    urlBusca: (t) => `https://www.araujo.com.br/busca?q=${encodeURIComponent(t)}`,
+    contato: { endereco: 'Mais de 300 lojas em Minas Gerais', telefone: '0800 725 0404', whatsapp: '(31) 3003-0404', horario: 'Seg-Sáb: 7h-22h | Dom: 8h-20h' },
+    descricao: 'Maior rede de farmácias de Minas Gerais. Programa Araujo Fidelidade.',
+  },
 ];
 
 const MEDICAMENTOS = [
@@ -52,50 +118,24 @@ const MEDICAMENTOS = [
   { nome: 'Dexametasona 4mg', substancia: 'Dexametasona', classe: 'Corticosteroide', tarja: 'vermelha', precos: { drogasil: 16.90, drogaraia: 17.50, paguemenos: 14.90, drogariasaopaulo: 17.20, panvel: 15.90, ultrafarma: 12.90, farmaciapopular: 0, nissei: 15.50, venancio: 17.10, araujo: 16.20 }},
 ];
 
-const ESTADOS_CIDADES: Record<string, string[]> = {
-  'SP': ['São Paulo','Campinas','Santos','Sorocaba','Ribeirão Preto','São José dos Campos','Guarulhos','Osasco','Santo André','São Bernardo'],
-  'RJ': ['Rio de Janeiro','Niterói','São Gonçalo','Duque de Caxias','Nova Iguaçu','Petrópolis'],
-  'MG': ['Belo Horizonte','Contagem','Betim','Uberlândia','Juiz de Fora','Uberaba','Montes Claros','Governador Valadares'],
-  'MT': ['Cuiabá','Várzea Grande','Rondonópolis','Sinop'],
-  'GO': ['Goiânia','Aparecida de Goiânia','Anápolis'],
-  'PA': ['Belém','Ananindeua','Marabá','Santarém'],
-  'PR': ['Curitiba','Londrina','Maringá','Cascavel','Ponta Grossa','Foz do Iguaçu'],
-  'RS': ['Porto Alegre','Caxias do Sul','Pelotas','Santa Maria','Canoas'],
-  'SC': ['Florianópolis','Joinville','Blumenau','Chapecó'],
-  'BA': ['Salvador','Feira de Santana','Vitória da Conquista'],
-  'PE': ['Recife','Jaboatão','Olinda','Caruaru'],
-  'CE': ['Fortaleza','Caucaia','Juazeiro do Norte'],
-  'DF': ['Brasília'],
-  'AM': ['Manaus'],
-  'RN': ['Natal','Mossoró'],
-  'PB': ['João Pessoa','Campina Grande'],
-  'PI': ['Teresina'],
-  'MA': ['São Luís'],
-  'AP': ['Macapá'],
-  'TO': ['Palmas'],
-  'MS': ['Campo Grande','Dourados'],
-  'ES': ['Vitória','Vila Velha','Serra'],
-  'SE': ['Aracaju'],
-  'AL': ['Maceió'],
-  'RR': ['Boa Vista'],
-  'AC': ['Rio Branco'],
-  'RO': ['Porto Velho'],
-};
-
 export default function PriceComparison() {
   const [search, setSearch] = useState('');
   const [estado, setEstado] = useState('');
   const [cidade, setCidade] = useState('');
   const [selectedFarmacias, setSelectedFarmacias] = useState<Set<string>>(new Set(FARMACIAS.map(f => f.id)));
   const [selectedMed, setSelectedMed] = useState<typeof MEDICAMENTOS[0] | null>(null);
+  const [expandedFarmacia, setExpandedFarmacia] = useState<string | null>(null);
   const [tab, setTab] = useState<'comparar' | 'gratuitos' | 'descontos'>('comparar');
 
-  const cidadesDoEstado = estado ? (ESTADOS_CIDADES[estado] || []) : [];
+  const cidadesDoEstado = useMemo(() => {
+    if (!estado) return [];
+    return (ESTADOS_CIDADES_COMPLETO[estado] || []).sort();
+  }, [estado]);
 
   const farmaciasNaCidade = useMemo(() => {
     if (!cidade) return FARMACIAS;
-    return FARMACIAS.filter(f => 
-      f.cidades.includes(REDE_NACIONAL) || 
+    return FARMACIAS.filter(f =>
+      f.cidades.includes(REDE_NACIONAL) ||
       f.cidades.some(c => c.toLowerCase() === cidade.toLowerCase())
     );
   }, [cidade]);
@@ -141,6 +181,10 @@ export default function PriceComparison() {
     'Diazepam 5mg', 'Fluoxetina 20mg', 'Amitriptilina 25mg',
   ];
 
+  const toggleExpandFarmacia = (farmaciaId: string) => {
+    setExpandedFarmacia(expandedFarmacia === farmaciaId ? null : farmaciaId);
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-4 space-y-6">
       <div className="text-center space-y-2">
@@ -171,7 +215,9 @@ export default function PriceComparison() {
               <select value={estado} onChange={e => { setEstado(e.target.value); setCidade(''); }}
                 className="px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm">
                 <option value="">Todos os Estados</option>
-                {Object.keys(ESTADOS_CIDADES).sort().map(uf => <option key={uf} value={uf}>{uf}</option>)}
+                {Object.keys(ESTADOS_CIDADES_COMPLETO).sort().map(uf => (
+                  <option key={uf} value={uf}>{uf} — {ESTADOS_NOMES[uf]}</option>
+                ))}
               </select>
               <select value={cidade} onChange={e => setCidade(e.target.value)} disabled={!estado}
                 className="px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm disabled:opacity-50">
@@ -217,29 +263,89 @@ export default function PriceComparison() {
                   <h2 className="text-xl font-bold text-white">{selectedMed.nome}</h2>
                   <p className="text-sm text-gray-400">{selectedMed.substancia} — {selectedMed.classe}</p>
                 </div>
-                <button onClick={() => setSelectedMed(null)} className="text-sm text-emerald-400 hover:underline">← Voltar</button>
+                <button onClick={() => { setSelectedMed(null); setExpandedFarmacia(null); }} className="text-sm text-emerald-400 hover:underline">← Voltar</button>
               </div>
               <div className="space-y-2">
                 {getPrecosFarmacias(selectedMed).map((p, i) => {
                   const isMin = i === 0 && p.preco > 0;
                   const isFree = p.preco === 0;
+                  const isExpanded = expandedFarmacia === p.farmacia.id;
                   return (
-                    <div key={p.farmacia.id}
-                      className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
-                        isMin ? 'border-emerald-500 bg-emerald-500/10' : isFree ? 'border-cyan-500 bg-cyan-500/10' : 'border-gray-700/50 bg-gray-900/50'}`}>
-                      <div className="flex items-center gap-3">
-                        <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: p.farmacia.cor }} />
-                        <span className="text-white font-medium text-sm">{p.farmacia.nome}</span>
-                        {isMin && <span className="text-xs bg-emerald-600 text-white px-2 py-0.5 rounded-full">Menor preço</span>}
-                        {isFree && <span className="text-xs bg-cyan-600 text-white px-2 py-0.5 rounded-full">Gratuito</span>}
+                    <div key={p.farmacia.id} className="rounded-lg border transition-all overflow-hidden"
+                      style={{ borderColor: isMin ? '#10b981' : isFree ? '#06b6d4' : 'rgba(55,65,81,0.5)' }}>
+                      <div
+                        onClick={() => toggleExpandFarmacia(p.farmacia.id)}
+                        className={`flex items-center justify-between p-3 cursor-pointer transition-all ${
+                          isMin ? 'bg-emerald-500/10' : isFree ? 'bg-cyan-500/10' : 'bg-gray-900/50 hover:bg-gray-800/80'}`}>
+                        <div className="flex items-center gap-3">
+                          <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: p.farmacia.cor }} />
+                          <span className="text-white font-medium text-sm">{p.farmacia.nome}</span>
+                          {isMin && <span className="text-xs bg-emerald-600 text-white px-2 py-0.5 rounded-full">Menor preço</span>}
+                          {isFree && <span className="text-xs bg-cyan-600 text-white px-2 py-0.5 rounded-full">Gratuito</span>}
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className={`font-bold ${isFree ? 'text-cyan-400' : isMin ? 'text-emerald-400' : 'text-white'}`}>
+                            {isFree ? 'GRÁTIS' : `R$ ${p.preco.toFixed(2).replace('.', ',')}`}
+                          </span>
+                          <span className="text-gray-400 text-xs">{isExpanded ? '▲' : '▼'}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`font-bold ${isFree ? 'text-cyan-400' : isMin ? 'text-emerald-400' : 'text-white'}`}>
-                          {isFree ? 'GRÁTIS' : `R$ ${p.preco.toFixed(2).replace('.', ',')}`}
-                        </span>
-                        <a href={p.farmacia.urlBusca(selectedMed.nome)} target="_blank" rel="noopener noreferrer"
-                          className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded transition-colors">Ver →</a>
-                      </div>
+                      {/* Expanded contact details */}
+                      {isExpanded && (
+                        <div className="px-4 py-3 bg-gray-900/80 border-t border-gray-700/50 space-y-3">
+                          <p className="text-xs text-gray-400">{p.farmacia.descricao}</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                              <div className="flex items-start gap-2">
+                                <span className="text-emerald-400 text-sm mt-0.5">📍</span>
+                                <div>
+                                  <p className="text-xs text-gray-500 uppercase">Endereço</p>
+                                  <p className="text-sm text-white">{p.farmacia.contato.endereco}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-start gap-2">
+                                <span className="text-emerald-400 text-sm mt-0.5">📞</span>
+                                <div>
+                                  <p className="text-xs text-gray-500 uppercase">Telefone</p>
+                                  <p className="text-sm text-white">{p.farmacia.contato.telefone}</p>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex items-start gap-2">
+                                <span className="text-emerald-400 text-sm mt-0.5">💬</span>
+                                <div>
+                                  <p className="text-xs text-gray-500 uppercase">WhatsApp</p>
+                                  <p className="text-sm text-white">{p.farmacia.contato.whatsapp}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-start gap-2">
+                                <span className="text-emerald-400 text-sm mt-0.5">🕐</span>
+                                <div>
+                                  <p className="text-xs text-gray-500 uppercase">Horário</p>
+                                  <p className="text-sm text-white">{p.farmacia.contato.horario}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex gap-2 pt-2">
+                            <a href={`tel:${p.farmacia.contato.telefone.replace(/\D/g, '')}`}
+                              className="flex-1 text-center px-3 py-2 bg-emerald-600/20 border border-emerald-600/40 rounded-lg text-emerald-300 text-xs font-medium hover:bg-emerald-600/30 transition-all">
+                              📞 Ligar
+                            </a>
+                            {p.farmacia.contato.whatsapp !== 'Não disponível' && (
+                              <a href={`https://wa.me/55${p.farmacia.contato.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"
+                                className="flex-1 text-center px-3 py-2 bg-green-600/20 border border-green-600/40 rounded-lg text-green-300 text-xs font-medium hover:bg-green-600/30 transition-all">
+                                💬 WhatsApp
+                              </a>
+                            )}
+                            <a href={p.farmacia.urlBusca(selectedMed.nome)} target="_blank" rel="noopener noreferrer"
+                              className="flex-1 text-center px-3 py-2 bg-blue-600/20 border border-blue-600/40 rounded-lg text-blue-300 text-xs font-medium hover:bg-blue-600/30 transition-all">
+                              🌐 Ver no Site
+                            </a>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
