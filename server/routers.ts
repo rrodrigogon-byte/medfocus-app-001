@@ -3262,6 +3262,46 @@ AVISO: Sugestão de apoio — prescrição final é responsabilidade do médico.
       return await refreshCMEDData();
     }),
   }),
+
+  // ─── Bulário Digital API ───────────────────────────────────────
+  bulario: router({
+    stats: publicProcedure.query(async () => {
+      const { getBularioStats } = await import('./services/bularioService');
+      return getBularioStats();
+    }),
+
+    search: publicProcedure
+      .input(z.object({
+        query: z.string().optional(),
+        tipo: z.string().optional(),
+        tarja: z.string().optional(),
+        classe: z.string().optional(),
+        laboratorio: z.string().optional(),
+        page: z.number().optional(),
+        pageSize: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        const { searchBulario } = await import('./services/bularioService');
+        return searchBulario(input);
+      }),
+
+    classes: publicProcedure.query(async () => {
+      const { getBularioClasses } = await import('./services/bularioService');
+      return getBularioClasses();
+    }),
+
+    labs: publicProcedure.query(async () => {
+      const { getBularioLabs } = await import('./services/bularioService');
+      return getBularioLabs();
+    }),
+
+    byId: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const { getBularioById } = await import('./services/bularioService');
+        return getBularioById(input.id);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
