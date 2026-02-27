@@ -114,3 +114,4 @@ temp/
 .env.local
 .env.production
 
+*.cjs
