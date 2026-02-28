@@ -305,14 +305,15 @@ async function startServer() {
   // Create Mercado Pago checkout
   app.post('/api/mercadopago/create-checkout', async (req, res) => {
     try {
-      const { createMPSubscription, isMPConfigured } = await import('../services/mercadoPagoService');
+      const { createMPCheckoutPreference, isMPConfigured } = await import('../services/mercadoPagoService');
       if (!isMPConfigured()) {
         return res.status(500).json({ error: 'Mercado Pago não configurado' });
       }
       const { userId, userEmail, userName, planId, interval, partnershipCode } = req.body;
       const origin = req.headers.origin || process.env.APP_URL || 'https://medfocus-app-969630653332.southamerica-east1.run.app';
 
-      const result = await createMPSubscription({
+      // Use Checkout Pro preference (works immediately, supports Pix/Card/Boleto)
+      const result = await createMPCheckoutPreference({
         userId,
         userEmail: userEmail || '',
         userName: userName || '',
@@ -322,7 +323,7 @@ async function startServer() {
         origin,
       });
 
-      res.json({ url: result.initPoint, subscriptionId: result.subscriptionId });
+      res.json({ url: result.initPoint, preferenceId: result.preferenceId });
     } catch (err: any) {
       console.error('[MercadoPago] Checkout creation error:', err.message);
       res.status(500).json({ error: err.message });
