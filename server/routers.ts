@@ -40,92 +40,135 @@ export const appRouter = router({
         partnershipCode: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const stripe = getStripe();
-        // Map 'pro' to 'estudante' for backwards compatibility
-        const effectivePlanId = input.planId === 'pro' ? 'estudante' : input.planId;
-        const plan = PLANS[effectivePlanId as keyof typeof PLANS] || PLANS.estudante;
-        const origin = ctx.req.headers.origin || process.env.APP_URL || "https://medfocus-app-ul6txuf2eq-rj.a.run.app";
-        const isYearly = input.interval === 'yearly';
-        const isPartnership = !!input.partnershipCode;
-        
-        // Calculate price based on plan, interval, and partnership
-        let unitAmount: number;
-        let planDescription: string;
-        if (isPartnership && isYearly && 'partnershipYearlyPrice' in plan) {
-          unitAmount = (plan as any).partnershipYearlyPrice;
-          planDescription = `${plan.description} - Parceria Universitária (40% desc)`;
-        } else if (isYearly) {
-          unitAmount = plan.yearlyPrice;
-          planDescription = `${plan.description} - Plano Anual (20% desc)`;
-        } else {
-          unitAmount = plan.price;
-          planDescription = `${plan.description} - R$ ${(plan.price / 100).toFixed(2)}/mês`;
-        }
-        const recurringInterval = isYearly ? 'year' as const : 'month' as const;
-
-        // Stripe Accounts V2 requires a customer object (not just email)
-        // Find existing customer or create a new one
-        let customerId: string | undefined;
-        if (ctx.user.stripeCustomerId) {
-          customerId = ctx.user.stripeCustomerId;
-        } else {
-          // Search for existing customer by email
-          const existingCustomers = await stripe.customers.list({
-            email: ctx.user.email || undefined,
-            limit: 1,
-          });
-          if (existingCustomers.data.length > 0) {
-            customerId = existingCustomers.data[0].id;
-          } else {
-            // Create new customer
-            const newCustomer = await stripe.customers.create({
-              email: ctx.user.email || undefined,
-              name: ctx.user.name || undefined,
-              metadata: {
-                user_id: ctx.user.id.toString(),
-                platform: 'medfocus',
-              },
-            });
-            customerId = newCustomer.id;
+        try {
+          const stripe = getStripe();
+          if (!ENV.stripeSecretKey) {
+            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Sistema de pagamento não configurado. Entre em contato com o suporte.' });
           }
-        }
+          // Map 'pro' to 'estudante' for backwards compatibility
+          const effectivePlanId = input.planId === 'pro' ? 'estudante' : input.planId;
+          const plan = PLANS[effectivePlanId as keyof typeof PLANS] || PLANS.estudante;
+          const origin = ctx.req.headers.origin || process.env.APP_URL || "https://medfocus-app-969630653332.southamerica-east1.run.app";
+          const isYearly = input.interval === 'yearly';
+          const isPartnership = !!input.partnershipCode;
+          
+          // Calculate price based on plan, interval, and partnership
+          let unitAmount: number;
+          let planDescription: string;
+          if (isPartnership && isYearly && 'partnershipYearlyPrice' in plan) {
+            unitAmount = (plan as any).partnershipYearlyPrice;
+            planDescription = `${plan.description} - Parceria Universitária (40% desc)`;
+          } else if (isYearly) {
+            unitAmount = plan.yearlyPrice;
+            planDescription = `${plan.description} - Plano Anual (20% desc)`;
+          } else {
+            unitAmount = plan.price;
+            planDescription = `${plan.description} - R$ ${(plan.price / 100).toFixed(2)}/mês`;
+          }
+          const recurringInterval = isYearly ? 'year' as const : 'month' as const;
 
-        const session = await stripe.checkout.sessions.create({
-          mode: "subscription",
-          payment_method_types: ["card"],
-          customer: customerId,
-          client_reference_id: ctx.user.id.toString(),
-          allow_promotion_codes: true,
-          subscription_data: {
-            trial_period_days: 7,
-          },
-          metadata: {
-            user_id: ctx.user.id.toString(),
-            customer_email: ctx.user.email || "",
-            customer_name: ctx.user.name || "",
-            plan: effectivePlanId,
-            interval: input.interval,
-            partnership_code: input.partnershipCode || "",
-          },
-          line_items: [
-            {
-              price_data: {
-                currency: plan.currency,
-                product_data: {
-                  name: `${plan.name} (${isYearly ? 'Anual' : 'Mensal'})`,
-                  description: planDescription,
-                },
-                unit_amount: unitAmount,
-                recurring: { interval: recurringInterval },
-              },
-              quantity: 1,
+          // Find existing customer or create a new one
+          let customerId: string | undefined;
+          if (ctx.user.stripeCustomerId) {
+            customerId = ctx.user.stripeCustomerId;
+          } else {
+            try {
+              // Search for existing customer by email
+              const existingCustomers = await stripe.customers.list({
+                email: ctx.user.email || undefined,
+                limit: 1,
+              });
+              if (existingCustomers.data.length > 0) {
+                customerId = existingCustomers.data[0].id;
+              } else {
+                // Create new customer
+                const newCustomer = await stripe.customers.create({
+                  email: ctx.user.email || undefined,
+                  name: ctx.user.name || undefined,
+                  metadata: {
+                    user_id: ctx.user.id.toString(),
+                    platform: 'medfocus',
+                  },
+                });
+                customerId = newCustomer.id;
+              }
+            } catch (custErr: any) {
+              console.error('[Stripe] Customer creation error:', custErr.message);
+              throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Erro ao preparar pagamento. Tente novamente em alguns minutos.' });
+            }
+          }
+
+          // Save stripeCustomerId to user if not already saved
+          if (customerId && !ctx.user.stripeCustomerId) {
+            try {
+              const { getDb } = await import('./db');
+              const { users } = await import('../drizzle/schema');
+              const { eq } = await import('drizzle-orm');
+              const db = await getDb();
+              if (db) {
+                await db.update(users)
+                  .set({ stripeCustomerId: customerId })
+                  .where(eq(users.id, ctx.user.id));
+              }
+            } catch (e) {
+              console.warn('[Stripe] Could not save customer ID to user:', e);
+            }
+          }
+
+          // Detect if we're in test mode
+          const isTestMode = ENV.stripeSecretKey.startsWith('sk_test_');
+          console.log(`[Stripe] Creating checkout session (${isTestMode ? 'TEST' : 'LIVE'} mode) for user ${ctx.user.id}, plan: ${effectivePlanId}`);
+
+          const session = await stripe.checkout.sessions.create({
+            mode: "subscription",
+            // Let Stripe automatically determine available payment methods
+            // This enables Card, Pix, Boleto etc. based on account capabilities
+            customer: customerId,
+            client_reference_id: ctx.user.id.toString(),
+            allow_promotion_codes: true,
+            subscription_data: {
+              trial_period_days: 7,
             },
-          ],
-          success_url: `${origin}/?payment=success`,
-          cancel_url: `${origin}/?payment=cancelled`,
-        });
+            metadata: {
+              user_id: ctx.user.id.toString(),
+              customer_email: ctx.user.email || "",
+              customer_name: ctx.user.name || "",
+              plan: effectivePlanId,
+              interval: input.interval,
+              partnership_code: input.partnershipCode || "",
+            },
+            line_items: [
+              {
+                price_data: {
+                  currency: plan.currency,
+                  product_data: {
+                    name: `${plan.name} (${isYearly ? 'Anual' : 'Mensal'})`,
+                    description: planDescription,
+                  },
+                  unit_amount: unitAmount,
+                  recurring: { interval: recurringInterval },
+                },
+                quantity: 1,
+              },
+            ],
+            success_url: `${origin}/?payment=success`,
+            cancel_url: `${origin}/?payment=cancelled`,
+          });
 
-        return { url: session.url };
+          console.log(`[Stripe] Checkout session created: ${session.id}`);
+          return { url: session.url };
+        } catch (err: any) {
+          console.error('[Stripe] Checkout creation error:', err.message, err.type, err.code);
+          if (err instanceof TRPCError) throw err;
+          // Provide user-friendly error messages
+          if (err.type === 'StripeAuthenticationError') {
+            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Configuração de pagamento inválida. Contate o suporte.' });
+          }
+          if (err.type === 'StripePermissionError' || err.code === 'account_invalid') {
+            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Sistema de pagamento em ativação. Tente novamente em breve.' });
+          }
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `Erro ao criar sessão de pagamento: ${err.message || 'erro desconhecido'}` });
+        }
       }),
 
     getSubscription: protectedProcedure.query(async ({ ctx }) => {

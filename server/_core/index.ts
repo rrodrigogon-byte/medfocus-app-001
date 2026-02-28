@@ -258,6 +258,126 @@ async function startServer() {
     }
   });
 
+  // ─── Mercado Pago API Endpoints ────────────────────────
+  // Webhook for Mercado Pago notifications
+  app.post('/api/mercadopago/webhook', async (req, res) => {
+    try {
+      const { processMPWebhook } = await import('../services/mercadoPagoService');
+      const result = await processMPWebhook(req.body);
+      console.log('[MercadoPago] Webhook result:', result);
+
+      if (result.action === 'payment_approved' || result.action === 'subscription_activated') {
+        // Activate user subscription
+        if (result.userId) {
+          try {
+            const { getDb } = await import('../db');
+            const { users } = await import('../../drizzle/schema');
+            const { eq } = await import('drizzle-orm');
+            const db = await getDb();
+            if (db) {
+              const trialEnd = new Date();
+              trialEnd.setDate(trialEnd.getDate() + 7);
+              await db.update(users)
+                .set({
+                  plan: result.planId || 'estudante',
+                  trialActive: true,
+                  trialEndDate: trialEnd,
+                  subscriptionStatus: 'active',
+                  paymentGateway: 'mercadopago',
+                  mpSubscriptionId: result.paymentId || null,
+                })
+                .where(eq(users.id, result.userId));
+              console.log(`[MercadoPago] User ${result.userId} activated with plan ${result.planId}`);
+            }
+          } catch (dbErr: any) {
+            console.error('[MercadoPago] DB update error:', dbErr.message);
+          }
+        }
+      }
+
+      res.status(200).json({ received: true });
+    } catch (err: any) {
+      console.error('[MercadoPago] Webhook error:', err.message);
+      res.status(200).json({ received: true }); // Always return 200 to avoid retries
+    }
+  });
+
+  // Create Mercado Pago checkout
+  app.post('/api/mercadopago/create-checkout', async (req, res) => {
+    try {
+      const { createMPSubscription, isMPConfigured } = await import('../services/mercadoPagoService');
+      if (!isMPConfigured()) {
+        return res.status(500).json({ error: 'Mercado Pago não configurado' });
+      }
+      const { userId, userEmail, userName, planId, interval, partnershipCode } = req.body;
+      const origin = req.headers.origin || process.env.APP_URL || 'https://medfocus-app-969630653332.southamerica-east1.run.app';
+
+      const result = await createMPSubscription({
+        userId,
+        userEmail: userEmail || '',
+        userName: userName || '',
+        planId: planId || 'estudante',
+        interval: interval || 'monthly',
+        partnershipCode,
+        origin,
+      });
+
+      res.json({ url: result.initPoint, subscriptionId: result.subscriptionId });
+    } catch (err: any) {
+      console.error('[MercadoPago] Checkout creation error:', err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Create Mercado Pago Checkout Pro preference (simpler, one-click)
+  app.post('/api/mercadopago/create-preference', async (req, res) => {
+    try {
+      const { createMPCheckoutPreference, isMPConfigured } = await import('../services/mercadoPagoService');
+      if (!isMPConfigured()) {
+        return res.status(500).json({ error: 'Mercado Pago não configurado' });
+      }
+      const { userId, userEmail, userName, planId, interval, partnershipCode } = req.body;
+      const origin = req.headers.origin || process.env.APP_URL || 'https://medfocus-app-969630653332.southamerica-east1.run.app';
+
+      const result = await createMPCheckoutPreference({
+        userId,
+        userEmail: userEmail || '',
+        userName: userName || '',
+        planId: planId || 'estudante',
+        interval: interval || 'monthly',
+        partnershipCode,
+        origin,
+      });
+
+      res.json({ url: result.initPoint, preferenceId: result.preferenceId });
+    } catch (err: any) {
+      console.error('[MercadoPago] Preference creation error:', err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Check Mercado Pago configuration status
+  app.get('/api/mercadopago/status', async (_req, res) => {
+    const { isMPConfigured } = await import('../services/mercadoPagoService');
+    res.json({
+      configured: isMPConfigured(),
+      gateway: 'mercadopago',
+      methods: ['pix', 'credit_card', 'debit_card', 'boleto'],
+    });
+  });
+
+  // Payment gateway status (which gateways are available)
+  app.get('/api/payment/gateways', async (_req, res) => {
+    const { isMPConfigured } = await import('../services/mercadoPagoService');
+    const stripeConfigured = !!ENV.stripeSecretKey;
+    const mpConfigured = isMPConfigured();
+    res.json({
+      mercadopago: { available: mpConfigured, primary: true, methods: ['pix', 'credit_card', 'debit_card', 'boleto'] },
+      stripe: { available: stripeConfigured, primary: false, methods: ['card'] },
+      recommended: mpConfigured ? 'mercadopago' : (stripeConfigured ? 'stripe' : 'none'),
+    });
+  });
+
   // Serve static files / Vite dev server
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);

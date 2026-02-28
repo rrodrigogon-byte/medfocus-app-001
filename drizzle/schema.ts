@@ -15,7 +15,7 @@ export const users = mysqlTable("users", {
   // Stripe fields
   stripeCustomerId: varchar("stripeCustomerId", { length: 128 }),
   stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 128 }),
-  plan: mysqlEnum("plan", ["free", "pro", "premium"]).default("free").notNull(),
+  plan: mysqlEnum("plan", ["free", "pro", "premium", "estudante", "medico", "professor", "admin"]).default("free").notNull(),
   
   // Trial fields
   trialStartDate: timestamp("trialStartDate"),
@@ -25,6 +25,9 @@ export const users = mysqlTable("users", {
   
   // Subscription billing
   billingInterval: mysqlEnum("billingInterval", ["monthly", "yearly"]).default("monthly"),
+  subscriptionStatus: varchar("subscriptionStatus", { length: 32 }).default("none"),
+  paymentGateway: varchar("paymentGateway", { length: 32 }).default("stripe"),
+  mpSubscriptionId: varchar("mpSubscriptionId", { length: 128 }),
 
   // Profile fields for medical student
   universityId: varchar("universityId", { length: 64 }),

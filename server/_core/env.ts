@@ -26,6 +26,12 @@ export const ENV = {
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
   stripePublishableKey: process.env.VITE_STRIPE_PUBLISHABLE_KEY ?? "",
 
+  // Mercado Pago
+  mpAccessToken: process.env.MP_ACCESS_TOKEN ?? "",
+  mpPublicKey: process.env.MP_PUBLIC_KEY ?? "",
+  mpClientId: process.env.MP_CLIENT_ID ?? "",
+  mpClientSecret: process.env.MP_CLIENT_SECRET ?? "",
+
   // CORS
   corsOrigin: process.env.CORS_ORIGIN ?? "*",
 

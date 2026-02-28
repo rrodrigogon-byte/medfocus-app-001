@@ -50,7 +50,7 @@ steps:
       - '--add-cloudsql-instances'
       - 'viralgram-4-0-rodrigo:southamerica-east1:viralgram-mysql'
       - '--update-env-vars'
-      - 'NODE_ENV=production'
+      - 'NODE_ENV=production,MP_ACCESS_TOKEN=APP_USR-3806961712774010-022816-a0067bac344e1badf6789ed35f4be39c-181888138,MP_PUBLIC_KEY=APP_USR-02d99962-9560-4686-8caf-d543bc235de8,MP_CLIENT_ID=3806961712774010,MP_CLIENT_SECRET=RLG14x1o6hZTiYUYLRSwShougvx0vC6B'
 
 substitutions:
   _COMMIT_SHA: 'latest'

@@ -1,28 +1,40 @@
 /**
- * MedFocus Pricing Plans v6.0 — Multi-Tier Pricing
+ * MedFocus Pricing Plans v7.0 — Dual Payment Gateway
+ * Primary: Mercado Pago (Pix, Cartão, Boleto)
+ * Fallback: Stripe (Cartão)
+ * 
  * Estudante: R$ 49,99/mês | Anual: R$ 479,90 (20% desc)
  * Médico: R$ 45,99/mês | Anual: R$ 441,50 (20% desc)
  * Professor: R$ 9,99/mês | Anual: R$ 95,90 (20% desc) | Grátis na Parceria
- * Parceria Universitária: 40% desc anual (min 30 alunos)
  * Trial de 7 dias gratuito
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { trpc } from '../../lib/trpc';
 
 type PlanType = 'estudante' | 'medico' | 'professor';
+type PaymentGateway = 'mercadopago' | 'stripe';
+
+interface GatewayStatus {
+  mercadopago: { available: boolean; primary: boolean; methods: string[] };
+  stripe: { available: boolean; primary: boolean; methods: string[] };
+  recommended: string;
+}
 
 const PricingPlans: React.FC = () => {
   const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly');
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [selectedGateway, setSelectedGateway] = useState<PaymentGateway>('mercadopago');
+  const [gateways, setGateways] = useState<GatewayStatus | null>(null);
   const [showPartnership, setShowPartnership] = useState(false);
   const [partnershipForm, setPartnershipForm] = useState({
     universityName: '', professorName: '', professorEmail: '', department: '',
     estimatedStudents: '', message: '',
   });
   const [partnershipSent, setPartnershipSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const subscriptionQuery = trpc.stripe.getSubscription.useQuery(undefined, { retry: false });
-  const createCheckout = trpc.stripe.createCheckout.useMutation();
+  const createStripeCheckout = trpc.stripe.createCheckout.useMutation();
 
   const sub = subscriptionQuery.data;
   const currentPlan = sub?.plan || 'free';
@@ -30,16 +42,57 @@ const PricingPlans: React.FC = () => {
   const trialActive = sub?.trialActive || false;
   const trialDaysLeft = sub?.trialDaysLeft || 0;
 
+  // Fetch available payment gateways
+  useEffect(() => {
+    fetch('/api/payment/gateways')
+      .then(r => r.json())
+      .then((data: GatewayStatus) => {
+        setGateways(data);
+        if (data.recommended === 'mercadopago') setSelectedGateway('mercadopago');
+        else if (data.recommended === 'stripe') setSelectedGateway('stripe');
+      })
+      .catch(() => {
+        // Default to Mercado Pago
+        setSelectedGateway('mercadopago');
+      });
+  }, []);
+
   const handleSubscribe = async (planId: PlanType) => {
     try {
       setLoadingPlan(planId);
-      const result = await createCheckout.mutateAsync({ planId, interval: billing });
-      if (result.url) {
-        window.location.href = result.url;
+      setError(null);
+
+      if (selectedGateway === 'mercadopago') {
+        // Use Mercado Pago
+        const response = await fetch('/api/mercadopago/create-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: sub?.userId || 0,
+            userEmail: sub?.email || '',
+            userName: sub?.name || '',
+            planId,
+            interval: billing,
+          }),
+        });
+        const data = await response.json();
+        if (data.url) {
+          window.location.href = data.url;
+        } else if (data.error) {
+          throw new Error(data.error);
+        }
+      } else {
+        // Use Stripe
+        const result = await createStripeCheckout.mutateAsync({ planId, interval: billing });
+        if (result.url) {
+          window.location.href = result.url;
+        }
       }
     } catch (err: any) {
       console.error('Checkout error:', err);
-      import('sonner').then(m => m.toast.error(err.message || 'Erro ao criar checkout. Faça login primeiro.'));
+      const errorMsg = err.message || 'Erro ao criar checkout. Faça login primeiro.';
+      setError(errorMsg);
+      import('sonner').then(m => m.toast.error(errorMsg));
     } finally {
       setLoadingPlan(null);
     }
@@ -47,7 +100,6 @@ const PricingPlans: React.FC = () => {
 
   const handlePartnershipSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // In production, this would send to backend
     console.log('Partnership request:', partnershipForm);
     setPartnershipSent(true);
   };
@@ -154,6 +206,11 @@ const PricingPlans: React.FC = () => {
     },
   ];
 
+  const gatewayLabel = selectedGateway === 'mercadopago' ? 'Mercado Pago' : 'Stripe';
+  const gatewayMethods = selectedGateway === 'mercadopago' 
+    ? 'Pix, Cartão, Boleto' 
+    : 'Cartão de Crédito';
+
   return (
     <div className="space-y-6 animate-fade-in pb-20">
       {/* Header */}
@@ -181,6 +238,58 @@ const PricingPlans: React.FC = () => {
           <p className="text-xs text-muted-foreground mt-1">Você tem acesso completo a todos os recursos</p>
         </div>
       )}
+
+      {/* Error Banner */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center">
+          <p className="text-red-400 font-bold text-sm">Erro no pagamento</p>
+          <p className="text-xs text-red-300 mt-1">{error}</p>
+          <button onClick={() => setError(null)} className="text-xs text-red-400 underline mt-2">Fechar</button>
+        </div>
+      )}
+
+      {/* Payment Gateway Selector */}
+      <div className="bg-card rounded-2xl border border-border p-4">
+        <h3 className="text-sm font-bold text-foreground mb-3 text-center">Forma de Pagamento</h3>
+        <div className="flex items-center justify-center gap-3">
+          <button
+            onClick={() => setSelectedGateway('mercadopago')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              selectedGateway === 'mercadopago'
+                ? 'bg-gradient-to-r from-[#009ee3] to-[#00b1ea] text-white shadow-lg shadow-blue-500/20'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            }`}
+          >
+            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            <span>Mercado Pago</span>
+            {selectedGateway === 'mercadopago' && (
+              <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">Recomendado</span>
+            )}
+          </button>
+          <button
+            onClick={() => setSelectedGateway('stripe')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              selectedGateway === 'stripe'
+                ? 'bg-gradient-to-r from-[#635bff] to-[#7a73ff] text-white shadow-lg shadow-purple-500/20'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            }`}
+          >
+            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+              <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
+            </svg>
+            <span>Stripe</span>
+          </button>
+        </div>
+        <div className="text-center mt-2">
+          <p className="text-[10px] text-muted-foreground">
+            {selectedGateway === 'mercadopago' 
+              ? 'Aceita Pix, Cartão de Crédito/Débito e Boleto Bancário'
+              : 'Aceita Cartão de Crédito Internacional'}
+          </p>
+        </div>
+      </div>
 
       {/* Billing Toggle */}
       <div className="flex items-center justify-center gap-3">
@@ -268,6 +377,13 @@ const PricingPlans: React.FC = () => {
                   </div>
                 )}
 
+                {/* Payment Method Info */}
+                {isPaid && !isCurrentPlan && (
+                  <p className="text-[10px] text-muted-foreground mt-2 text-center">
+                    via {gatewayLabel} ({gatewayMethods})
+                  </p>
+                )}
+
                 {/* Verification Note for Professor */}
                 {'requiresVerification' in plan && (plan as any).requiresVerification && (
                   <p className="text-[10px] text-amber-400 mt-2 text-center">
@@ -303,7 +419,7 @@ const PricingPlans: React.FC = () => {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-              🏛️ Parceria Universitária
+              Parceria Universitária
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
               40% de desconto no plano anual para turmas com mínimo de 30 alunos. Professor mentor é <span className="text-emerald-400 font-bold">gratuito</span>.
@@ -426,13 +542,13 @@ const PricingPlans: React.FC = () => {
         <h3 className="text-lg font-bold text-foreground mb-4 text-center">Como Funciona</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { step: '1', title: 'Escolha seu Plano', desc: 'Selecione o plano ideal para seu perfil: Estudante, Médico ou Professor', icon: '🎯' },
-            { step: '2', title: 'Trial de 7 Dias', desc: 'Teste todas as funcionalidades gratuitamente por 7 dias', icon: '🆓' },
-            { step: '3', title: 'Cadastre o Cartão', desc: 'Pagamento seguro via Stripe. Cancele a qualquer momento', icon: '💳' },
-            { step: '4', title: 'Acesso Completo', desc: 'Desbloqueie todos os recursos e comece a evoluir', icon: '🚀' },
+            { step: '1', title: 'Escolha seu Plano', desc: 'Selecione o plano ideal para seu perfil: Estudante, Médico ou Professor', icon: '1' },
+            { step: '2', title: 'Trial de 7 Dias', desc: 'Teste todas as funcionalidades gratuitamente por 7 dias', icon: '2' },
+            { step: '3', title: 'Pague como Preferir', desc: `Pagamento seguro via ${selectedGateway === 'mercadopago' ? 'Pix, Cartão ou Boleto' : 'Cartão de Crédito'}. Cancele a qualquer momento`, icon: '3' },
+            { step: '4', title: 'Acesso Completo', desc: 'Desbloqueie todos os recursos e comece a evoluir', icon: '4' },
           ].map(item => (
             <div key={item.step} className="text-center p-4">
-              <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-cyan-500/10 flex items-center justify-center text-2xl">{item.icon}</div>
+              <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-cyan-500/10 flex items-center justify-center text-xl font-bold text-cyan-400">{item.icon}</div>
               <div className="text-xs font-bold text-cyan-400 mb-1">Passo {item.step}</div>
               <h4 className="text-sm font-bold text-foreground mb-1">{item.title}</h4>
               <p className="text-[10px] text-muted-foreground">{item.desc}</p>
@@ -448,7 +564,7 @@ const PricingPlans: React.FC = () => {
           Professores devem enviar comprovação de vínculo universitário para ativar o plano.
         </p>
         <p className="text-[10px] text-muted-foreground mt-1">
-          Pagamento seguro processado via Stripe. Todos os preços em Reais (BRL). Cancele a qualquer momento.
+          Pagamento seguro processado via {gatewayLabel}. Todos os preços em Reais (BRL). Cancele a qualquer momento.
         </p>
       </div>
     </div>
