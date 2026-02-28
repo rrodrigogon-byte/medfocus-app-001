@@ -11,7 +11,7 @@ import {
   UserPlus, CheckCircle, AlertCircle, Stethoscope, Shield,
   FileText, Clock, Send, ArrowLeft, Building2, MapPin
 } from 'lucide-react';
-import { ESTADOS, CIDADES_POR_ESTADO } from '@/data/cidadesBrasil';
+import { ESTADOS, CIDADES_POR_ESTADO } from './cidadesBrasil';
 
 const ESPECIALIDADES = [
   'Acupuntura', 'Alergia e Imunologia', 'Anestesiologia', 'Angiologia', 'Cancerologia',

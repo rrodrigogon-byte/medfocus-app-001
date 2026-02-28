@@ -12,7 +12,7 @@ import {
   Stethoscope, Clock, Shield, Users, ChevronDown, ChevronUp,
   ExternalLink, Heart, Brain, Baby, Eye, Bone, Activity
 } from 'lucide-react';
-import { ESTADOS, CIDADES_POR_ESTADO } from '@/data/cidadesBrasil';
+import { ESTADOS, CIDADES_POR_ESTADO } from './cidadesBrasil';
 
 // ─── Hospital/Clinic Types ────────────────────────────────────
 interface Hospital {
