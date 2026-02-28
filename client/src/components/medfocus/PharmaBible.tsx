@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { trpc } from "../../lib/trpc";
 
-type Tab = 'classes' | 'search' | 'monograph' | 'prescriptionGuide' | 'compare' | 'ask' | 'classDetail';
+type Tab = 'classes' | 'search' | 'monograph' | 'prescriptionGuide' | 'compare' | 'ask' | 'classDetail' | 'bulaAnvisa';
 
 interface DrugClass {
   id: string;
@@ -24,6 +24,13 @@ export default function PharmaBible() {
   const [compareDrugs, setCompareDrugs] = useState<string[]>(['', '']);
   const [question, setQuestion] = useState('');
   const [selectedClassId, setSelectedClassId] = useState('');
+
+  // ANVISA Bula state
+  const [bulaSearchQuery, setBulaSearchQuery] = useState('');
+  const [bulaResults, setBulaResults] = useState<any[]>([]);
+  const [bulaLoading, setBulaLoading] = useState(false);
+  const [farmacoData, setFarmacoData] = useState<any>(null);
+  const [selectedBulaDrug, setSelectedBulaDrug] = useState('');
 
   // Results
   const [monographResult, setMonographResult] = useState<any>(null);
@@ -94,6 +101,25 @@ export default function PharmaBible() {
     setLoading(false);
   };
 
+  const handleBulaSearch = async () => {
+    if (!bulaSearchQuery.trim()) return;
+    handleBulaSearchDirect(bulaSearchQuery);
+  };
+
+  const handleBulaSearchDirect = async (nome: string) => {
+    setBulaLoading(true);
+    setSelectedBulaDrug(nome);
+    try {
+      const res = await fetch(`/api/anvisa/farmaco/${encodeURIComponent(nome)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setFarmacoData(data);
+        setBulaResults(data.bulas || []);
+      }
+    } catch (e) { console.error(e); }
+    setBulaLoading(false);
+  };
+
   const handleClassDetail = async (classId: string) => {
     setSelectedClassId(classId);
     setActiveTab('classDetail');
@@ -127,6 +153,7 @@ export default function PharmaBible() {
     { id: 'prescriptionGuide', label: 'Guia de Prescrição', icon: '📝' },
     { id: 'compare', label: 'Comparar Fármacos', icon: '⚖️' },
     { id: 'ask', label: 'Pergunte ao Farmacologista', icon: '🤖' },
+    { id: 'bulaAnvisa', label: 'Bula ANVISA', icon: '📄' },
   ];
 
   return (
@@ -776,6 +803,124 @@ export default function PharmaBible() {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Tab: Bula ANVISA */}
+      {activeTab === 'bulaAnvisa' && !loading && (
+        <div className="space-y-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-bold mb-2 flex items-center gap-2">📄 Busca de Bula — Bulário ANVISA</h2>
+            <p className="text-sm text-gray-500 mb-4">Busque bulas oficiais diretamente do Bulário Eletrônico da ANVISA e dados farmacológicos completos.</p>
+            <div className="flex gap-2">
+              <input value={bulaSearchQuery} onChange={e => setBulaSearchQuery(e.target.value)}
+                placeholder="Nome do medicamento (ex: Amoxicilina, Losartana, Omeprazol...)"
+                onKeyDown={e => e.key === 'Enter' && handleBulaSearch()}
+                className="flex-1 px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+              <button onClick={handleBulaSearch} disabled={bulaLoading}
+                className="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium disabled:opacity-50">
+                {bulaLoading ? '🔄 Buscando...' : '🔍 Buscar'}
+              </button>
+            </div>
+            <div className="flex gap-2 mt-3 flex-wrap">
+              {['Dipirona', 'Amoxicilina', 'Losartana', 'Metformina', 'Omeprazol', 'Enalapril', 'Sinvastatina', 'Ibuprofeno'].map(d => (
+                <button key={d} onClick={() => { setBulaSearchQuery(d); handleBulaSearchDirect(d); }}
+                  className="text-xs bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors">
+                  💊 {d}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Farmacological Data */}
+          {farmacoData?.farmacoInfo && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-emerald-200 dark:border-emerald-700">
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">💊 Dados Farmacológicos — {selectedBulaDrug}</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3">
+                    <h4 className="font-bold text-emerald-800 dark:text-emerald-400 text-sm mb-1">⚙️ Mecanismo de Ação</h4>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">{farmacoData.farmacoInfo.mecanismoAcao}</p>
+                  </div>
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                    <h4 className="font-bold text-blue-800 dark:text-blue-400 text-sm mb-1">📊 Farmacocinética</h4>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">{farmacoData.farmacoInfo.farmacocinetica}</p>
+                  </div>
+                  <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
+                    <h4 className="font-bold text-purple-800 dark:text-purple-400 text-sm mb-1">💉 Posologia</h4>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">{farmacoData.farmacoInfo.posologia}</p>
+                  </div>
+                  <div className="bg-pink-50 dark:bg-pink-900/20 rounded-lg p-3">
+                    <h4 className="font-bold text-pink-800 dark:text-pink-400 text-sm mb-1">🤰 Populações Especiais</h4>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">{farmacoData.farmacoInfo.populacoesEspeciais}</p>
+                    <div className="mt-1"><span className={`text-xs font-bold px-2 py-0.5 rounded ${farmacoData.farmacoInfo.classificacaoRisco === 'X' ? 'bg-red-600 text-white' : farmacoData.farmacoInfo.classificacaoRisco === 'D' ? 'bg-orange-500 text-white' : farmacoData.farmacoInfo.classificacaoRisco === 'C' ? 'bg-yellow-500 text-white' : 'bg-green-500 text-white'}`}>Risco na Gestação: {farmacoData.farmacoInfo.classificacaoRisco}</span></div>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+                    <h4 className="font-bold text-green-800 dark:text-green-400 text-sm mb-1">✅ Indicações</h4>
+                    <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-0.5">{farmacoData.farmacoInfo.indicacoes.map((i: string, idx: number) => <li key={idx}>• {i}</li>)}</ul>
+                  </div>
+                  <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+                    <h4 className="font-bold text-red-800 dark:text-red-400 text-sm mb-1">❌ Contraindicações</h4>
+                    <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-0.5">{farmacoData.farmacoInfo.contraindicacoes.map((c: string, idx: number) => <li key={idx}>• {c}</li>)}</ul>
+                  </div>
+                  <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3">
+                    <h4 className="font-bold text-orange-800 dark:text-orange-400 text-sm mb-1">⚠️ Efeitos Adversos</h4>
+                    <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-0.5">{farmacoData.farmacoInfo.efeitosAdversos.map((e: string, idx: number) => <li key={idx}>• {e}</li>)}</ul>
+                  </div>
+                  <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3">
+                    <h4 className="font-bold text-amber-800 dark:text-amber-400 text-sm mb-1">🔄 Interações</h4>
+                    <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-0.5">{farmacoData.farmacoInfo.interacoes.map((i: string, idx: number) => <li key={idx}>• {i}</li>)}</ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ANVISA Bula Results */}
+          {bulaResults.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-bold mb-3">📄 Bulas encontradas no Bulário ANVISA ({bulaResults.length})</h3>
+              <div className="space-y-2">
+                {bulaResults.map((bula: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <div>
+                      <div className="font-medium text-sm">{bula.nomeProduto}</div>
+                      <div className="text-xs text-gray-500">{bula.nomeEmpresa} — {bula.tipoBula} — {bula.dataBula}</div>
+                    </div>
+                    {bula.urlBula && (
+                      <a href={bula.urlBula} target="_blank" rel="noopener noreferrer"
+                        className="px-3 py-1.5 bg-emerald-600 text-white text-xs rounded-lg hover:bg-emerald-700">Ver Bula PDF</a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* OpenFDA Data */}
+          {farmacoData?.openFdaData && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-bold mb-3">🌐 Dados OpenFDA (Internacional)</h3>
+              <div className="space-y-3 text-sm">
+                {farmacoData.openFdaData.indicationsAndUsage && (
+                  <div><h4 className="font-bold text-gray-700 dark:text-gray-300">Indications & Usage</h4><p className="text-gray-600 dark:text-gray-400 mt-1">{farmacoData.openFdaData.indicationsAndUsage.substring(0, 500)}...</p></div>
+                )}
+                {farmacoData.openFdaData.mechanismOfAction && (
+                  <div><h4 className="font-bold text-gray-700 dark:text-gray-300">Mechanism of Action</h4><p className="text-gray-600 dark:text-gray-400 mt-1">{farmacoData.openFdaData.mechanismOfAction.substring(0, 500)}...</p></div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Quick link to ANVISA Bulário */}
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-4 text-sm">
+            <strong>Fonte oficial:</strong> Dados obtidos do{' '}
+            <a href="https://consultas.anvisa.gov.br/#/bulario/" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Bulário Eletrônico da ANVISA</a>{' '}
+            e da API <a href="https://open.fda.gov/" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">OpenFDA</a>.
+            Para bulas completas, consulte sempre o site oficial da ANVISA.
+          </div>
         </div>
       )}
 

@@ -773,3 +773,72 @@ export const studySuggestions = mysqlTable("study_suggestions", {
   createdAt: timestamp("suggestionCreatedAt").defaultNow().notNull(),
 });
 export type StudySuggestion = typeof studySuggestions.$inferSelect;
+
+
+// ─── Video Lessons (Vídeo-Aulas Colaborativas) ──────────────────
+export const videoLessons = mysqlTable("video_lessons", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("videoTitle", { length: 500 }).notNull(),
+  description: text("videoDescription"),
+  discipline: varchar("discipline", { length: 128 }).notNull(),
+  professor: varchar("professor", { length: 255 }).notNull(),
+  professorId: int("professorId"), // linked to users table
+  duration: varchar("videoDuration", { length: 16 }), // e.g. "45:00"
+  year: int("videoYear").notNull(), // medical year 1-6
+  semester: int("videoSemester").default(1).notNull(),
+  topics: text("videoTopics"), // JSON array of topic strings
+  difficulty: mysqlEnum("videoDifficulty", ["basico", "intermediario", "avancado"]).default("intermediario").notNull(),
+  
+  // Video file info
+  videoUrl: text("videoUrl"), // GCS or external URL
+  thumbnailUrl: text("thumbnailUrl"),
+  fileSize: int("fileSize"), // bytes
+  mimeType: varchar("mimeType", { length: 64 }),
+  
+  // Approval workflow
+  status: mysqlEnum("videoStatus", ["pending", "approved", "rejected", "archived"]).default("pending").notNull(),
+  reviewedBy: int("reviewedBy"),
+  reviewNotes: text("reviewNotes"),
+  reviewedAt: timestamp("reviewedAt"),
+  
+  // Engagement metrics
+  views: int("videoViews").default(0).notNull(),
+  likes: int("videoLikes").default(0).notNull(),
+  rating: int("videoRating"), // avg 0-50 (x10)
+  ratingCount: int("ratingCount").default(0).notNull(),
+  
+  // Metadata
+  tags: text("videoTags"), // JSON array
+  externalLink: text("externalLink"), // YouTube, Vimeo, etc.
+  
+  createdAt: timestamp("videoCreatedAt").defaultNow().notNull(),
+  updatedAt: timestamp("videoUpdatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type VideoLesson = typeof videoLessons.$inferSelect;
+export type InsertVideoLesson = typeof videoLessons.$inferInsert;
+
+// ─── Video Ratings ──────────────────────────────────────────────
+export const videoRatings = mysqlTable("video_ratings", {
+  id: int("id").autoincrement().primaryKey(),
+  videoId: int("videoId").notNull(),
+  userId: int("ratingUserId").notNull(),
+  rating: int("userRating").notNull(), // 1-5
+  comment: text("ratingComment"),
+  createdAt: timestamp("ratingCreatedAt").defaultNow().notNull(),
+});
+
+export type VideoRating = typeof videoRatings.$inferSelect;
+
+// ─── Video Notes (per user per video) ───────────────────────────
+export const videoNotes = mysqlTable("video_notes", {
+  id: int("id").autoincrement().primaryKey(),
+  videoId: int("noteVideoId").notNull(),
+  userId: int("noteUserId").notNull(),
+  content: text("noteContent").notNull(),
+  timestamp: int("noteTimestamp"), // seconds into video
+  updatedAt: timestamp("noteUpdatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("noteCreatedAt").defaultNow().notNull(),
+});
+
+export type VideoNote = typeof videoNotes.$inferSelect;

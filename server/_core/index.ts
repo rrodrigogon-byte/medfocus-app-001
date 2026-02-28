@@ -118,6 +118,146 @@ async function startServer() {
     }
   });
 
+  // ─── CNES Hospital/Clinic API Endpoints ──────────────────────
+  // Search establishments from DataSUS CNES API
+  app.get('/api/cnes/estabelecimentos', async (req, res) => {
+    try {
+      const { searchEstabelecimentos } = await import('../services/cnesService');
+      const { uf, municipio, tipo, limit, offset } = req.query;
+      const result = await searchEstabelecimentos({
+        uf: uf as string,
+        municipio: municipio ? Number(municipio) : undefined,
+        tipoUnidade: tipo ? Number(tipo) : undefined,
+        limit: limit ? Number(limit) : 20,
+        offset: offset ? Number(offset) : 0,
+      });
+      res.setHeader('Cache-Control', 'public, max-age=1800');
+      res.json(result);
+    } catch (err: any) {
+      console.error('[CNES] Error:', err.message);
+      res.status(500).json({ estabelecimentos: [], total_estimado: 0, error: err.message });
+    }
+  });
+
+  // Get paginated results (multiple pages) for a state/type
+  app.get('/api/cnes/buscar', async (req, res) => {
+    try {
+      const { fetchEstabelecimentosPaginados } = await import('../services/cnesService');
+      const { uf, municipio, tipo, paginas } = req.query;
+      const results = await fetchEstabelecimentosPaginados({
+        uf: uf as string,
+        municipio: municipio ? Number(municipio) : undefined,
+        tipoUnidade: tipo ? Number(tipo) : undefined,
+        maxPages: paginas ? Number(paginas) : 5,
+      });
+      res.setHeader('Cache-Control', 'public, max-age=1800');
+      res.json({ estabelecimentos: results, total: results.length });
+    } catch (err: any) {
+      console.error('[CNES] Buscar error:', err.message);
+      res.status(500).json({ estabelecimentos: [], total: 0, error: err.message });
+    }
+  });
+
+  // Get single establishment by CNES code
+  app.get('/api/cnes/estabelecimento/:codigo', async (req, res) => {
+    try {
+      const { getEstabelecimentoByCnes } = await import('../services/cnesService');
+      const result = await getEstabelecimentoByCnes(Number(req.params.codigo));
+      if (result) {
+        res.json(result);
+      } else {
+        res.status(404).json({ error: 'Estabelecimento não encontrado' });
+      }
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Get hospitals with bed data
+  app.get('/api/cnes/hospitais-leitos', async (req, res) => {
+    try {
+      const { getHospitaisComLeitos } = await import('../services/cnesService');
+      const { limit, offset } = req.query;
+      const result = await getHospitaisComLeitos({
+        limit: limit ? Number(limit) : 20,
+        offset: offset ? Number(offset) : 0,
+      });
+      res.setHeader('Cache-Control', 'public, max-age=1800');
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ hospitais: [], total_estimado: 0, error: err.message });
+    }
+  });
+
+  // Get CNES stats and unit types
+  app.get('/api/cnes/stats', async (_req, res) => {
+    try {
+      const { getCnesStats, getRelevantUnitTypes } = await import('../services/cnesService');
+      res.json({ stats: getCnesStats(), tiposUnidade: getRelevantUnitTypes() });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ─── Video Lessons API Endpoints ────────────────────────────
+  // Get approved videos
+  app.get('/api/videos', async (req, res) => {
+    try {
+      const status = (req.query.status as string) || 'approved';
+      // For now return empty — DB videos will be populated as professors upload
+      res.json({ videos: [], total: 0 });
+    } catch (err: any) {
+      res.status(500).json({ videos: [], error: err.message });
+    }
+  });
+
+  // Submit a new video for approval
+  app.post('/api/videos', async (req, res) => {
+    try {
+      const { title, discipline, professor, description, year, semester, difficulty, topics, externalLink, duration } = req.body;
+      if (!title || !discipline || !professor) {
+        return res.status(400).json({ error: 'Título, disciplina e professor são obrigatórios' });
+      }
+      // TODO: Save to DB when video_lessons table is migrated
+      console.log('[VIDEO] New submission:', title, 'by', professor);
+      res.json({ success: true, message: 'Vídeo enviado para aprovação', id: Date.now() });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ─── ANVISA Bula / Bíblia Farmacológica API ─────────────────
+  app.get('/api/anvisa/bula/search', async (req, res) => {
+    try {
+      const nome = req.query.nome as string;
+      if (!nome) return res.status(400).json({ error: 'Parâmetro "nome" é obrigatório' });
+      const { searchBulasAnvisa } = await import('../services/anvisaBulaService');
+      const bulas = await searchBulasAnvisa(nome);
+      res.json({ bulas, total: bulas.length });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get('/api/anvisa/farmaco/:nome', async (req, res) => {
+    try {
+      const { getDrugInfo } = await import('../services/anvisaBulaService');
+      const info = await getDrugInfo(req.params.nome);
+      res.json(info);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get('/api/anvisa/farmaco-db', async (req, res) => {
+    try {
+      const { getAvailableDrugs } = await import('../services/anvisaBulaService');
+      res.json({ drugs: getAvailableDrugs() });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Serve static files / Vite dev server
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
