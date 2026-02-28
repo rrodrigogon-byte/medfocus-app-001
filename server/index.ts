@@ -93,9 +93,6 @@ async function startServer() {
   app.use("/api/scraping", authenticateToken, scrapingRouter);
   app.use("/api/ai", aiRouter);
 
-    // Error handler
-  app.use(errorHandler);
-
   // ─── CMED Medicine API Endpoints ─────────────────────────────
   // Serve full CMED medicines data for frontend PriceComparison
   app.get('/api/cmed/medicines', async (req, res) => {
@@ -123,7 +120,10 @@ async function startServer() {
     }
   });
 
-  // Serve static files from dist/public in production
+  // Error handler
+  app.use(errorHandler);
+
+  // Serve static files from dist/public in productionn
   const staticPath =
     process.env.NODE_ENV === "production"
       ? path.resolve(__dirname, "public")
