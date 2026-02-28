@@ -11,7 +11,7 @@ import {
   UserPlus, CheckCircle, AlertCircle, Stethoscope, Shield,
   FileText, Clock, Send, ArrowLeft, Building2, MapPin
 } from 'lucide-react';
-import { ESTADOS, CIDADES_POR_ESTADO } from './cidadesBrasil';
+import { ESTADOS_NOMES as ESTADOS, ESTADOS_CIDADES_COMPLETO as CIDADES_POR_ESTADO } from './cidadesBrasil';
 
 const ESPECIALIDADES = [
   'Acupuntura', 'Alergia e Imunologia', 'Anestesiologia', 'Angiologia', 'Cancerologia',
@@ -215,7 +215,7 @@ export default function DoctorRegistration() {
                   <select value={form.crmEstado} onChange={e => updateField('crmEstado', e.target.value)}
                     className="w-full mt-1 p-3 bg-background border border-border rounded-xl text-foreground">
                     <option value="">UF</option>
-                    {ESTADOS.map(e => <option key={e.sigla} value={e.sigla}>{e.sigla}</option>)}
+                    {Object.entries(ESTADOS).map(([sigla, nome]) => <option key={sigla} value={sigla}>{sigla}</option>)}
                   </select>
                   {errors.crmEstado && <p className="text-xs text-red-400 mt-1">{errors.crmEstado}</p>}
                 </div>
@@ -306,7 +306,7 @@ export default function DoctorRegistration() {
                 <select value={form.estado} onChange={e => { updateField('estado', e.target.value); updateField('cidade', ''); }}
                   className="w-full mt-1 p-3 bg-background border border-border rounded-xl text-foreground">
                   <option value="">Selecione...</option>
-                  {ESTADOS.map(e => <option key={e.sigla} value={e.sigla}>{e.sigla} — {e.nome}</option>)}
+                  {Object.entries(ESTADOS).map(([sigla, nome]) => <option key={sigla} value={sigla}>{sigla} — {nome}</option>)}
                 </select>
                 {errors.estado && <p className="text-xs text-red-400 mt-1">{errors.estado}</p>}
               </div>

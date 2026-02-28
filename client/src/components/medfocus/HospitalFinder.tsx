@@ -12,7 +12,7 @@ import {
   Stethoscope, Clock, Shield, Users, ChevronDown, ChevronUp,
   ExternalLink, Heart, Brain, Baby, Eye, Bone, Activity
 } from 'lucide-react';
-import { ESTADOS, CIDADES_POR_ESTADO } from './cidadesBrasil';
+import { ESTADOS_NOMES as ESTADOS, ESTADOS_CIDADES_COMPLETO as CIDADES_POR_ESTADO } from './cidadesBrasil';
 
 // ─── Hospital/Clinic Types ────────────────────────────────────
 interface Hospital {
@@ -189,7 +189,7 @@ export default function HospitalFinder() {
               className="w-full p-3 bg-background border border-border rounded-xl text-foreground"
             >
               <option value="">Todos os Estados</option>
-              {ESTADOS.map(e => <option key={e.sigla} value={e.sigla}>{e.sigla} — {e.nome}</option>)}
+              {Object.entries(ESTADOS).map(([sigla, nome]) => <option key={sigla} value={sigla}>{sigla} — {nome}</option>)}
             </select>
             <select
               value={selectedCidade}
