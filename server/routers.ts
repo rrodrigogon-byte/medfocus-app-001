@@ -44,7 +44,7 @@ export const appRouter = router({
         // Map 'pro' to 'estudante' for backwards compatibility
         const effectivePlanId = input.planId === 'pro' ? 'estudante' : input.planId;
         const plan = PLANS[effectivePlanId as keyof typeof PLANS] || PLANS.estudante;
-        const origin = ctx.req.headers.origin || process.env.APP_URL || "https://medfocus-app-969630653332.southamerica-east1.run.app";
+        const origin = ctx.req.headers.origin || process.env.APP_URL || "https://medfocus-app-ul6txuf2eq-rj.a.run.app";
         const isYearly = input.interval === 'yearly';
         const isPartnership = !!input.partnershipCode;
         
@@ -63,10 +63,37 @@ export const appRouter = router({
         }
         const recurringInterval = isYearly ? 'year' as const : 'month' as const;
 
+        // Stripe Accounts V2 requires a customer object (not just email)
+        // Find existing customer or create a new one
+        let customerId: string | undefined;
+        if (ctx.user.stripeCustomerId) {
+          customerId = ctx.user.stripeCustomerId;
+        } else {
+          // Search for existing customer by email
+          const existingCustomers = await stripe.customers.list({
+            email: ctx.user.email || undefined,
+            limit: 1,
+          });
+          if (existingCustomers.data.length > 0) {
+            customerId = existingCustomers.data[0].id;
+          } else {
+            // Create new customer
+            const newCustomer = await stripe.customers.create({
+              email: ctx.user.email || undefined,
+              name: ctx.user.name || undefined,
+              metadata: {
+                user_id: ctx.user.id.toString(),
+                platform: 'medfocus',
+              },
+            });
+            customerId = newCustomer.id;
+          }
+        }
+
         const session = await stripe.checkout.sessions.create({
           mode: "subscription",
           payment_method_types: ["card"],
-          customer_email: ctx.user.email || undefined,
+          customer: customerId,
           client_reference_id: ctx.user.id.toString(),
           allow_promotion_codes: true,
           subscription_data: {

@@ -568,7 +568,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ userName }) => {
                 { label: 'Proprietario', value: 'rodrigo.goncalves@uisa.com.br', color: 'emerald' },
                 { label: 'Dominio', value: 'medfocus-app-ul6txuf2eq-rj.a.run.app', color: 'blue' },
                 { label: 'Banco de Dados', value: 'Cloud SQL MySQL', color: 'emerald' },
-                { label: 'Stripe', value: 'Gateway de pagamento (modo teste)', color: 'amber' },
+                { label: 'Stripe', value: 'Gateway de pagamento (ativação pendente — modo teste)', color: 'amber' },
                 { label: 'IA (Dr. Focus)', value: 'Vertex AI — southamerica-east1', color: 'emerald' },
                 { label: 'Storage', value: 'AWS S3 — medfocus-uploads', color: 'emerald' },
               ].map((item, i) => (
