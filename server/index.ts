@@ -93,17 +93,42 @@ async function startServer() {
   app.use("/api/scraping", authenticateToken, scrapingRouter);
   app.use("/api/ai", aiRouter);
 
-  // Error handler
+    // Error handler
   app.use(errorHandler);
+
+  // ─── CMED Medicine API Endpoints ─────────────────────────────
+  // Serve full CMED medicines data for frontend PriceComparison
+  app.get('/api/cmed/medicines', async (req, res) => {
+    try {
+      const { searchMedicines, getCMEDMetadata, getCMEDCategories } = await import('./services/cmedService');
+      const metadata = getCMEDMetadata();
+      const categories = getCMEDCategories();
+      // Return all medicines (paginated with large pageSize)
+      const result = searchMedicines({ query: '', page: 1, pageSize: 10000 });
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.json({ metadata, categories, medicines: result.medicines });
+    } catch (err: any) {
+      res.status(500).json({ metadata: {}, categories: [], medicines: [] });
+    }
+  });
+
+  // Also expose a direct HTTP endpoint for Cloud Scheduler
+  app.get('/api/cmed/refresh', async (_req, res) => {
+    try {
+      const { refreshCMEDData } = await import('./services/cmedService');
+      const result = await refreshCMEDData();
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
 
   // Serve static files from dist/public in production
   const staticPath =
     process.env.NODE_ENV === "production"
       ? path.resolve(__dirname, "public")
       : path.resolve(__dirname, "..", "dist", "public");
-
   app.use(express.static(staticPath));
-
   // Handle client-side routing - serve index.html for all routes
   app.get("*", (_req, res) => {
     res.sendFile(path.join(staticPath, "index.html"));
@@ -130,32 +155,6 @@ async function startServer() {
     setInterval(runCMEDRefresh, CMED_REFRESH_INTERVAL);
   }, 60 * 60 * 1000);
   console.log('[CMED] Daily price refresh scheduled (every 24h)');
-
-  // Serve full CMED medicines data for frontend PriceComparison
-  app.get('/api/cmed/medicines', async (req, res) => {
-    try {
-      const { searchMedicines, getCMEDMetadata, getCMEDCategories } = await import('./services/cmedService');
-      const metadata = getCMEDMetadata();
-      const categories = getCMEDCategories();
-      // Return all medicines (paginated with large pageSize)
-      const result = searchMedicines({ query: '', page: 1, pageSize: 10000 });
-      res.setHeader('Cache-Control', 'public, max-age=3600');
-      res.json({ metadata, categories, medicines: result.medicines });
-    } catch (err: any) {
-      res.status(500).json({ metadata: {}, categories: [], medicines: [] });
-    }
-  });
-
-  // Also expose a direct HTTP endpoint for Cloud Scheduler
-  app.get('/api/cmed/refresh', async (_req, res) => {
-    try {
-      const { refreshCMEDData } = await import('./services/cmedService');
-      const result = await refreshCMEDData();
-      res.json(result);
-    } catch (err: any) {
-      res.status(500).json({ success: false, message: err.message });
-    }
-  });
 
   server.listen(port, () => {
     console.log(`🚀 MedFocus Server running on http://localhost:${port}/`);
