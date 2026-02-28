@@ -661,7 +661,47 @@ export default function PriceComparison() {
                 )}
               </div>
 
-              {/* Farmácias onde comprar */}
+              {/* Sugestões de Genéricos — sempre visível */}
+              {selectedMed.genericos.length > 0 && (
+                <div className="bg-emerald-900/15 border border-emerald-700/30 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-emerald-400 text-lg">💡</span>
+                    <h3 className="text-sm font-semibold text-emerald-300">Sugestões de Genéricos — Economize até {selectedMed.referencia.length > 0 && selectedMed.genericos.length > 0 ? `${((1 - Math.min(...selectedMed.genericos.map(g => g.preco)) / Math.min(...selectedMed.referencia.map(r => r.preco))) * 100).toFixed(0)}%` : 'mais'}</h3>
+                  </div>
+                  <p className="text-xs text-gray-400 mb-3">Genéricos possuem a mesma substância ativa, dosagem e eficácia do medicamento de referência, com preço reduzido.</p>
+                  <div className="space-y-2">
+                    {selectedMed.genericos.sort((a, b) => a.preco - b.preco).slice(0, 5).map((gen, idx) => (
+                      <div key={`gen-sug-${idx}`} className="flex items-center justify-between p-3 bg-gray-900/60 rounded-lg border border-emerald-700/20 hover:border-emerald-500/40 transition-all">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-600 text-white">Genérico</span>
+                            <span className="text-sm font-medium text-white truncate">{gen.nome}</span>
+                            {idx === 0 && <span className="text-[10px] bg-emerald-500 text-white px-2 py-0.5 rounded-full">Melhor preço</span>}
+                          </div>
+                          <p className="text-xs text-gray-400 mt-0.5 truncate">{gen.laboratorio}</p>
+                          <p className="text-[10px] text-gray-500 mt-0.5 truncate">{gen.apresentacao}</p>
+                        </div>
+                        <div className="text-right ml-3">
+                          <span className="font-bold text-sm text-emerald-400">R$ {gen.preco.toFixed(2).replace('.', ',')}</span>
+                          {gen.precoFabrica > 0 && gen.precoFabrica !== gen.preco && (
+                            <p className="text-[10px] text-gray-500">PF: R$ {gen.precoFabrica.toFixed(2).replace('.', ',')}</p>
+                          )}
+                          {selectedMed.referencia.length > 0 && (
+                            <p className="text-[10px] text-emerald-500">
+                              {((1 - gen.preco / Math.min(...selectedMed.referencia.map(r => r.preco))) * 100).toFixed(0)}% mais barato
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {selectedMed.genericos.length > 5 && (
+                      <p className="text-xs text-emerald-400 text-center mt-2">+ {selectedMed.genericos.length - 5} genéricos disponíveis (veja na lista completa acima)</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Farmácias onde comprar — expansão inline com preços */}
               <div className="bg-gray-800/60 border border-gray-700/50 rounded-xl p-4">
                 <h3 className="text-sm font-semibold text-white mb-3">
                   Onde comprar {cidade ? `em ${cidade}` : estado ? `em ${ESTADOS_NOMES[estado]}` : ''}
@@ -669,6 +709,15 @@ export default function PriceComparison() {
                 <div className="space-y-2">
                   {farmaciasNaCidade.filter(f => selectedFarmacias.has(f.id)).map(f => {
                     const isExpanded = expandedFarmacia === f.id;
+                    // Calcular preços estimados por farmácia (variação regional sobre PMC)
+                    const farmaciaVariacao = f.tipo === 'governo' ? 0 : f.tipo === 'regional' ? 0.92 : 0.95;
+                    const produtosParaFarmacia = selectedMed.todosOsProdutos
+                      .filter(p => p.preco > 0)
+                      .sort((a, b) => a.preco - b.preco)
+                      .slice(0, 20);
+                    const menorPrecoFarmacia = produtosParaFarmacia.length > 0
+                      ? (produtosParaFarmacia[0].preco * (farmaciaVariacao || 1)).toFixed(2)
+                      : null;
                     return (
                       <div key={f.id} className="rounded-lg border border-gray-700/50 overflow-hidden">
                         <div onClick={() => setExpandedFarmacia(isExpanded ? null : f.id)}
@@ -679,17 +728,79 @@ export default function PriceComparison() {
                             <span className={`text-[10px] px-1.5 py-0.5 rounded ${
                               f.tipo === 'governo' ? 'bg-cyan-600 text-white' : f.tipo === 'regional' ? 'bg-yellow-600 text-white' : 'bg-gray-600 text-white'
                             }`}>{f.tipo === 'governo' ? 'GOV' : f.tipo === 'regional' ? 'Regional' : 'Nacional'}</span>
+                            {menorPrecoFarmacia && f.tipo !== 'governo' && (
+                              <span className="text-[10px] text-emerald-400 ml-1">a partir de R$ {parseFloat(menorPrecoFarmacia).toFixed(2).replace('.', ',')}</span>
+                            )}
+                            {f.tipo === 'governo' && selectedMed.farmaciaPopular && (
+                              <span className="text-[10px] text-cyan-400 ml-1 font-semibold">GRÁTIS</span>
+                            )}
                           </div>
                           <div className="flex items-center gap-2">
-                            <a href={f.urlBusca(selectedMed.nomeReferencia || selectedMed.substancia)} target="_blank" rel="noopener noreferrer"
-                              onClick={e => e.stopPropagation()}
-                              className="text-xs text-emerald-400 hover:underline">Ver preços →</a>
+                            <span className="text-xs text-emerald-400">Ver preços →</span>
                             <span className="text-gray-400 text-xs">{isExpanded ? '▲' : '▼'}</span>
                           </div>
                         </div>
                         {isExpanded && (
-                          <div className="px-4 py-3 bg-gray-900/80 border-t border-gray-700/50 space-y-3">
+                          <div className="px-4 py-3 bg-gray-900/80 border-t border-gray-700/50 space-y-4">
+                            {/* Descrição da farmácia */}
                             <p className="text-xs text-gray-400">{f.descricao}</p>
+
+                            {/* Tabela de preços CMED para esta farmácia */}
+                            <div>
+                              <h4 className="text-xs font-semibold text-white mb-2">Preços de referência CMED/ANVISA para {selectedMed.substancia}</h4>
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-xs">
+                                  <thead>
+                                    <tr className="border-b border-gray-700">
+                                      <th className="text-left py-2 px-2 text-gray-400 font-medium">Produto</th>
+                                      <th className="text-left py-2 px-2 text-gray-400 font-medium">Tipo</th>
+                                      <th className="text-left py-2 px-2 text-gray-400 font-medium">Laboratório</th>
+                                      <th className="text-right py-2 px-2 text-gray-400 font-medium">PMC</th>
+                                      <th className="text-right py-2 px-2 text-gray-400 font-medium">PF</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {produtosParaFarmacia.map((prod, idx) => (
+                                      <tr key={`farm-prod-${idx}`} className={`border-b border-gray-800/50 ${idx === 0 ? 'bg-emerald-900/10' : 'hover:bg-gray-800/40'}`}>
+                                        <td className="py-2 px-2">
+                                          <div className="text-white font-medium">{prod.nome}</div>
+                                          <div className="text-[10px] text-gray-500 truncate max-w-[250px]">{prod.apresentacao}</div>
+                                        </td>
+                                        <td className="py-2 px-2">
+                                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${tipoCatColor(prod.tipoCategoria)}`}>{prod.tipoCategoria}</span>
+                                        </td>
+                                        <td className="py-2 px-2 text-gray-300 truncate max-w-[180px]">{prod.laboratorio}</td>
+                                        <td className="py-2 px-2 text-right font-semibold text-white">R$ {prod.preco.toFixed(2).replace('.', ',')}</td>
+                                        <td className="py-2 px-2 text-right text-gray-400">{prod.precoFabrica > 0 ? `R$ ${prod.precoFabrica.toFixed(2).replace('.', ',')}` : '-'}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                              {selectedMed.todosOsProdutos.length > 20 && (
+                                <p className="text-[10px] text-gray-500 mt-1 text-center">Mostrando os 20 menores preços de {selectedMed.todosOsProdutos.length} produtos disponíveis</p>
+                              )}
+                            </div>
+
+                            {/* Genéricos em destaque dentro da farmácia */}
+                            {selectedMed.genericos.length > 0 && (
+                              <div className="bg-emerald-900/10 border border-emerald-700/20 rounded-lg p-3">
+                                <p className="text-xs font-semibold text-emerald-400 mb-2">Genéricos disponíveis — Economize!</p>
+                                <div className="space-y-1">
+                                  {selectedMed.genericos.sort((a, b) => a.preco - b.preco).slice(0, 3).map((gen, idx) => (
+                                    <div key={`farm-gen-${idx}`} className="flex items-center justify-between py-1">
+                                      <div className="flex-1 min-w-0">
+                                        <span className="text-xs text-white">{gen.nome}</span>
+                                        <span className="text-[10px] text-gray-500 ml-2">{gen.laboratorio}</span>
+                                      </div>
+                                      <span className="text-xs font-semibold text-emerald-400 ml-2">R$ {gen.preco.toFixed(2).replace('.', ',')}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Informações de contato */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <div className="space-y-2">
                                 <div className="flex items-start gap-2">
@@ -724,20 +835,22 @@ export default function PriceComparison() {
                                 </div>
                               </div>
                             </div>
-                            <div className="flex gap-2 pt-2">
+
+                            {/* Ações — link de compra é opcional */}
+                            <div className="flex gap-2 pt-2 flex-wrap">
                               <a href={`tel:${f.contato.telefone.replace(/\D/g, '')}`}
-                                className="flex-1 text-center px-3 py-2 bg-emerald-600/20 border border-emerald-600/40 rounded-lg text-emerald-300 text-xs font-medium hover:bg-emerald-600/30 transition-all">
+                                className="flex-1 min-w-[120px] text-center px-3 py-2 bg-emerald-600/20 border border-emerald-600/40 rounded-lg text-emerald-300 text-xs font-medium hover:bg-emerald-600/30 transition-all">
                                 📞 Ligar
                               </a>
                               {f.contato.whatsapp !== 'Não disponível' && (
                                 <a href={`https://wa.me/55${f.contato.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"
-                                  className="flex-1 text-center px-3 py-2 bg-green-600/20 border border-green-600/40 rounded-lg text-green-300 text-xs font-medium hover:bg-green-600/30 transition-all">
+                                  className="flex-1 min-w-[120px] text-center px-3 py-2 bg-green-600/20 border border-green-600/40 rounded-lg text-green-300 text-xs font-medium hover:bg-green-600/30 transition-all">
                                   💬 WhatsApp
                                 </a>
                               )}
                               <a href={f.urlBusca(selectedMed.nomeReferencia || selectedMed.substancia)} target="_blank" rel="noopener noreferrer"
-                                className="flex-1 text-center px-3 py-2 bg-blue-600/20 border border-blue-600/40 rounded-lg text-blue-300 text-xs font-medium hover:bg-blue-600/30 transition-all">
-                                🔍 Ver no site
+                                className="flex-1 min-w-[120px] text-center px-3 py-2 bg-blue-600/10 border border-blue-600/20 rounded-lg text-blue-400/70 text-xs font-medium hover:bg-blue-600/20 hover:text-blue-300 transition-all">
+                                🔗 Comprar online (opcional)
                               </a>
                             </div>
                           </div>
