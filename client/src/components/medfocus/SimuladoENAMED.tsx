@@ -17,6 +17,7 @@ import {
   Database, Download, Shield
 } from 'lucide-react';
 import { REAL_QUESTIONS, QUESTION_STATS, type RealQuestion } from '@/data/realQuestions';
+import { VESTIBULAR_QUESTIONS, VESTIBULAR_SOURCES, VESTIBULAR_STATS, type VestibularQuestion } from '@/data/vestibularQuestions';
 
 // ─── Medical Areas ─────────────────────────────────────────────
 const MEDICAL_AREAS = [
@@ -34,12 +35,14 @@ const EXAM_TYPES = [
   { id: 'enamed', name: 'ENAMED', description: 'Exame Nacional de Avaliação da Formação Médica', questions: 80, time: 300 },
   { id: 'revalida', name: 'REVALIDA', description: 'Exame Nacional de Revalidação de Diplomas Médicos', questions: 100, time: 300 },
   { id: 'residencia', name: 'Residência Médica', description: 'Simulado estilo prova de residência', questions: 60, time: 240 },
+  { id: 'vestibular', name: 'Vestibular Medicina', description: `Provas de ${VESTIBULAR_STATS.totalQuestions} questões de ${VESTIBULAR_STATS.totalSources} universidades (ENEM, USP, Santa Casa, UNIVAG, PUC-SP, Einstein)`, questions: 30, time: 180 },
 ];
 
 const QUESTION_SOURCES = [
-  { id: 'real', name: 'Questões Oficiais', description: `${QUESTION_STATS.total} questões reais do INEP`, icon: FileText },
+  { id: 'real', name: 'Questões Oficiais', description: `${QUESTION_STATS.total} questões INEP + ${VESTIBULAR_STATS.totalQuestions} vestibulares`, icon: FileText },
   { id: 'ai', name: 'Questões por IA', description: 'Geradas sob demanda pela IA', icon: Sparkles },
   { id: 'mixed', name: 'Misto', description: 'Combina questões reais + IA', icon: Database },
+  { id: 'vestibular', name: 'Vestibulares', description: `${VESTIBULAR_STATS.totalQuestions} questões de ${VESTIBULAR_STATS.totalSources} universidades`, icon: GraduationCap },
 ];
 
 interface Question {
@@ -80,6 +83,32 @@ function convertRealQuestion(rq: RealQuestion): Question {
     realNumber: rq.number,
     realYear: rq.year,
   };
+}
+
+// ─── Helper: Convert vestibular question to internal format ───
+function convertVestibularQuestion(vq: VestibularQuestion): Question {
+  const correctIdx = vq.options.findIndex(o => o.letter === vq.correctAnswer);
+  return {
+    question: `[${vq.sourceLabel} ${vq.year}] ${vq.text}`,
+    options: vq.options.map(o => o.text),
+    correctIndex: correctIdx >= 0 ? correctIdx : 0,
+    explanation: vq.explanation,
+    area: 'clinica_medica',
+    source: 'real',
+    realSource: vq.source,
+    realNumber: vq.number,
+    realYear: vq.year,
+  };
+}
+
+// ─── Helper: Get vestibular questions ─────────────────────────
+function getVestibularQuestions(count: number, sources?: string[]): Question[] {
+  let filtered = [...VESTIBULAR_QUESTIONS];
+  if (sources && sources.length > 0) {
+    filtered = filtered.filter(q => sources.includes(q.source));
+  }
+  const shuffled = filtered.sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count).map(convertVestibularQuestion);
 }
 
 // ─── Helper: Get real questions by area ────────────────────────
@@ -243,9 +272,12 @@ const SimuladoENAMED: React.FC = () => {
       });
       setSimuladoId(sim.id);
 
-      const allQuestions: Question[] = [];
-
-      if (config.questionSource === 'real' || config.questionSource === 'mixed') {
+       const allQuestions: Question[] = [];
+      if (config.questionSource === 'vestibular') {
+        // Get vestibular questions
+        const vestQs = getVestibularQuestions(config.totalQuestions);
+        allQuestions.push(...vestQs);
+      } else if (config.questionSource === 'real' || config.questionSource === 'mixed') {
         // Get real questions
         const realCount = config.questionSource === 'real' ? config.totalQuestions : Math.ceil(config.totalQuestions * 0.6);
         const realQs = getRealQuestionsByArea(config.areas, realCount, config.examType);

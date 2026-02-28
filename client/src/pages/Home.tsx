@@ -68,6 +68,8 @@ import AtlasAnalytics from '../components/medfocus/AtlasAnalytics';
 import MedicineComparator from '../components/medfocus/MedicineComparator';
 import Bulario from '../components/medfocus/Bulario';
 import DoctorFinder from '../components/medfocus/DoctorFinder';
+import HospitalFinder from '../components/medfocus/HospitalFinder';
+import DoctorRegistration from '../components/medfocus/DoctorRegistration';
 import HealthTips from '../components/medfocus/HealthTips';
 import PriceComparison from '../components/medfocus/PriceComparison';
 import LegalProtection from '../components/medfocus/LegalProtection';
@@ -298,6 +300,8 @@ export default function Home() {
       case 'medicineComparator': return <MedicineComparator />;
       case 'bulario': return <Bulario />;
       case 'doctorFinder': return <DoctorFinder />;
+      case 'hospitalFinder': return <HospitalFinder />;
+      case 'doctorRegistration': return <DoctorRegistration />;
       case 'healthTips': return <HealthTips />;
       case 'priceComparison': return <PriceComparison />;
       case 'legalProtection': return <LegalProtection />;

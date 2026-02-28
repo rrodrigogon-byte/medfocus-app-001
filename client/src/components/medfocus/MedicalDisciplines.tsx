@@ -338,6 +338,115 @@ const DISCIPLINES: Discipline[] = [
     ],
     mainReferences: ['Hércules HC. Medicina Legal. 14ª ed.', 'França GV. Medicina Legal. 11ª ed.'],
   },
+  // === ANO 3 - Complementares ===
+  {
+    id: 'imagem', name: 'Diagnóstico por Imagem', year: 3, semester: 2, icon: '📷', color: '#6366F1',
+    category: 'clinica', hours: 60,
+    description: 'Radiologia convencional, ultrassonografia, tomografia, ressonância magnética.',
+    objectives: ['Interpretar radiografias de tórax', 'Identificar achados tomográficos', 'Solicitar exames adequadamente'],
+    topics: [
+      { id: 'img1', name: 'Radiologia Convencional', description: 'Raio-X de tórax, abdome, ossos', keyPoints: ['Sist. ABCDE tórax', 'Níveis hidro-aéreos', 'Fraturas: regra de Ottawa'], references: ['Novelline Cap.1-5'] },
+      { id: 'img2', name: 'Tomografia Computadorizada', description: 'TC de crânio, tórax, abdome', keyPoints: ['Janela óssea vs parenquimatosa', 'AVC isquêmico vs hemorrágico', 'Escala Hounsfield'], references: ['Novelline Cap.6-8'] },
+      { id: 'img3', name: 'Ultrassonografia', description: 'USG abdominal, obstétrica, FAST', keyPoints: ['FAST: trauma', 'USG obstétrica: biometria fetal', 'Doppler vascular'], references: ['Rumack Cap.1-5'] },
+      { id: 'img4', name: 'Ressonância Magnética', description: 'RM de crânio, coluna, articulações', keyPoints: ['T1 vs T2', 'Difusão: AVC agudo', 'Gadolínio: contraste'], references: ['Novelline Cap.9-10'] },
+    ],
+    mainReferences: ['Novelline RA. Fundamentos de Radiologia. 6ª ed.', 'Rumack CM. Diagnóstico por Ultrassonografia. 5ª ed.'],
+  },
+  {
+    id: 'infectologia', name: 'Infectologia', year: 4, semester: 2, icon: '🦠', color: '#059669',
+    category: 'clinica', hours: 90,
+    description: 'Doenças infecciosas e parasitárias, antimicrobianos, infecções hospitalares.',
+    objectives: ['Diagnosticar e tratar infecções prevalentes', 'Uso racional de antimicrobianos', 'Prevenção de IRAS'],
+    topics: [
+      { id: 'inf1', name: 'HIV/AIDS', description: 'Diagnóstico, estadiamento, TARV', keyPoints: ['CD4 < 200: AIDS', 'TARV: TDF+3TC+DTG', 'Profilaxias: PCP, toxo'], references: ['MS Protocolo HIV 2024'] },
+      { id: 'inf2', name: 'Tuberculose', description: 'Diagnóstico, tratamento, ILTB', keyPoints: ['RIPE: 2 meses + RI: 4 meses', 'TRM-TB: diagnóstico rápido', 'ILTB: isoniazida 270 doses'], references: ['MS Manual TB 2024'] },
+      { id: 'inf3', name: 'Hepatites Virais', description: 'A, B, C, D, E', keyPoints: ['HBV: HBsAg, Anti-HBs, Anti-HBc', 'HCV: DAAs cura > 95%', 'Vacinação: HBV universal'], references: ['MS Protocolo Hepatites 2024'] },
+      { id: 'inf4', name: 'Arboviroses', description: 'Dengue, Zika, Chikungunya, Febre Amarela', keyPoints: ['Dengue: prova do laço, hematocrito', 'Sinais de alarme: dor abdominal, vômitos', 'Zika: microcefalia'], references: ['MS Dengue 2024'] },
+    ],
+    mainReferences: ['Veronesi R. Tratado de Infectologia. 6ª ed.', 'Mandell GL. Principles of Infectious Diseases. 9th ed.'],
+  },
+  {
+    id: 'neurologia', name: 'Neurologia', year: 4, semester: 2, icon: '🧠', color: '#7C3AED',
+    category: 'clinica', hours: 90,
+    description: 'Doenças do sistema nervoso central e periférico.',
+    objectives: ['Realizar exame neurológico completo', 'Diagnosticar AVC e epilepsia', 'Manejar cefaleias'],
+    topics: [
+      { id: 'neuro1', name: 'AVC', description: 'Isquêmico e hemorrágico', keyPoints: ['NIHSS: gravidade', 'Trombolítico: até 4,5h', 'Trombectomia: até 24h'], references: ['Rowland Cap.35-38'] },
+      { id: 'neuro2', name: 'Epilepsia', description: 'Classificação, diagnóstico, tratamento', keyPoints: ['Focal vs generalizada', 'EEG: padrão', 'Monoterapia inicial'], references: ['Rowland Cap.25-27'] },
+      { id: 'neuro3', name: 'Cefaleias', description: 'Migrânea, tensional, em salvas', keyPoints: ['Sinais de alarme: red flags', 'Migrânea: triptanos', 'Profilaxia: topiramato, propranolol'], references: ['Rowland Cap.8-10'] },
+    ],
+    mainReferences: ['Rowland LP. Merritt\'s Neurology. 14th ed.', 'Machado ABM. Neuroanatomia Funcional. 3ª ed.'],
+  },
+  {
+    id: 'cardiologia', name: 'Cardiologia', year: 4, semester: 1, icon: '❤️', color: '#DC2626',
+    category: 'clinica', hours: 90,
+    description: 'Doenças cardiovasculares: diagnóstico, tratamento e prevenção.',
+    objectives: ['Interpretar ECG', 'Manejar síndromes coronarianas', 'Tratar insuficiência cardíaca'],
+    topics: [
+      { id: 'card1', name: 'Eletrocardiograma', description: 'Interpretação sistemática do ECG', keyPoints: ['Ritmo, FC, eixo, intervalos', 'Supra de ST: IAM', 'BRE, BRD, bloqueios AV'], references: ['Braunwald Cap.13'] },
+      { id: 'card2', name: 'Síndromes Coronarianas', description: 'IAM com e sem supra, angina instável', keyPoints: ['Troponina: marcador', 'IAMCSST: angioplastia < 90min', 'Dupla antiagregação'], references: ['Braunwald Cap.35-38'] },
+      { id: 'card3', name: 'Insuficiência Cardíaca', description: 'IC sistólica e diastólica', keyPoints: ['FEVE reduzida vs preservada', 'IECA + BB + espironolactona + SGLT2i', 'BNP/NT-proBNP'], references: ['Braunwald Cap.25-27'] },
+      { id: 'card4', name: 'Hipertensão Arterial', description: 'Diagnóstico, classificação, tratamento', keyPoints: ['MAPA, MRPA', 'Meta: < 130/80 mmHg', 'Crise hipertensiva: emergência vs urgência'], references: ['Diretriz SBC HAS 2024'] },
+    ],
+    mainReferences: ['Braunwald E. Heart Disease. 12th ed.', 'Diretriz SBC 2024'],
+  },
+  // === ANO 6 - INTERNATO ===
+  {
+    id: 'internato_cm', name: 'Internato - Clínica Médica', year: 6, semester: 1, icon: '🏥', color: '#3B82F6',
+    category: 'estagio', hours: 480,
+    description: 'Estágio obrigatório em enfermarias, ambulatórios e emergência de clínica médica.',
+    objectives: ['Conduzir casos clínicos de forma autônoma', 'Prescrever e acompanhar pacientes internados', 'Realizar procedimentos básicos'],
+    topics: [
+      { id: 'icm1', name: 'Enfermaria de Clínica Médica', description: 'Manejo de pacientes internados', keyPoints: ['Evolução diária', 'Prescrição médica', 'Alta hospitalar'], references: ['Harrison Cap. diversos'] },
+      { id: 'icm2', name: 'Ambulatório Geral', description: 'Consultas ambulatoriais', keyPoints: ['Anamnese completa', 'Exame físico dirigido', 'Plano terapêutico'], references: ['Harrison Cap. diversos'] },
+      { id: 'icm3', name: 'Plantão de Emergência', description: 'Atendimento de urgência/emergência', keyPoints: ['Triagem: Manchester/ESI', 'ACLS/BLS', 'Sepse: pacote 1h'], references: ['ATLS, ACLS'] },
+    ],
+    mainReferences: ['Harrison TR. Principles of Internal Medicine. 21st ed.', 'Goldman L. Cecil Medicine. 27th ed.'],
+  },
+  {
+    id: 'internato_cir', name: 'Internato - Cirurgia', year: 6, semester: 1, icon: '🔪', color: '#DC2626',
+    category: 'estagio', hours: 480,
+    description: 'Estágio obrigatório em centro cirúrgico, enfermaria cirúrgica e emergência.',
+    objectives: ['Auxiliar em cirurgias', 'Manejar pós-operatório', 'Realizar suturas e drenagens'],
+    topics: [
+      { id: 'icir1', name: 'Centro Cirúrgico', description: 'Paramentação, instrumentação, técnica cirúrgica', keyPoints: ['Escovação, paramentação', 'Nós e suturas', 'Hemostasia'], references: ['Sabiston Cap.1-5'] },
+      { id: 'icir2', name: 'Emergência Cirúrgica', description: 'Abdome agudo, trauma', keyPoints: ['ATLS: ABCDE', 'Abdome agudo: perfurativo, obstrutivo, inflamatório', 'FAST'], references: ['ATLS 10ª ed.'] },
+    ],
+    mainReferences: ['Sabiston DC. Textbook of Surgery. 21st ed.', 'ATLS. 10ª ed.'],
+  },
+  {
+    id: 'internato_go', name: 'Internato - Ginecologia e Obstetrícia', year: 6, semester: 2, icon: '🤰', color: '#EC4899',
+    category: 'estagio', hours: 480,
+    description: 'Estágio obrigatório em pré-natal, centro obstétrico e ambulatório de ginecologia.',
+    objectives: ['Acompanhar pré-natal', 'Assistir partos', 'Manejar emergências obstétricas'],
+    topics: [
+      { id: 'igo1', name: 'Pré-Natal', description: 'Consultas, exames, vacinas', keyPoints: ['Mínimo 6 consultas', 'Exames por trimestre', 'Suplementação: ácido fólico + ferro'], references: ['Rezende Cap.10-15'] },
+      { id: 'igo2', name: 'Centro Obstétrico', description: 'Trabalho de parto, partograma', keyPoints: ['Fases: dilatação, expulsão, dequitação', 'Partograma: linha de alerta/ação', 'Episiotomia seletiva'], references: ['Rezende Cap.20-25'] },
+    ],
+    mainReferences: ['Rezende J. Obstetrícia. 14ª ed.', 'Berek JS. Berek & Novak\'s Gynecology. 16th ed.'],
+  },
+  {
+    id: 'internato_ped', name: 'Internato - Pediatria', year: 6, semester: 2, icon: '👶', color: '#F472B6',
+    category: 'estagio', hours: 480,
+    description: 'Estágio obrigatório em puericultura, enfermaria pediátrica e emergência.',
+    objectives: ['Realizar puericultura', 'Manejar doenças prevalentes na infância', 'Reanimação neonatal'],
+    topics: [
+      { id: 'iped1', name: 'Puericultura', description: 'Crescimento, desenvolvimento, vacinas', keyPoints: ['Curvas de crescimento OMS', 'Marcos do desenvolvimento', 'Calendário vacinal PNI'], references: ['Nelson Cap.1-10'] },
+      { id: 'iped2', name: 'Emergência Pediátrica', description: 'PALS, desidratação, convulsão febril', keyPoints: ['PALS: algoritmos', 'Desidratação: planos A, B, C', 'Bronquiolite: suporte'], references: ['Nelson Cap.60-70'] },
+    ],
+    mainReferences: ['Nelson WE. Textbook of Pediatrics. 22nd ed.', 'SBP. Tratado de Pediatria. 5ª ed.'],
+  },
+  {
+    id: 'internato_sc', name: 'Internato - Saúde Coletiva', year: 6, semester: 2, icon: '🌍', color: '#059669',
+    category: 'estagio', hours: 240,
+    description: 'Estágio em UBS, ESF, vigilância epidemiológica e gestão em saúde.',
+    objectives: ['Atuar na Estratégia Saúde da Família', 'Realizar ações de vigilância', 'Compreender gestão do SUS'],
+    topics: [
+      { id: 'isc1', name: 'ESF e APS', description: 'Atenção Primária à Saúde', keyPoints: ['Território, adscrição', 'Visita domiciliar', 'Grupos operativos'], references: ['Starfield B. APS'] },
+      { id: 'isc2', name: 'Vigilância em Saúde', description: 'Epidemiológica, sanitária, ambiental', keyPoints: ['Notificação compulsória', 'Investigação de surtos', 'Indicadores de saúde'], references: ['MS Guia de Vigilância'] },
+    ],
+    mainReferences: ['Starfield B. Atenção Primária.', 'Duncan BB. Medicina Ambulatorial. 5ª ed.'],
+  },
 ];
 
 const YEAR_COLORS: Record<number, string> = { 1: '#3B82F6', 2: '#8B5CF6', 3: '#EF4444', 4: '#F59E0B', 5: '#10B981', 6: '#EC4899' };

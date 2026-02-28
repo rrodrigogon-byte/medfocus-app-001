@@ -77,6 +77,36 @@ async function startServer() {
     }
   });
 
+  // Seed library with free medical books
+  app.get('/api/library/seed', async (_req, res) => {
+    try {
+      const { saveLibraryMaterial } = await import('../db');
+      const { FREE_BOOKS } = await import('../../client/src/data/freeBooks');
+      let seeded = 0;
+      for (const book of FREE_BOOKS) {
+        const id = await saveLibraryMaterial({
+          title: book.title,
+          description: book.description,
+          type: book.type as any,
+          subject: book.category || 'Medicina',
+          authorName: book.author,
+          authorInstitution: book.institution || undefined,
+          source: book.source || undefined,
+          externalUrl: book.url || undefined,
+          publishedYear: book.year || undefined,
+          relevanceScore: Math.round(book.rating * 10) || 85,
+          language: book.language === 'pt-BR' ? 'pt' : book.language || 'pt',
+          tags: book.tags?.join(',') || undefined,
+        });
+        if (id) seeded++;
+      }
+      res.json({ success: true, seeded, total: FREE_BOOKS.length });
+    } catch (err: any) {
+      console.error('[SEED] Error seeding library:', err.message);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
   // CMED refresh endpoint for Cloud Scheduler
   app.get('/api/cmed/refresh', async (_req, res) => {
     try {
