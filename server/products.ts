@@ -1,20 +1,22 @@
 /**
- * MedFocus — Planos e Produtos v2.0
+ * MedFocus — Planos e Produtos v3.0
  * 
  * Estrutura de Planos:
- * ┌─────────────────────────────────────────────────────────────────┐
- * │ PERFIL          │ MENSAL      │ ANUAL (20% desc)  │ PARCERIA   │
- * ├─────────────────┼─────────────┼───────────────────┼────────────┤
- * │ Estudante       │ R$ 49,99    │ R$ 479,90/ano     │ 40% desc   │
- * │ Médico          │ R$ 45,99    │ R$ 441,50/ano     │ —          │
- * │ Professor       │ R$ 9,99     │ R$ 95,90/ano      │ GRÁTIS*    │
- * │ Admin           │ GRÁTIS      │ GRÁTIS            │ —          │
- * └─────────────────────────────────────────────────────────────────┘
+ * ┌─────────────────────────────────────────────────────────────────────┐
+ * │ PERFIL          │ MENSAL      │ ANUAL (20% desc)  │ PARCERIA      │
+ * ├─────────────────┼─────────────┼───────────────────┼───────────────┤
+ * │ Público Geral   │ R$ 6,99     │ R$ 67,10/ano      │ —             │
+ * │ Estudante       │ R$ 49,90    │ R$ 479,04/ano     │ 40% desc      │
+ * │ Professor       │ R$ 49,90    │ R$ 479,04/ano     │ GRÁTIS*       │
+ * │ Médico          │ R$ 59,90    │ R$ 575,04/ano     │ —             │
+ * │ Admin           │ GRÁTIS      │ GRÁTIS            │ —             │
+ * └─────────────────────────────────────────────────────────────────────┘
  * 
+ * * Público Geral: acesso restrito a módulos de Saúde Pública
  * * Professor é gratuito na Parceria Universitária (min. 30 alunos)
  * * Parceria: 40% desconto no plano anual, mínimo 30 assinaturas
  * * Professor envia comprovação de vínculo universitário
- * * Trial de 7 dias gratuito para todos os planos
+ * * Trial de 7 dias gratuito para todos os planos pagos
  */
 
 export const PLANS = {
@@ -47,14 +49,46 @@ export const PLANS = {
       quizzesPerDay: 3,
     },
   },
+  publico: {
+    id: 'publico',
+    name: 'MedFocus Público Geral',
+    description: 'Acesso a módulos de Saúde Pública',
+    targetAudience: 'publico',
+    price: 699, // R$ 6,99/mês
+    yearlyPrice: 6710, // R$ 67,10/ano (20% desconto)
+    partnershipYearlyPrice: 0,
+    currency: 'brl',
+    interval: 'month' as const,
+    trialDays: 7,
+    features: [
+      'Tudo do plano Free',
+      'Busca de Hospitais e UBS (CNES/DataSUS)',
+      'Busca de Médicos por especialidade',
+      'Busca de Farmácias e preços',
+      'Consulta de Medicamentos (ANVISA/CMED)',
+      'Bulário Eletrônico ANVISA',
+      'CID-10 completo',
+      'Guia de Doenças básico',
+      'Calculadoras de saúde',
+      'Informações de Saúde Pública',
+      'Localizador de UPA/SAMU',
+      'Calendário de Vacinação',
+    ],
+    limits: {
+      aiQueriesPerDay: 5,
+      contentYears: [1, 2],
+      flashcardsPerDay: 10,
+      quizzesPerDay: 3,
+    },
+  },
   estudante: {
     id: 'estudante',
     name: 'MedFocus Estudante',
     description: 'Plano completo para estudantes de medicina',
     targetAudience: 'estudante',
-    price: 4999, // R$ 49,99/mês
-    yearlyPrice: 47990, // R$ 479,90/ano (20% desconto)
-    partnershipYearlyPrice: 28794, // R$ 287,94/ano (40% desconto sobre anual)
+    price: 4990, // R$ 49,90/mês
+    yearlyPrice: 47904, // R$ 479,04/ano (20% desconto)
+    partnershipYearlyPrice: 28742, // R$ 287,42/ano (40% desconto sobre anual)
     currency: 'brl',
     interval: 'month' as const,
     trialDays: 7,
@@ -93,8 +127,8 @@ export const PLANS = {
     name: 'MedFocus Médico',
     description: 'Plano profissional para médicos em exercício',
     targetAudience: 'medico',
-    price: 4599, // R$ 45,99/mês
-    yearlyPrice: 44150, // R$ 441,50/ano (20% desconto)
+    price: 5990, // R$ 59,90/mês
+    yearlyPrice: 57504, // R$ 575,04/ano (20% desconto)
     partnershipYearlyPrice: 0,
     currency: 'brl',
     interval: 'month' as const,
@@ -126,8 +160,8 @@ export const PLANS = {
     name: 'MedFocus Professor',
     description: 'Plano para docentes universitários (requer comprovação)',
     targetAudience: 'professor',
-    price: 999, // R$ 9,99/mês
-    yearlyPrice: 9590, // R$ 95,90/ano (20% desconto)
+    price: 4990, // R$ 49,90/mês
+    yearlyPrice: 47904, // R$ 479,04/ano (20% desconto)
     partnershipYearlyPrice: 0, // GRÁTIS na parceria universitária
     currency: 'brl',
     interval: 'month' as const,
@@ -172,7 +206,7 @@ export type PlanId = keyof typeof PLANS;
 export type Plan = (typeof PLANS)[PlanId];
 
 /**
- * Módulos que requerem plano pago
+ * Módulos que requerem plano pago (qualquer plano pago)
  */
 export const PRO_MODULES: string[] = [
   'smartSummary', 'clinicalCases', 'battle', 'quiz', 'atlas',
@@ -180,6 +214,17 @@ export const PRO_MODULES: string[] = [
   'drugInteractions', 'classroom', 'analytics', 'professor',
   'validated-library', 'reports', 'flashcardStudy', 'lectureTranscription',
   'myContent', 'pharmaBible', 'pubmedResearch', 'studyRooms', 'socialFeed',
+];
+
+/**
+ * Módulos disponíveis para o plano Público Geral
+ * (além dos módulos gratuitos)
+ */
+export const PUBLIC_MODULES: string[] = [
+  'hospitalFinder', 'doctorFinder', 'pharmacyFinder', 'medicationSearch',
+  'bulario', 'cid10Full', 'diseaseGuide', 'healthCalculators',
+  'publicHealth', 'upaLocator', 'vaccinationCalendar', 'cnesSearch',
+  'anvisaConsultFull', 'cmedPrices',
 ];
 
 /**
@@ -200,6 +245,11 @@ export function hasAccess(userPlan: string, moduleId: string, trialActive?: bool
   if (userPlan === 'admin') return true;
   if (FREE_MODULES.includes(moduleId)) return true;
   if (trialActive) return true;
+  // Plano Público Geral: acesso aos módulos de saúde pública + free
+  if (userPlan === 'publico') {
+    return PUBLIC_MODULES.includes(moduleId);
+  }
+  // Planos pagos completos
   if (['estudante', 'medico', 'professor', 'pro', 'premium'].includes(userPlan)) return true;
   return false;
 }

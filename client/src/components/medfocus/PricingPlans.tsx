@@ -1,17 +1,18 @@
 /**
- * MedFocus Pricing Plans v7.0 — Dual Payment Gateway
+ * MedFocus Pricing Plans v8.0 — Dual Payment Gateway + Público Geral
  * Primary: Mercado Pago (Pix, Cartão, Boleto)
  * Fallback: Stripe (Cartão)
  * 
- * Estudante: R$ 49,99/mês | Anual: R$ 479,90 (20% desc)
- * Médico: R$ 45,99/mês | Anual: R$ 441,50 (20% desc)
- * Professor: R$ 9,99/mês | Anual: R$ 95,90 (20% desc) | Grátis na Parceria
+ * Público Geral: R$ 6,99/mês | Anual: R$ 67,10 (20% desc) — Saúde Pública
+ * Estudante: R$ 49,90/mês | Anual: R$ 479,04 (20% desc)
+ * Professor: R$ 49,90/mês | Anual: R$ 479,04 (20% desc) | Grátis na Parceria
+ * Médico: R$ 59,90/mês | Anual: R$ 575,04 (20% desc)
  * Trial de 7 dias gratuito
  */
 import React, { useState, useEffect } from 'react';
 import { trpc } from '../../lib/trpc';
 
-type PlanType = 'estudante' | 'medico' | 'professor';
+type PlanType = 'publico' | 'estudante' | 'medico' | 'professor';
 type PaymentGateway = 'mercadopago' | 'stripe';
 
 interface GatewayStatus {
@@ -52,7 +53,6 @@ const PricingPlans: React.FC = () => {
         else if (data.recommended === 'stripe') setSelectedGateway('stripe');
       })
       .catch(() => {
-        // Default to Mercado Pago
         setSelectedGateway('mercadopago');
       });
   }, []);
@@ -63,7 +63,6 @@ const PricingPlans: React.FC = () => {
       setError(null);
 
       if (selectedGateway === 'mercadopago') {
-        // Use Mercado Pago
         const response = await fetch('/api/mercadopago/create-checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -82,7 +81,6 @@ const PricingPlans: React.FC = () => {
           throw new Error(data.error);
         }
       } else {
-        // Use Stripe
         const result = await createStripeCheckout.mutateAsync({ planId, interval: billing });
         if (result.url) {
           window.location.href = result.url;
@@ -127,12 +125,38 @@ const PricingPlans: React.FC = () => {
       ],
     },
     {
+      id: 'publico' as const,
+      name: 'Público Geral',
+      description: 'Saúde Pública para todos',
+      monthlyPrice: 6.99,
+      yearlyPrice: 67.10,
+      yearlyMonthly: 5.59,
+      color: 'from-orange-500 to-amber-600',
+      borderColor: 'border-orange-400 dark:border-orange-500',
+      badge: 'ACESSÍVEL',
+      features: [
+        { text: 'Tudo do plano Free', included: true, highlight: true },
+        { text: 'Busca de Hospitais e UBS (CNES)', included: true },
+        { text: 'Busca de Médicos por especialidade', included: true },
+        { text: 'Busca de Farmácias e preços', included: true },
+        { text: 'Consulta de Medicamentos (ANVISA)', included: true },
+        { text: 'Bulário Eletrônico ANVISA', included: true },
+        { text: 'CID-10 completo', included: true },
+        { text: 'Guia de Doenças básico', included: true },
+        { text: 'Calculadoras de saúde', included: true },
+        { text: 'Localizador de UPA/SAMU', included: true },
+        { text: 'Calendário de Vacinação', included: true },
+        { text: 'Conteúdo acadêmico avançado', included: false },
+        { text: 'IA e ferramentas profissionais', included: false },
+      ],
+    },
+    {
       id: 'estudante' as const,
       name: 'Estudante',
       description: 'Para estudantes de medicina',
-      monthlyPrice: 49.99,
-      yearlyPrice: 479.90,
-      yearlyMonthly: 39.99,
+      monthlyPrice: 49.90,
+      yearlyPrice: 479.04,
+      yearlyMonthly: 39.92,
       color: 'from-cyan-500 to-blue-600',
       borderColor: 'border-cyan-400 dark:border-cyan-500',
       badge: 'MAIS POPULAR',
@@ -154,37 +178,12 @@ const PricingPlans: React.FC = () => {
       ],
     },
     {
-      id: 'medico' as const,
-      name: 'Médico',
-      description: 'Para médicos em exercício',
-      monthlyPrice: 45.99,
-      yearlyPrice: 441.50,
-      yearlyMonthly: 36.79,
-      color: 'from-emerald-500 to-teal-600',
-      borderColor: 'border-emerald-400 dark:border-emerald-500',
-      badge: 'PROFISSIONAL',
-      features: [
-        { text: 'Tudo do plano Estudante', included: true, highlight: true },
-        { text: '15+ Calculadoras médicas avançadas', included: true },
-        { text: 'Protocolos Clínicos completos', included: true },
-        { text: 'Apoio Diagnóstico IA avançado', included: true },
-        { text: 'Interações Medicamentosas completas', included: true },
-        { text: 'Atlas Anatômico 3D profissional', included: true },
-        { text: 'Pesquisa PubMed ilimitada', included: true },
-        { text: 'Bulário completo ANVISA + FDA', included: true },
-        { text: 'Guia de Doenças expandido', included: true },
-        { text: 'Condutas baseadas em evidência', included: true },
-        { text: 'Atualizações de guidelines', included: true },
-        { text: 'Suporte prioritário', included: true },
-      ],
-    },
-    {
       id: 'professor' as const,
       name: 'Professor',
       description: 'Para docentes universitários',
-      monthlyPrice: 9.99,
-      yearlyPrice: 95.90,
-      yearlyMonthly: 7.99,
+      monthlyPrice: 49.90,
+      yearlyPrice: 479.04,
+      yearlyMonthly: 39.92,
       color: 'from-purple-500 to-indigo-600',
       borderColor: 'border-purple-400 dark:border-purple-500',
       badge: 'DOCENTE',
@@ -204,6 +203,31 @@ const PricingPlans: React.FC = () => {
         { text: 'Suporte VIP', included: true },
       ],
     },
+    {
+      id: 'medico' as const,
+      name: 'Médico',
+      description: 'Para médicos em exercício',
+      monthlyPrice: 59.90,
+      yearlyPrice: 575.04,
+      yearlyMonthly: 47.92,
+      color: 'from-emerald-500 to-teal-600',
+      borderColor: 'border-emerald-400 dark:border-emerald-500',
+      badge: 'PROFISSIONAL',
+      features: [
+        { text: 'Tudo do plano Estudante', included: true, highlight: true },
+        { text: '15+ Calculadoras médicas avançadas', included: true },
+        { text: 'Protocolos Clínicos completos', included: true },
+        { text: 'Apoio Diagnóstico IA avançado', included: true },
+        { text: 'Interações Medicamentosas completas', included: true },
+        { text: 'Atlas Anatômico 3D profissional', included: true },
+        { text: 'Pesquisa PubMed ilimitada', included: true },
+        { text: 'Bulário completo ANVISA + FDA', included: true },
+        { text: 'Guia de Doenças expandido', included: true },
+        { text: 'Condutas baseadas em evidência', included: true },
+        { text: 'Atualizações de guidelines', included: true },
+        { text: 'Suporte prioritário', included: true },
+      ],
+    },
   ];
 
   const gatewayLabel = selectedGateway === 'mercadopago' ? 'Mercado Pago' : 'Stripe';
@@ -217,7 +241,7 @@ const PricingPlans: React.FC = () => {
       <div className="text-center">
         <h1 className="text-3xl font-bold text-foreground mb-2">Planos MedFocus</h1>
         <p className="text-muted-foreground text-sm max-w-2xl mx-auto">
-          Escolha o plano ideal para sua jornada médica. Todos incluem 7 dias de trial gratuito.
+          Escolha o plano ideal para sua jornada. Todos os planos pagos incluem 7 dias de trial gratuito.
         </p>
       </div>
 
@@ -306,7 +330,7 @@ const PricingPlans: React.FC = () => {
       </div>
 
       {/* Plans Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {plans.map(plan => {
           const isCurrentPlan = currentPlan === plan.id;
           const isPaid = plan.id !== 'free';
@@ -352,6 +376,15 @@ const PricingPlans: React.FC = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Public Plan Note */}
+                {plan.id === 'publico' && (
+                  <div className="mb-3 bg-orange-500/10 border border-orange-500/20 rounded-lg p-2">
+                    <p className="text-[10px] text-orange-300 font-medium text-center">
+                      Acesso exclusivo a módulos de Saúde Pública — ideal para o público geral
+                    </p>
+                  </div>
+                )}
 
                 {/* CTA Button */}
                 {isPaid ? (
@@ -465,14 +498,14 @@ const PricingPlans: React.FC = () => {
               <tbody>
                 <tr className="border-b border-gray-800">
                   <td className="py-1.5 text-foreground font-medium">Estudante</td>
-                  <td className="text-right text-muted-foreground">R$ 49,99</td>
-                  <td className="text-right text-muted-foreground">R$ 479,90</td>
-                  <td className="text-right text-purple-300 font-bold">R$ 287,94 <span className="text-emerald-400 text-[10px]">(-40%)</span></td>
+                  <td className="text-right text-muted-foreground">R$ 49,90</td>
+                  <td className="text-right text-muted-foreground">R$ 479,04</td>
+                  <td className="text-right text-purple-300 font-bold">R$ 287,42 <span className="text-emerald-400 text-[10px]">(-40%)</span></td>
                 </tr>
                 <tr>
                   <td className="py-1.5 text-foreground font-medium">Professor</td>
-                  <td className="text-right text-muted-foreground">R$ 9,99</td>
-                  <td className="text-right text-muted-foreground">R$ 95,90</td>
+                  <td className="text-right text-muted-foreground">R$ 49,90</td>
+                  <td className="text-right text-muted-foreground">R$ 479,04</td>
                   <td className="text-right text-emerald-400 font-bold">GRÁTIS</td>
                 </tr>
               </tbody>
@@ -542,10 +575,10 @@ const PricingPlans: React.FC = () => {
         <h3 className="text-lg font-bold text-foreground mb-4 text-center">Como Funciona</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { step: '1', title: 'Escolha seu Plano', desc: 'Selecione o plano ideal para seu perfil: Estudante, Médico ou Professor', icon: '1' },
+            { step: '1', title: 'Escolha seu Plano', desc: 'Selecione o plano ideal: Público Geral, Estudante, Professor ou Médico', icon: '1' },
             { step: '2', title: 'Trial de 7 Dias', desc: 'Teste todas as funcionalidades gratuitamente por 7 dias', icon: '2' },
             { step: '3', title: 'Pague como Preferir', desc: `Pagamento seguro via ${selectedGateway === 'mercadopago' ? 'Pix, Cartão ou Boleto' : 'Cartão de Crédito'}. Cancele a qualquer momento`, icon: '3' },
-            { step: '4', title: 'Acesso Completo', desc: 'Desbloqueie todos os recursos e comece a evoluir', icon: '4' },
+            { step: '4', title: 'Acesso Liberado', desc: 'Desbloqueie os recursos do seu plano e comece a evoluir', icon: '4' },
           ].map(item => (
             <div key={item.step} className="text-center p-4">
               <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-cyan-500/10 flex items-center justify-center text-xl font-bold text-cyan-400">{item.icon}</div>

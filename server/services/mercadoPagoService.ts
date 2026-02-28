@@ -97,25 +97,32 @@ async function mpFetch<T>(endpoint: string, options: RequestInit = {}): Promise<
  * Plan configuration for Mercado Pago
  */
 const MP_PLANS = {
+  publico: {
+    title: "MedFocus Público Geral",
+    description: "Acesso a módulos de Saúde Pública",
+    monthlyPrice: 6.99,
+    yearlyPrice: 67.10,
+    partnershipYearlyPrice: 0,
+  },
   estudante: {
     title: "MedFocus Estudante",
     description: "Plano completo para estudantes de medicina",
-    monthlyPrice: 49.99,
-    yearlyPrice: 479.90,
-    partnershipYearlyPrice: 287.94,
+    monthlyPrice: 49.90,
+    yearlyPrice: 479.04,
+    partnershipYearlyPrice: 287.42,
   },
   medico: {
     title: "MedFocus Médico",
     description: "Plano profissional para médicos em exercício",
-    monthlyPrice: 45.99,
-    yearlyPrice: 441.50,
+    monthlyPrice: 59.90,
+    yearlyPrice: 575.04,
     partnershipYearlyPrice: 0,
   },
   professor: {
     title: "MedFocus Professor",
     description: "Plano para docentes universitários",
-    monthlyPrice: 9.99,
-    yearlyPrice: 95.90,
+    monthlyPrice: 49.90,
+    yearlyPrice: 479.04,
     partnershipYearlyPrice: 0,
   },
 };
@@ -128,7 +135,7 @@ export async function createMPSubscription(params: {
   userId: number;
   userEmail: string;
   userName: string;
-  planId: "estudante" | "medico" | "professor";
+  planId: "publico" | "estudante" | "medico" | "professor";
   interval: "monthly" | "yearly";
   partnershipCode?: string;
   origin: string;
@@ -203,7 +210,7 @@ export async function createMPCheckoutPreference(params: {
   userId: number;
   userEmail: string;
   userName: string;
-  planId: "estudante" | "medico" | "professor";
+  planId: "publico" | "estudante" | "medico" | "professor";
   interval: "monthly" | "yearly";
   partnershipCode?: string;
   origin: string;
