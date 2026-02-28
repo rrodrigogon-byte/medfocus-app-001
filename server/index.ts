@@ -131,6 +131,21 @@ async function startServer() {
   }, 60 * 60 * 1000);
   console.log('[CMED] Daily price refresh scheduled (every 24h)');
 
+  // Serve full CMED medicines data for frontend PriceComparison
+  app.get('/api/cmed/medicines', async (req, res) => {
+    try {
+      const { searchMedicines, getCMEDMetadata, getCMEDCategories } = await import('./services/cmedService');
+      const metadata = getCMEDMetadata();
+      const categories = getCMEDCategories();
+      // Return all medicines (paginated with large pageSize)
+      const result = searchMedicines({ query: '', page: 1, pageSize: 10000 });
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.json({ metadata, categories, medicines: result.medicines });
+    } catch (err: any) {
+      res.status(500).json({ metadata: {}, categories: [], medicines: [] });
+    }
+  });
+
   // Also expose a direct HTTP endpoint for Cloud Scheduler
   app.get('/api/cmed/refresh', async (_req, res) => {
     try {
