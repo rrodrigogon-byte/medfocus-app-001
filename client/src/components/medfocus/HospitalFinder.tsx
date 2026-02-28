@@ -13,6 +13,7 @@ import {
   Activity, Loader2, Database, RefreshCw, AlertCircle
 } from 'lucide-react';
 import { ESTADOS_NOMES as ESTADOS, ESTADOS_CIDADES_COMPLETO as CIDADES_POR_ESTADO } from './cidadesBrasil';
+import { getIBGECode, ibgeToCnes } from './ibgeCodes';
 
 // ─── Types ───────────────────────────────────────────────────
 interface CnesEstabelecimento {
@@ -23,6 +24,7 @@ interface CnesEstabelecimento {
   descricao_tipo_unidade?: string;
   codigo_uf: number;
   codigo_municipio: number;
+  nome_municipio?: string;
   sigla_uf?: string;
   endereco_estabelecimento: string;
   numero_estabelecimento: string;
@@ -271,7 +273,7 @@ function cnesToDisplay(e: CnesEstabelecimento): DisplayHospital {
     tipoLabel: e.descricao_tipo_unidade || tipoInfo.label,
     tipoColor: tipoInfo.color,
     estado: e.sigla_uf || '',
-    cidade: '', // Will be filled from municipality name if available
+    cidade: e.nome_municipio || '',
     endereco: `${e.endereco_estabelecimento}${e.numero_estabelecimento ? ', ' + e.numero_estabelecimento : ''}`,
     bairro: e.bairro_estabelecimento || '',
     telefone: cnesFormatPhone(e.numero_telefone_estabelecimento),
@@ -331,41 +333,86 @@ export default function HospitalFinder() {
     setCnesError('');
 
     try {
-      const params = new URLSearchParams();
-      params.set('uf', selectedEstado);
-      if (selectedTipo) params.set('tipo', selectedTipo);
-      params.set('limit', '20');
-      params.set('offset', String(page * 20));
+      // If a city is selected, use the multi-page endpoint with municipality code
+      if (selectedCidade) {
+        const ibgeCode = getIBGECode(selectedEstado, selectedCidade);
+        if (ibgeCode) {
+          const cnesCode = ibgeToCnes(ibgeCode);
+          const params = new URLSearchParams();
+          params.set('uf', selectedEstado);
+          params.set('municipio', String(cnesCode));
+          if (selectedTipo) params.set('tipo', selectedTipo);
+          params.set('paginas', '10'); // Up to 200 results
 
-      const res = await fetch(`/api/cnes/estabelecimentos?${params.toString()}`);
-      if (!res.ok) throw new Error(`Erro ${res.status}`);
+          const res = await fetch(`/api/cnes/buscar?${params.toString()}`);
+          if (!res.ok) throw new Error(`Erro ${res.status}`);
 
-      const data = await res.json();
-      const converted = (data.estabelecimentos || []).map(cnesToDisplay);
+          const data = await res.json();
+          const converted = (data.estabelecimentos || []).map(cnesToDisplay);
+          setCnesResults(converted);
+          setTotalCnesLoaded(converted.length);
+          setCnesHasMore(false); // All pages already fetched
+          setCnesPage(0);
+        } else {
+          // Fallback: use state-level search
+          const params = new URLSearchParams();
+          params.set('uf', selectedEstado);
+          if (selectedTipo) params.set('tipo', selectedTipo);
+          params.set('limit', '20');
+          params.set('offset', String(page * 20));
 
-      if (append) {
-        setCnesResults(prev => [...prev, ...converted]);
+          const res = await fetch(`/api/cnes/estabelecimentos?${params.toString()}`);
+          if (!res.ok) throw new Error(`Erro ${res.status}`);
+
+          const data = await res.json();
+          const converted = (data.estabelecimentos || []).map(cnesToDisplay);
+          if (append) {
+            setCnesResults(prev => [...prev, ...converted]);
+          } else {
+            setCnesResults(converted);
+          }
+          setTotalCnesLoaded(prev => append ? prev + converted.length : converted.length);
+          setCnesHasMore(converted.length === 20);
+          setCnesPage(page);
+        }
       } else {
-        setCnesResults(converted);
-      }
+        // State-level search with pagination
+        const params = new URLSearchParams();
+        params.set('uf', selectedEstado);
+        if (selectedTipo) params.set('tipo', selectedTipo);
+        params.set('limit', '20');
+        params.set('offset', String(page * 20));
 
-      setTotalCnesLoaded(prev => append ? prev + converted.length : converted.length);
-      setCnesHasMore(converted.length === 20);
-      setCnesPage(page);
+        const res = await fetch(`/api/cnes/estabelecimentos?${params.toString()}`);
+        if (!res.ok) throw new Error(`Erro ${res.status}`);
+
+        const data = await res.json();
+        const converted = (data.estabelecimentos || []).map(cnesToDisplay);
+
+        if (append) {
+          setCnesResults(prev => [...prev, ...converted]);
+        } else {
+          setCnesResults(converted);
+        }
+
+        setTotalCnesLoaded(prev => append ? prev + converted.length : converted.length);
+        setCnesHasMore(converted.length === 20);
+        setCnesPage(page);
+      }
     } catch (err: any) {
       setCnesError(err.message || 'Erro ao buscar dados do CNES');
       if (!append) setCnesResults([]);
     } finally {
       setCnesLoading(false);
     }
-  }, [selectedEstado, selectedTipo]);
+  }, [selectedEstado, selectedCidade, selectedTipo]);
 
-  // Auto-fetch when state changes
+  // Auto-fetch when state or city changes
   useEffect(() => {
     if (useCnesAPI && selectedEstado) {
       fetchCnes(0, false);
     }
-  }, [selectedEstado, selectedTipo, useCnesAPI]);
+  }, [selectedEstado, selectedCidade, selectedTipo, useCnesAPI]);
 
   // Load more pages
   const loadMore = useCallback(() => {

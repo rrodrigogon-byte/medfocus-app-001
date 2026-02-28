@@ -15,6 +15,8 @@
  * hitting the API rate limits and provide fast search to frontend.
  */
 
+import { MUNICIPIO_NAMES } from './municipioNames';
+
 const API_BASE = 'https://apidadosabertos.saude.gov.br';
 const MAX_PER_PAGE = 20; // API limit
 
@@ -232,6 +234,7 @@ export async function searchEstabelecimentos(params: {
   const estabelecimentos = (data.estabelecimentos || []).map(e => ({
     ...e,
     sigla_uf: CODE_TO_UF[e.codigo_uf] || '',
+    nome_municipio: MUNICIPIO_NAMES[e.codigo_municipio] || '',
     descricao_tipo_unidade: RELEVANT_UNIT_TYPES[e.codigo_tipo_unidade] || `Tipo ${e.codigo_tipo_unidade}`,
   }));
 
@@ -252,7 +255,7 @@ export async function fetchEstabelecimentosPaginados(params: {
   tipoUnidade?: number;
   maxPages?: number;
 }): Promise<CnesEstabelecimento[]> {
-  const maxPages = Math.min(params.maxPages || 5, 10);
+  const maxPages = Math.min(params.maxPages || 5, 20);
   const allResults: CnesEstabelecimento[] = [];
 
   for (let page = 0; page < maxPages; page++) {
@@ -288,6 +291,7 @@ export async function getEstabelecimentoByCnes(codigoCnes: number): Promise<Cnes
     return {
       ...data,
       sigla_uf: CODE_TO_UF[data.codigo_uf] || '',
+      nome_municipio: MUNICIPIO_NAMES[data.codigo_municipio] || '',
       descricao_tipo_unidade: RELEVANT_UNIT_TYPES[data.codigo_tipo_unidade] || `Tipo ${data.codigo_tipo_unidade}`,
     };
   } catch {

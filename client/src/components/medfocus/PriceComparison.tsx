@@ -1,6 +1,6 @@
 /**
- * MedFocus — Preços de Medicamentos v2.0
- * Comparativo completo com base CMED/ANVISA (2.304 substâncias, 6.193+ produtos).
+ * MedFocus — Preços de Medicamentos v3.0
+ * Comparativo completo com base CMED/ANVISA (2.304 substâncias, 27.000+ produtos).
  * Busca inteligente por nome comercial, genérico, substância, laboratório e nomes populares.
  * Farmácias reais por cidade/estado com fallback para preço estadual.
  * Mostra genéricos, similares e marcas concorrentes com laboratório fabricante.
@@ -10,23 +10,37 @@ import { ESTADOS_CIDADES_COMPLETO, ESTADOS_NOMES } from './cidadesBrasil';
 import { FARMACIAS, getFarmaciasParaCidade, type Farmacia } from './farmaciasDB';
 import { ALIASES_POPULARES, FARMACIA_POPULAR_GRATUITOS, LABORATORIOS_PRINCIPAIS, classificarTarja, getClasseTerapeutica } from './medicamentosDB';
 
-// Tipo para medicamento da base CMED
-interface CmedProduto {
+// Tipo para produto da base CMED (formato real da API)
+interface CmedProduct {
   nome: string;
-  laboratorio: string;
-  preco: number;
+  lab: string;
   apresentacao: string;
-  tipo: string;
-  apresentacoes?: number;
-  ean?: string;
+  tipo: string; // 'Novo', 'Genérico', 'Similar', 'Biológico', 'Específico', 'Fitoterápico'
+  pmc: number | null;
+  pf: number | null;
+  tarja: string;
+  ean: string;
+  hospitalar: boolean;
 }
 
+// Tipo para medicamento da base CMED (formato real da API)
 interface CmedMedicamento {
   id: number;
   substancia: string;
-  referencia: CmedProduto;
-  genericos: CmedProduto[];
-  similares: CmedProduto[];
+  nomes: string[];
+  referencia: string;
+  labReferencia: string;
+  classe: string;
+  tarja: string;
+  totalApresentacoes: number;
+  totalReferencia: number;
+  totalGenerico: number;
+  totalSimilar: number;
+  totalOutros: number;
+  precoMin: number;
+  precoMax: number;
+  laboratorios: string[];
+  products: CmedProduct[];
 }
 
 interface CmedData {
@@ -35,20 +49,62 @@ interface CmedData {
   medicines: CmedMedicamento[];
 }
 
+// Tipo normalizado para exibição
+interface ProdutoNormalizado {
+  nome: string;
+  laboratorio: string;
+  preco: number;
+  precoFabrica: number;
+  apresentacao: string;
+  tipo: string;
+  tipoCategoria: 'Referência' | 'Genérico' | 'Similar' | 'Outro';
+  ean: string;
+  hospitalar: boolean;
+}
+
 // Tipo para resultado de busca
 interface ResultadoBusca {
   substancia: string;
   classe: string;
   tarja: string;
   farmaciaPopular: boolean;
-  referencia: CmedProduto;
-  genericos: CmedProduto[];
-  similares: CmedProduto[];
-  todosOsProdutos: CmedProduto[];
+  nomeReferencia: string;
+  labReferencia: string;
+  referencia: ProdutoNormalizado[];
+  genericos: ProdutoNormalizado[];
+  similares: ProdutoNormalizado[];
+  outros: ProdutoNormalizado[];
+  todosOsProdutos: ProdutoNormalizado[];
   menorPreco: number;
   maiorPreco: number;
   totalProdutos: number;
+  totalApresentacoes: number;
+  laboratorios: string[];
   matchType: 'substancia' | 'referencia' | 'generico' | 'similar' | 'alias' | 'laboratorio';
+}
+
+// Normalizar tipo do produto para categorias
+function categorizarTipo(tipo: string): 'Referência' | 'Genérico' | 'Similar' | 'Outro' {
+  const t = tipo.toLowerCase();
+  if (t === 'genérico' || t === 'generico') return 'Genérico';
+  if (t === 'similar') return 'Similar';
+  if (t === 'novo' || t === 'biológico' || t === 'biologico' || t === 'referência' || t === 'referencia') return 'Referência';
+  return 'Outro';
+}
+
+// Normalizar produto da API para formato de exibição
+function normalizarProduto(p: CmedProduct): ProdutoNormalizado {
+  return {
+    nome: p.nome || '-',
+    laboratorio: p.lab || '-',
+    preco: p.pmc || p.pf || 0,
+    precoFabrica: p.pf || 0,
+    apresentacao: p.apresentacao || '-',
+    tipo: p.tipo || 'Outro',
+    tipoCategoria: categorizarTipo(p.tipo),
+    ean: p.ean || '',
+    hospitalar: p.hospitalar || false,
+  };
 }
 
 // Cache da base CMED carregada
@@ -65,7 +121,7 @@ export default function PriceComparison() {
   const [tab, setTab] = useState<'comparar' | 'gratuitos' | 'descontos'>('comparar');
   const [cmedData, setCmedData] = useState<CmedData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [filtroTipo, setFiltroTipo] = useState<'todos' | 'referencia' | 'generico' | 'similar'>('todos');
+  const [filtroTipo, setFiltroTipo] = useState<'todos' | 'referencia' | 'generico' | 'similar' | 'outro'>('todos');
   const [filtroLab, setFiltroLab] = useState('');
 
   // Carregar base CMED
@@ -92,7 +148,6 @@ export default function PriceComparison() {
 
   const farmaciasNaCidade = useMemo(() => {
     const farmacias = getFarmaciasParaCidade(estado, cidade);
-    // Inicializar seleção
     if (selectedFarmacias.size === 0 && farmacias.length > 0) {
       setSelectedFarmacias(new Set(farmacias.map(f => f.id)));
     }
@@ -118,9 +173,11 @@ export default function PriceComparison() {
     // 2. Buscar nos medicamentos
     for (const med of meds) {
       const sub = med.substancia.toLowerCase();
-      const refNome = med.referencia?.nome?.toLowerCase() || '';
-      const refLab = med.referencia?.laboratorio?.toLowerCase() || '';
-      
+      const nomes = (med.nomes || []).map(n => n.toLowerCase());
+      const refNome = (med.referencia || '').toLowerCase();
+      const refLab = (med.labReferencia || '').toLowerCase();
+      const labs = (med.laboratorios || []).map(l => l.toLowerCase());
+
       let matchType: ResultadoBusca['matchType'] | null = null;
 
       // Match por alias
@@ -131,50 +188,51 @@ export default function PriceComparison() {
       else if (sub.includes(q)) {
         matchType = 'substancia';
       }
-      // Match por nome de referência
-      else if (refNome.includes(q)) {
+      // Match por nome comercial
+      else if (nomes.some(n => n.includes(q)) || refNome.includes(q)) {
         matchType = 'referencia';
       }
       // Match por laboratório
-      else if (refLab.includes(q)) {
+      else if (refLab.includes(q) || labs.some(l => l.includes(q))) {
         matchType = 'laboratorio';
       }
-      // Match por genéricos
-      else if (med.genericos?.some(g => g.nome?.toLowerCase().includes(q) || g.laboratorio?.toLowerCase().includes(q))) {
+      // Match por nome de produto individual
+      else if (med.products?.some(p => p.nome?.toLowerCase().includes(q) || p.lab?.toLowerCase().includes(q))) {
         matchType = 'generico';
-      }
-      // Match por similares
-      else if (med.similares?.some(s => s.nome?.toLowerCase().includes(q) || s.laboratorio?.toLowerCase().includes(q))) {
-        matchType = 'similar';
       }
 
       if (matchType && !substanciasJaAdicionadas.has(med.substancia)) {
         substanciasJaAdicionadas.add(med.substancia);
-        
-        const todosOsProdutos: CmedProduto[] = [];
-        if (med.referencia?.preco) {
-          todosOsProdutos.push({ ...med.referencia, tipo: 'Referência' });
-        }
-        (med.genericos || []).forEach(g => todosOsProdutos.push({ ...g, tipo: 'Genérico' }));
-        (med.similares || []).forEach(s => todosOsProdutos.push({ ...s, tipo: 'Similar' }));
 
-        const precos = todosOsProdutos.filter(p => p.preco > 0).map(p => p.preco);
-        const isFarmaciaPopular = FARMACIA_POPULAR_GRATUITOS.some(fp => 
+        // Normalizar todos os produtos
+        const todosNormalizados = (med.products || []).map(normalizarProduto).filter(p => p.preco > 0);
+        const referencia = todosNormalizados.filter(p => p.tipoCategoria === 'Referência');
+        const genericos = todosNormalizados.filter(p => p.tipoCategoria === 'Genérico');
+        const similares = todosNormalizados.filter(p => p.tipoCategoria === 'Similar');
+        const outros = todosNormalizados.filter(p => p.tipoCategoria === 'Outro');
+
+        const precos = todosNormalizados.map(p => p.preco).filter(p => p > 0);
+        const isFarmaciaPopular = FARMACIA_POPULAR_GRATUITOS.some(fp =>
           med.substancia.toUpperCase().includes(fp) || fp.includes(med.substancia.toUpperCase().split(';')[0])
         );
 
         resultados.push({
           substancia: med.substancia,
-          classe: getClasseTerapeutica(med.substancia),
+          classe: med.classe || getClasseTerapeutica(med.substancia),
           tarja: classificarTarja(med.substancia),
           farmaciaPopular: isFarmaciaPopular,
-          referencia: med.referencia ? { ...med.referencia, tipo: 'Referência' } : { nome: '-', laboratorio: '-', preco: 0, apresentacao: '-', tipo: 'Referência' },
-          genericos: (med.genericos || []).map(g => ({ ...g, tipo: 'Genérico' })),
-          similares: (med.similares || []).map(s => ({ ...s, tipo: 'Similar' })),
-          todosOsProdutos,
+          nomeReferencia: med.referencia || med.nomes?.[0] || med.substancia,
+          labReferencia: med.labReferencia || '-',
+          referencia,
+          genericos,
+          similares,
+          outros,
+          todosOsProdutos: todosNormalizados,
           menorPreco: precos.length > 0 ? Math.min(...precos) : 0,
           maiorPreco: precos.length > 0 ? Math.max(...precos) : 0,
-          totalProdutos: todosOsProdutos.length,
+          totalProdutos: todosNormalizados.length,
+          totalApresentacoes: med.totalApresentacoes || todosNormalizados.length,
+          laboratorios: med.laboratorios || [],
           matchType,
         });
       }
@@ -184,7 +242,7 @@ export default function PriceComparison() {
     const prioridade: Record<string, number> = { alias: 0, substancia: 1, referencia: 2, generico: 3, similar: 4, laboratorio: 5 };
     resultados.sort((a, b) => prioridade[a.matchType] - prioridade[b.matchType]);
 
-    return resultados.slice(0, 50); // Limitar a 50 resultados
+    return resultados.slice(0, 50);
   }, [cmedData, search]);
 
   const toggleFarmacia = (id: string) => {
@@ -201,8 +259,8 @@ export default function PriceComparison() {
     if (!selectedMed) return [];
     let produtos = selectedMed.todosOsProdutos;
     if (filtroTipo !== 'todos') {
-      const tipoMap: Record<string, string> = { referencia: 'Referência', generico: 'Genérico', similar: 'Similar' };
-      produtos = produtos.filter(p => p.tipo === tipoMap[filtroTipo]);
+      const tipoMap: Record<string, string> = { referencia: 'Referência', generico: 'Genérico', similar: 'Similar', outro: 'Outro' };
+      produtos = produtos.filter(p => p.tipoCategoria === tipoMap[filtroTipo]);
     }
     if (filtroLab) {
       produtos = produtos.filter(p => p.laboratorio.toLowerCase().includes(filtroLab.toLowerCase()));
@@ -257,6 +315,17 @@ export default function PriceComparison() {
       case 'Referência': return 'bg-blue-600 text-white';
       case 'Genérico': return 'bg-emerald-600 text-white';
       case 'Similar': return 'bg-purple-600 text-white';
+      case 'Novo': return 'bg-blue-600 text-white';
+      case 'Biológico': return 'bg-orange-600 text-white';
+      default: return 'bg-gray-600 text-white';
+    }
+  };
+
+  const tipoCatColor = (tipo: string) => {
+    switch(tipo) {
+      case 'Referência': return 'bg-blue-600 text-white';
+      case 'Genérico': return 'bg-emerald-600 text-white';
+      case 'Similar': return 'bg-purple-600 text-white';
       default: return 'bg-gray-600 text-white';
     }
   };
@@ -264,11 +333,12 @@ export default function PriceComparison() {
   return (
     <div className="max-w-7xl mx-auto p-4 space-y-6">
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold text-white">Preços de Medicamentos</h1>
+        <h1 className="text-3xl font-bold text-white">Preços De Medicamentos</h1>
         <p className="text-gray-400">Compare preços entre farmácias da sua cidade e encontre o melhor preço</p>
         {cmedData && (
           <p className="text-xs text-gray-500">
-            Base CMED/ANVISA: {cmedData.medicines?.length?.toLocaleString()} substâncias | 
+            Base CMED/ANVISA: {cmedData.medicines?.length?.toLocaleString()} substâncias |
+            {cmedData.medicines?.reduce((acc, m) => acc + (m.products?.length || 0), 0).toLocaleString()} produtos |
             Atualizado: {cmedData.metadata?.lastUpdate || 'N/A'}
           </p>
         )}
@@ -388,22 +458,93 @@ export default function PriceComparison() {
                   <div className="bg-gray-900/60 rounded-lg p-3 text-center">
                     <p className="text-xs text-gray-500">Economia</p>
                     <p className="text-lg font-bold text-yellow-400">
-                      {selectedMed.maiorPreco > 0 ? `${((1 - selectedMed.menorPreco / selectedMed.maiorPreco) * 100).toFixed(0)}%` : '-'}
+                      {selectedMed.maiorPreco > 0 && selectedMed.menorPreco > 0
+                        ? `${((1 - selectedMed.menorPreco / selectedMed.maiorPreco) * 100).toFixed(0)}%`
+                        : '-'}
                     </p>
                   </div>
                 </div>
 
                 {/* Referência */}
-                {selectedMed.referencia.preco > 0 && (
+                {selectedMed.referencia.length > 0 && (
                   <div className="mt-4 bg-blue-900/20 border border-blue-700/30 rounded-lg p-3">
-                    <p className="text-xs text-blue-400 font-semibold mb-1">Medicamento de Referência</p>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-white">{selectedMed.referencia.nome}</p>
-                        <p className="text-xs text-gray-400">{selectedMed.referencia.laboratorio}</p>
-                        <p className="text-[10px] text-gray-500 mt-0.5">{selectedMed.referencia.apresentacao}</p>
+                    <p className="text-xs text-blue-400 font-semibold mb-2">Medicamento de Referência ({selectedMed.referencia.length} apresentações)</p>
+                    {selectedMed.referencia.slice(0, 3).map((ref, idx) => (
+                      <div key={idx} className="flex items-center justify-between mb-1 last:mb-0">
+                        <div>
+                          <p className="text-sm font-medium text-white">{ref.nome}</p>
+                          <p className="text-xs text-gray-400">{ref.laboratorio}</p>
+                          <p className="text-[10px] text-gray-500 mt-0.5">{ref.apresentacao}</p>
+                        </div>
+                        <div className="text-right ml-3">
+                          <p className="text-lg font-bold text-blue-300">R$ {ref.preco.toFixed(2).replace('.', ',')}</p>
+                          {ref.precoFabrica > 0 && ref.precoFabrica !== ref.preco && (
+                            <p className="text-[10px] text-gray-500">PF: R$ {ref.precoFabrica.toFixed(2).replace('.', ',')}</p>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-lg font-bold text-blue-300">R$ {selectedMed.referencia.preco.toFixed(2).replace('.', ',')}</p>
+                    ))}
+                    {selectedMed.referencia.length > 3 && (
+                      <p className="text-[10px] text-blue-400 mt-1">+ {selectedMed.referencia.length - 3} mais apresentações</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Resumo por categoria */}
+                <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {selectedMed.referencia.length > 0 && (
+                    <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-2 text-center">
+                      <p className="text-[10px] text-blue-400">Referência</p>
+                      <p className="text-sm font-bold text-white">{selectedMed.referencia.length}</p>
+                      <p className="text-[10px] text-gray-500">
+                        {selectedMed.referencia.length > 0
+                          ? `R$ ${Math.min(...selectedMed.referencia.map(r => r.preco)).toFixed(2).replace('.', ',')}`
+                          : '-'}
+                      </p>
+                    </div>
+                  )}
+                  {selectedMed.genericos.length > 0 && (
+                    <div className="bg-emerald-900/20 border border-emerald-700/30 rounded-lg p-2 text-center">
+                      <p className="text-[10px] text-emerald-400">Genéricos</p>
+                      <p className="text-sm font-bold text-white">{selectedMed.genericos.length}</p>
+                      <p className="text-[10px] text-gray-500">
+                        A partir de R$ {Math.min(...selectedMed.genericos.map(g => g.preco)).toFixed(2).replace('.', ',')}
+                      </p>
+                    </div>
+                  )}
+                  {selectedMed.similares.length > 0 && (
+                    <div className="bg-purple-900/20 border border-purple-700/30 rounded-lg p-2 text-center">
+                      <p className="text-[10px] text-purple-400">Similares</p>
+                      <p className="text-sm font-bold text-white">{selectedMed.similares.length}</p>
+                      <p className="text-[10px] text-gray-500">
+                        A partir de R$ {Math.min(...selectedMed.similares.map(s => s.preco)).toFixed(2).replace('.', ',')}
+                      </p>
+                    </div>
+                  )}
+                  {selectedMed.outros.length > 0 && (
+                    <div className="bg-gray-800/60 border border-gray-700/30 rounded-lg p-2 text-center">
+                      <p className="text-[10px] text-gray-400">Outros</p>
+                      <p className="text-sm font-bold text-white">{selectedMed.outros.length}</p>
+                      <p className="text-[10px] text-gray-500">
+                        A partir de R$ {Math.min(...selectedMed.outros.map(o => o.preco)).toFixed(2).replace('.', ',')}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Laboratórios */}
+                {selectedMed.laboratorios.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-[10px] text-gray-500 mb-1">Laboratórios ({selectedMed.laboratorios.length}):</p>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedMed.laboratorios.slice(0, 10).map((lab, i) => (
+                        <span key={i} className="text-[10px] px-2 py-0.5 bg-gray-700/50 rounded text-gray-300">
+                          {lab.length > 30 ? lab.substring(0, 30) + '...' : lab}
+                        </span>
+                      ))}
+                      {selectedMed.laboratorios.length > 10 && (
+                        <span className="text-[10px] text-gray-500">+ {selectedMed.laboratorios.length - 10} mais</span>
+                      )}
                     </div>
                   </div>
                 )}
@@ -418,7 +559,7 @@ export default function PriceComparison() {
                       className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
                         filtroTipo === t ? 'bg-emerald-600 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}`}>
                       {t === 'todos' ? `Todos (${selectedMed.totalProdutos})` :
-                       t === 'referencia' ? `Referência (1)` :
+                       t === 'referencia' ? `Referência (${selectedMed.referencia.length})` :
                        t === 'generico' ? `Genéricos (${selectedMed.genericos.length})` :
                        `Similares (${selectedMed.similares.length})`}
                     </button>
@@ -439,7 +580,7 @@ export default function PriceComparison() {
                   const isMin = i === 0 && prod.preco > 0;
                   const isExpanded = expandedProduto === `${prod.nome}-${prod.laboratorio}-${i}`;
                   return (
-                    <div key={`${prod.nome}-${i}`}
+                    <div key={`${prod.nome}-${prod.laboratorio}-${i}`}
                       className={`rounded-lg border transition-all overflow-hidden ${
                         isMin ? 'border-emerald-500/50' : 'border-gray-700/50'}`}>
                       <div onClick={() => setExpandedProduto(isExpanded ? null : `${prod.nome}-${prod.laboratorio}-${i}`)}
@@ -448,15 +589,23 @@ export default function PriceComparison() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className={`text-[10px] px-1.5 py-0.5 rounded ${tipoColor(prod.tipo)}`}>{prod.tipo}</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded ${tipoCatColor(prod.tipoCategoria)}`}>{prod.tipoCategoria}</span>
                             <span className="text-sm font-medium text-white truncate">{prod.nome}</span>
                             {isMin && <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full">Menor preço</span>}
+                            {prod.hospitalar && <span className="text-[10px] bg-yellow-600 text-white px-1.5 py-0.5 rounded">HOSP</span>}
                           </div>
                           <p className="text-xs text-gray-400 mt-0.5 truncate">{prod.laboratorio}</p>
+                          <p className="text-[10px] text-gray-500 mt-0.5 truncate">{prod.apresentacao}</p>
                         </div>
-                        <div className="flex items-center gap-3 ml-3">
+                        <div className="flex flex-col items-end gap-1 ml-3">
                           <span className={`font-bold text-sm ${isMin ? 'text-emerald-400' : 'text-white'}`}>
                             R$ {prod.preco.toFixed(2).replace('.', ',')}
                           </span>
+                          {prod.precoFabrica > 0 && prod.precoFabrica !== prod.preco && (
+                            <span className="text-[10px] text-gray-500">
+                              PF: R$ {prod.precoFabrica.toFixed(2).replace('.', ',')}
+                            </span>
+                          )}
                           <span className="text-gray-400 text-xs">{isExpanded ? '▲' : '▼'}</span>
                         </div>
                       </div>
@@ -471,6 +620,14 @@ export default function PriceComparison() {
                               <span className="text-gray-500">Laboratório:</span>
                               <span className="text-white ml-1">{prod.laboratorio}</span>
                             </div>
+                            <div>
+                              <span className="text-gray-500">PMC (Preço Máximo):</span>
+                              <span className="text-white ml-1">R$ {prod.preco.toFixed(2).replace('.', ',')}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">PF (Preço Fábrica):</span>
+                              <span className="text-white ml-1">R$ {prod.precoFabrica.toFixed(2).replace('.', ',')}</span>
+                            </div>
                             {prod.ean && (
                               <div>
                                 <span className="text-gray-500">EAN:</span>
@@ -479,7 +636,7 @@ export default function PriceComparison() {
                             )}
                             <div>
                               <span className="text-gray-500">Tipo:</span>
-                              <span className="text-white ml-1">{prod.tipo}</span>
+                              <span className="text-white ml-1">{prod.tipo} ({prod.tipoCategoria})</span>
                             </div>
                           </div>
                           {/* Links para buscar nas farmácias selecionadas */}
@@ -524,7 +681,7 @@ export default function PriceComparison() {
                             }`}>{f.tipo === 'governo' ? 'GOV' : f.tipo === 'regional' ? 'Regional' : 'Nacional'}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <a href={f.urlBusca(selectedMed.referencia.nome || selectedMed.substancia)} target="_blank" rel="noopener noreferrer"
+                            <a href={f.urlBusca(selectedMed.nomeReferencia || selectedMed.substancia)} target="_blank" rel="noopener noreferrer"
                               onClick={e => e.stopPropagation()}
                               className="text-xs text-emerald-400 hover:underline">Ver preços →</a>
                             <span className="text-gray-400 text-xs">{isExpanded ? '▲' : '▼'}</span>
@@ -578,9 +735,9 @@ export default function PriceComparison() {
                                   💬 WhatsApp
                                 </a>
                               )}
-                              <a href={f.urlBusca(selectedMed.referencia.nome || selectedMed.substancia)} target="_blank" rel="noopener noreferrer"
+                              <a href={f.urlBusca(selectedMed.nomeReferencia || selectedMed.substancia)} target="_blank" rel="noopener noreferrer"
                                 className="flex-1 text-center px-3 py-2 bg-blue-600/20 border border-blue-600/40 rounded-lg text-blue-300 text-xs font-medium hover:bg-blue-600/30 transition-all">
-                                🌐 Ver no Site
+                                🔍 Ver no site
                               </a>
                             </div>
                           </div>
@@ -600,7 +757,7 @@ export default function PriceComparison() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold text-white text-sm">{med.referencia.nome !== '-' ? med.referencia.nome : med.substancia}</h3>
+                        <h3 className="font-semibold text-white text-sm">{med.nomeReferencia}</h3>
                         <span className={`text-[10px] px-1.5 py-0.5 rounded border ${tarjaColor(med.tarja)}`}>
                           {med.tarja === 'sem' ? 'OTC' : med.tarja.charAt(0).toUpperCase() + med.tarja.slice(1)}
                         </span>
@@ -609,18 +766,27 @@ export default function PriceComparison() {
                         )}
                       </div>
                       <p className="text-xs text-gray-400 mt-0.5">{med.substancia} — {med.classe}</p>
-                      <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-500">
+                      <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-500 flex-wrap">
+                        {med.referencia.length > 0 && <span className="text-blue-400">{med.referencia.length} referência</span>}
                         {med.genericos.length > 0 && <span className="text-emerald-400">{med.genericos.length} genérico(s)</span>}
                         {med.similares.length > 0 && <span className="text-purple-400">{med.similares.length} similar(es)</span>}
                         <span>{med.totalProdutos} produto(s)</span>
-                        {med.referencia.laboratorio !== '-' && <span className="truncate max-w-[200px]">{med.referencia.laboratorio}</span>}
+                        <span className="truncate max-w-[200px]">{med.labReferencia}</span>
                       </div>
+                      {med.laboratorios.length > 1 && (
+                        <p className="text-[10px] text-gray-600 mt-0.5">{med.laboratorios.length} laboratórios fabricantes</p>
+                      )}
                     </div>
                     <div className="text-right ml-3">
                       <div className="text-sm font-bold text-emerald-400">
                         {med.menorPreco > 0 ? `A partir de R$ ${med.menorPreco.toFixed(2).replace('.', ',')}` : 'Consultar'}
                       </div>
-                      <div className="text-[10px] text-gray-500">
+                      {med.maiorPreco > 0 && med.maiorPreco !== med.menorPreco && (
+                        <div className="text-[10px] text-gray-500">
+                          até R$ {med.maiorPreco.toFixed(2).replace('.', ',')}
+                        </div>
+                      )}
+                      <div className="text-[10px] text-gray-500 mt-0.5">
                         {med.matchType === 'alias' && '🔍 Nome popular'}
                         {med.matchType === 'laboratorio' && '🏭 Laboratório'}
                       </div>
@@ -640,7 +806,7 @@ export default function PriceComparison() {
                   <p className="text-lg mb-2">Digite o nome do medicamento para buscar</p>
                   <p className="text-sm">Busque por nome comercial, genérico, substância ou laboratório</p>
                   <div className="flex flex-wrap gap-2 justify-center mt-4">
-                    {['Dipirona', 'Viagra', 'Losartana', 'Omeprazol', 'Ozempic', 'Rivotril', 'CIMED'].map(ex => (
+                    {['Dipirona', 'Viagra', 'Losartana', 'Omeprazol', 'Ozempic', 'Rivotril', 'CIMED', 'Tadalafila'].map(ex => (
                       <button key={ex} onClick={() => setSearch(ex)}
                         className="px-3 py-1.5 bg-gray-800 border border-gray-600 rounded-lg text-xs text-gray-300 hover:border-emerald-500 hover:text-emerald-300 transition-all">
                         {ex}
