@@ -147,7 +147,10 @@ export type View =
   | 'filaSUS'
   | 'localizadorUBS'
   | 'carteiraVacinacao'
-  | 'direitosSUS';
+  | 'direitosSUS'
+  | 'symptomChecker'
+  | 'drugInteractionAdvanced'
+  | 'mentalHealthHub';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {
