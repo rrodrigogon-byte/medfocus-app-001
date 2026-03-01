@@ -1,6 +1,6 @@
 /**
  * MedFocus Validated Library v3.0 — Expanded Academic Content System
- * 50+ materiais validados cobrindo todos os 6 anos de medicina
+ * 58 materiais validados cobrindo todos os 6 anos de medicina
  * Referências completas: Gray's, Netter, Guyton, Harrison's, Sabiston, etc.
  * 
  * Tier Structure:
@@ -314,6 +314,149 @@ const ValidatedLibrary: React.FC<ValidatedLibraryProps> = ({ userRole, currentYe
       duration: 60, tags: ['emergência', 'casos clínicos', 'IA', 'simulação'], language: 'pt-BR', createdAt: '2024-05-15', updatedAt: '2024-05-30', downloads: 420, views: 1200, rating: 4.2, verified: false,
       tier: 'experimental', validationStatus: { isValidated: false, validatedBy: [], qualityScore: 70, hasConsensus: false },
       references: [{ id: 'r38', title: 'Emergências Clínicas - Martins', authors: ['Herlon Saraiva Martins'], source: 'Manole', year: 2023, quality: 'bronze' }],
+    },
+    // ═══════════════════════════════════════════════════════════
+    // PROTOCOLOS CLÍNICOS E DIRETRIZES VALIDADAS (EXPANSÃO)
+    // ═══════════════════════════════════════════════════════════
+    {
+      id: '39', title: 'Protocolo ACLS 2025 — Suporte Avançado de Vida', description: 'Protocolo completo de ACLS da AHA: algoritmos de PCR (FV/TV, AESP, Assistolia), bradicardia, taquicardia, SCA, AVC. Inclui doses de drogas e fluxogramas.',
+      type: 'livro', universityId: 'usp', universityName: 'USP', course: 'Medicina', year: 5, semester: 1, subjectId: 'emergencia', subjectName: 'Emergência',
+      duration: 120, tags: ['ACLS', 'PCR', 'emergência', 'AHA', 'protocolo'], language: 'pt-BR', createdAt: '2025-01-01', updatedAt: '2025-01-15', downloads: 8500, views: 22000, rating: 4.9, verified: true,
+      tier: 'validated', validationStatus: { isValidated: true, validatedBy: ['prof_039', 'prof_040'], validationDate: '2025-01-20', qualityScore: 99, hasConsensus: true },
+      references: [{ id: 'r39', title: 'AHA Guidelines for CPR and ECC', authors: ['AHA'], source: 'Circulation', year: 2025, quality: 'gold', citationCount: 25000 }],
+    },
+    {
+      id: '40', title: 'Protocolo ATLS — Trauma', description: 'Protocolo de atendimento ao politraumatizado: ABCDE, avaliação primária e secundária, manejo de via aérea, choque hemorrágico, TCE, trauma torácico e abdominal.',
+      type: 'livro', universityId: 'unifesp', universityName: 'UNIFESP', course: 'Medicina', year: 5, semester: 1, subjectId: 'cirurgia', subjectName: 'Cirurgia',
+      duration: 90, tags: ['ATLS', 'trauma', 'emergência', 'cirurgia'], language: 'pt-BR', createdAt: '2025-01-05', updatedAt: '2025-01-20', downloads: 7200, views: 18000, rating: 4.8, verified: true,
+      tier: 'validated', validationStatus: { isValidated: true, validatedBy: ['prof_041', 'prof_042'], validationDate: '2025-01-25', qualityScore: 98, hasConsensus: true },
+      references: [{ id: 'r40', title: 'ATLS Student Course Manual', authors: ['ACS'], source: 'American College of Surgeons', year: 2018, quality: 'gold', citationCount: 18000 }],
+    },
+    {
+      id: '41', title: 'Diretriz Brasileira de Hipertensão Arterial 2024', description: 'Diretriz completa da SBC: classificação, diagnóstico, metas terapêuticas, tratamento farmacológico (IECA, BRA, BCC, diuréticos), emergências hipertensivas.',
+      type: 'livro', universityId: 'usp', universityName: 'USP', course: 'Medicina', year: 4, semester: 1, subjectId: 'cardiologia', subjectName: 'Cardiologia',
+      duration: 60, tags: ['hipertensão', 'SBC', 'diretriz', 'cardiologia'], language: 'pt-BR', createdAt: '2024-09-01', updatedAt: '2024-12-01', downloads: 6800, views: 16000, rating: 4.8, verified: true,
+      tier: 'validated', validationStatus: { isValidated: true, validatedBy: ['prof_043', 'prof_044'], validationDate: '2024-12-15', qualityScore: 97, hasConsensus: true },
+      references: [{ id: 'r41', title: 'Diretriz Brasileira de Hipertensão Arterial', authors: ['SBC'], source: 'Arq Bras Cardiol', year: 2024, quality: 'gold' }],
+    },
+    {
+      id: '42', title: 'Diretriz SBD — Diabetes Mellitus 2024', description: 'Diretriz da Sociedade Brasileira de Diabetes: diagnóstico, metas de HbA1c, algoritmo terapêutico (metformina, SGLT2i, GLP-1RA, insulina), manejo de complicações.',
+      type: 'livro', universityId: 'unicamp', universityName: 'UNICAMP', course: 'Medicina', year: 4, semester: 1, subjectId: 'endocrinologia', subjectName: 'Endocrinologia',
+      duration: 60, tags: ['diabetes', 'SBD', 'diretriz', 'endocrinologia', 'insulina'], language: 'pt-BR', createdAt: '2024-08-01', updatedAt: '2024-11-01', downloads: 5900, views: 14000, rating: 4.7, verified: true,
+      tier: 'validated', validationStatus: { isValidated: true, validatedBy: ['prof_045', 'prof_046'], validationDate: '2024-11-15', qualityScore: 96, hasConsensus: true },
+      references: [{ id: 'r42', title: 'Diretrizes da Sociedade Brasileira de Diabetes', authors: ['SBD'], source: 'Clannad', year: 2024, quality: 'gold' }],
+    },
+    {
+      id: '43', title: 'Protocolo Sepse — Surviving Sepsis Campaign 2024', description: 'Bundle de 1 hora: lactato, hemoculturas, antibiótico empírico, cristaloide 30mL/kg, vasopressor se PAM<65. Critérios Sepsis-3, SOFA, qSOFA.',
+      type: 'livro', universityId: 'usp', universityName: 'USP', course: 'Medicina', year: 5, semester: 2, subjectId: 'infectologia', subjectName: 'Infectologia',
+      duration: 45, tags: ['sepse', 'SSC', 'protocolo', 'UTI', 'infectologia'], language: 'pt-BR', createdAt: '2024-10-01', updatedAt: '2025-01-01', downloads: 5500, views: 13000, rating: 4.8, verified: true,
+      tier: 'validated', validationStatus: { isValidated: true, validatedBy: ['prof_047', 'prof_048'], validationDate: '2025-01-10', qualityScore: 98, hasConsensus: true },
+      references: [{ id: 'r43', title: 'Surviving Sepsis Campaign Guidelines', authors: ['Evans L et al.'], source: 'Intensive Care Med', year: 2021, quality: 'gold', citationCount: 8500 }],
+    },
+    {
+      id: '44', title: 'Protocolo de Dor Torácica na Emergência', description: 'Fluxograma completo: ECG em 10 min, troponina seriada, HEART Score, TIMI, GRACE. Manejo de SCA com e sem supra de ST. Indicações de cateterismo.',
+      type: 'livro', universityId: 'unifesp', universityName: 'UNIFESP', course: 'Medicina', year: 5, semester: 1, subjectId: 'cardiologia', subjectName: 'Cardiologia',
+      duration: 40, tags: ['dor torácica', 'SCA', 'IAM', 'emergência', 'cardiologia'], language: 'pt-BR', createdAt: '2024-11-01', updatedAt: '2025-01-15', downloads: 4800, views: 12000, rating: 4.7, verified: true,
+      tier: 'validated', validationStatus: { isValidated: true, validatedBy: ['prof_049', 'prof_050'], validationDate: '2025-01-20', qualityScore: 97, hasConsensus: true },
+      references: [{ id: 'r44', title: 'ESC Guidelines for ACS', authors: ['ESC'], source: 'Eur Heart J', year: 2023, quality: 'gold' }],
+    },
+    {
+      id: '45', title: 'KDIGO — Doença Renal Crônica e IRA', description: 'Diretrizes KDIGO: classificação DRC (TFG e albuminúria), estadiamento IRA (KDIGO/AKIN), indicações de diálise, manejo de distúrbios eletrolíticos.',
+      type: 'livro', universityId: 'usp', universityName: 'USP', course: 'Medicina', year: 4, semester: 2, subjectId: 'nefrologia', subjectName: 'Nefrologia',
+      duration: 50, tags: ['DRC', 'IRA', 'KDIGO', 'nefrologia', 'diálise'], language: 'pt-BR', createdAt: '2024-07-01', updatedAt: '2024-10-01', downloads: 4200, views: 10000, rating: 4.7, verified: true,
+      tier: 'validated', validationStatus: { isValidated: true, validatedBy: ['prof_051', 'prof_052'], validationDate: '2024-10-15', qualityScore: 96, hasConsensus: true },
+      references: [{ id: 'r45', title: 'KDIGO Clinical Practice Guidelines', authors: ['KDIGO'], source: 'Kidney Int Suppl', year: 2024, quality: 'gold' }],
+    },
+    {
+      id: '46', title: 'Protocolo de Ventilação Mecânica — SDRA', description: 'Ventilação protetora: VC 6mL/kg peso predito, Pplatô ≤30, PEEP table, driving pressure ≤15. Posição prona, bloqueio neuromuscular, ECMO.',
+      type: 'livro', universityId: 'unicamp', universityName: 'UNICAMP', course: 'Medicina', year: 5, semester: 2, subjectId: 'pneumologia', subjectName: 'Pneumologia',
+      duration: 50, tags: ['ventilação mecânica', 'SDRA', 'UTI', 'pneumologia'], language: 'pt-BR', createdAt: '2024-06-01', updatedAt: '2024-09-01', downloads: 3800, views: 9000, rating: 4.6, verified: true,
+      tier: 'validated', validationStatus: { isValidated: true, validatedBy: ['prof_053', 'prof_054'], validationDate: '2024-09-15', qualityScore: 95, hasConsensus: true },
+      references: [{ id: 'r46', title: 'ARDS Network Protocol', authors: ['ARDS Network'], source: 'NEJM', year: 2000, quality: 'gold', citationCount: 12000 }],
+    },
+    {
+      id: '47', title: 'Condutas em Obstetrícia — FEBRASGO 2024', description: 'Pré-natal de alto risco, pré-eclâmpsia (sulfato de magnésio), hemorragia pós-parto, DMG, ITU na gestação, trabalho de parto prematuro.',
+      type: 'livro', universityId: 'unifesp', universityName: 'UNIFESP', course: 'Medicina', year: 5, semester: 1, subjectId: 'obstetricia', subjectName: 'Obstetrícia',
+      duration: 60, tags: ['obstetrícia', 'FEBRASGO', 'pré-natal', 'pré-eclâmpsia'], language: 'pt-BR', createdAt: '2024-05-01', updatedAt: '2024-08-01', downloads: 4500, views: 11000, rating: 4.7, verified: true,
+      tier: 'validated', validationStatus: { isValidated: true, validatedBy: ['prof_055', 'prof_056'], validationDate: '2024-08-15', qualityScore: 96, hasConsensus: true },
+      references: [{ id: 'r47', title: 'Protocolos FEBRASGO', authors: ['FEBRASGO'], source: 'FEBRASGO', year: 2024, quality: 'gold' }],
+    },
+    {
+      id: '48', title: 'Protocolo de Antibioticoterapia Empírica', description: 'Guia de escolha de antibióticos por sítio de infecção: PAC, ITU, meningite, pele, intra-abdominal, sepse. Doses, espectro, ajuste renal.',
+      type: 'livro', universityId: 'usp', universityName: 'USP', course: 'Medicina', year: 4, semester: 2, subjectId: 'infectologia', subjectName: 'Infectologia',
+      duration: 45, tags: ['antibiótico', 'infectologia', 'protocolo', 'antimicrobiano'], language: 'pt-BR', createdAt: '2024-04-01', updatedAt: '2024-07-01', downloads: 5200, views: 13000, rating: 4.8, verified: true,
+      tier: 'validated', validationStatus: { isValidated: true, validatedBy: ['prof_057', 'prof_058'], validationDate: '2024-07-15', qualityScore: 97, hasConsensus: true },
+      references: [{ id: 'r48', title: 'Sanford Guide to Antimicrobial Therapy', authors: ['Gilbert DN et al.'], source: 'Antimicrobial Therapy Inc', year: 2024, quality: 'gold' }],
+    },
+    {
+      id: '49', title: 'Diretriz de Insuficiência Cardíaca — SBC 2024', description: 'Classificação NYHA, diagnóstico (BNP/NT-proBNP, eco), tratamento: IECA/BRA/ARNI, betabloqueador, espironolactona, SGLT2i. IC com FE reduzida e preservada.',
+      type: 'livro', universityId: 'usp', universityName: 'USP', course: 'Medicina', year: 4, semester: 2, subjectId: 'cardiologia', subjectName: 'Cardiologia',
+      duration: 55, tags: ['IC', 'insuficiência cardíaca', 'SBC', 'ARNI', 'SGLT2i'], language: 'pt-BR', createdAt: '2024-03-01', updatedAt: '2024-06-01', downloads: 4100, views: 10000, rating: 4.7, verified: true,
+      tier: 'validated', validationStatus: { isValidated: true, validatedBy: ['prof_059', 'prof_060'], validationDate: '2024-06-15', qualityScore: 96, hasConsensus: true },
+      references: [{ id: 'r49', title: 'Diretriz Brasileira de IC', authors: ['SBC'], source: 'Arq Bras Cardiol', year: 2024, quality: 'gold' }],
+    },
+    {
+      id: '50', title: 'Protocolo de AVC — Trombólise e Trombectomia', description: 'Janela terapêutica: alteplase até 4.5h, trombectomia até 24h. Critérios NIHSS, neuroimagem, contraindicações, manejo de PA, prevenção secundária.',
+      type: 'livro', universityId: 'unicamp', universityName: 'UNICAMP', course: 'Medicina', year: 5, semester: 1, subjectId: 'neurologia', subjectName: 'Neurologia',
+      duration: 40, tags: ['AVC', 'trombólise', 'neurologia', 'emergência'], language: 'pt-BR', createdAt: '2024-02-01', updatedAt: '2024-05-01', downloads: 3900, views: 9500, rating: 4.7, verified: true,
+      tier: 'validated', validationStatus: { isValidated: true, validatedBy: ['prof_061', 'prof_062'], validationDate: '2024-05-15', qualityScore: 96, hasConsensus: true },
+      references: [{ id: 'r50', title: 'AHA/ASA Guidelines for Acute Ischemic Stroke', authors: ['Powers WJ et al.'], source: 'Stroke', year: 2019, quality: 'gold', citationCount: 9500 }],
+    },
+    {
+      id: '51', title: 'Geriatria — Avaliação Geriátrica Ampla', description: 'AGA completa: funcionalidade (Katz, Lawton), cognição (MEEM, MoCA), humor (GDS-15), equilíbrio (Timed Up and Go), nutrição (MNA), polifarmácia.',
+      type: 'livro', universityId: 'usp', universityName: 'USP', course: 'Medicina', year: 5, semester: 2, subjectId: 'geriatria', subjectName: 'Geriatria',
+      duration: 50, tags: ['geriatria', 'AGA', 'idoso', 'funcionalidade'], language: 'pt-BR', createdAt: '2024-01-15', updatedAt: '2024-04-01', downloads: 3200, views: 8000, rating: 4.6, verified: true,
+      tier: 'validated', validationStatus: { isValidated: true, validatedBy: ['prof_063', 'prof_064'], validationDate: '2024-04-15', qualityScore: 95, hasConsensus: true },
+      references: [{ id: 'r51', title: 'Tratado de Geriatria e Gerontologia', authors: ['Freitas EV, Py L'], source: 'Guanabara Koogan', year: 2022, quality: 'gold' }],
+    },
+    {
+      id: '52', title: 'Medicina de Família — Abordagem Centrada na Pessoa', description: 'Método clínico centrado na pessoa (MCCP), genograma, ecomapa, SOAP, medicina baseada em evidências na APS, rastreamento populacional.',
+      type: 'livro', universityId: 'unifesp', universityName: 'UNIFESP', course: 'Medicina', year: 6, semester: 1, subjectId: 'mfc', subjectName: 'Medicina de Família',
+      duration: 45, tags: ['MFC', 'APS', 'medicina de família', 'MCCP'], language: 'pt-BR', createdAt: '2024-01-20', updatedAt: '2024-04-15', downloads: 3000, views: 7500, rating: 4.6, verified: true,
+      tier: 'validated', validationStatus: { isValidated: true, validatedBy: ['prof_065', 'prof_066'], validationDate: '2024-04-20', qualityScore: 95, hasConsensus: true },
+      references: [{ id: 'r52', title: 'Tratado de Medicina de Família e Comunidade', authors: ['Gusso G, Lopes JMC'], source: 'Artmed', year: 2019, quality: 'gold' }],
+    },
+    {
+      id: '53', title: 'Pediatria — Protocolo PALS e Emergências Pediátricas', description: 'PALS: algoritmos de PCR pediátrica, bradicardia, taquicardia, choque. Doses pediátricas, via aérea difícil, acesso intraósseo, cetoacidose diabética.',
+      type: 'livro', universityId: 'unicamp', universityName: 'UNICAMP', course: 'Medicina', year: 5, semester: 1, subjectId: 'pediatria', subjectName: 'Pediatria',
+      duration: 60, tags: ['PALS', 'pediatria', 'emergência', 'PCR pediátrica'], language: 'pt-BR', createdAt: '2024-02-15', updatedAt: '2024-05-15', downloads: 4000, views: 10000, rating: 4.8, verified: true,
+      tier: 'validated', validationStatus: { isValidated: true, validatedBy: ['prof_067', 'prof_068'], validationDate: '2024-05-20', qualityScore: 97, hasConsensus: true },
+      references: [{ id: 'r53', title: 'PALS Provider Manual', authors: ['AHA'], source: 'AHA', year: 2020, quality: 'gold' }],
+    },
+    {
+      id: '54', title: 'Dermatologia — Atlas de Lesões Elementares', description: 'Atlas completo: mácula, pápula, placa, nódulo, vesícula, bolha, pústula, erosão, úlcera, crosta. Diagnóstico diferencial por morfologia.',
+      type: 'livro', universityId: 'usp', universityName: 'USP', course: 'Medicina', year: 3, semester: 2, subjectId: 'dermatologia', subjectName: 'Dermatologia',
+      duration: 35, tags: ['dermatologia', 'lesões elementares', 'atlas', 'pele'], language: 'pt-BR', createdAt: '2024-03-15', updatedAt: '2024-06-15', downloads: 3500, views: 8500, rating: 4.6, verified: true,
+      tier: 'validated', validationStatus: { isValidated: true, validatedBy: ['prof_069', 'prof_070'], validationDate: '2024-06-20', qualityScore: 95, hasConsensus: true },
+      references: [{ id: 'r54', title: 'Dermatologia de Fitzpatrick', authors: ['Kang S et al.'], source: 'AMGH', year: 2019, quality: 'gold' }],
+    },
+    {
+      id: '55', title: 'Psiquiatria — Manejo de Crises e Psicofarmacologia', description: 'Emergências psiquiátricas: agitação psicomotora, risco suicida, surto psicótico. Psicofarmacologia: antidepressivos, antipsicóticos, estabilizadores, benzodiazepínicos.',
+      type: 'livro', universityId: 'unifesp', universityName: 'UNIFESP', course: 'Medicina', year: 4, semester: 2, subjectId: 'psiquiatria', subjectName: 'Psiquiatria',
+      duration: 50, tags: ['psiquiatria', 'psicofarmacologia', 'emergência', 'suicídio'], language: 'pt-BR', createdAt: '2024-04-15', updatedAt: '2024-07-15', downloads: 3300, views: 8000, rating: 4.6, verified: true,
+      tier: 'validated', validationStatus: { isValidated: true, validatedBy: ['prof_071', 'prof_072'], validationDate: '2024-07-20', qualityScore: 95, hasConsensus: true },
+      references: [{ id: 'r55', title: 'Stahl\'s Essential Psychopharmacology', authors: ['Stephen M. Stahl'], source: 'Cambridge', year: 2021, quality: 'gold' }],
+    },
+    {
+      id: '56', title: 'Ortopedia — Fraturas e Imobilizações', description: 'Classificação de fraturas (Salter-Harris, AO), manejo inicial, imobilizações, indicações cirúrgicas. Fraturas de fêmur, rádio distal, tornozelo, coluna.',
+      type: 'livro', universityId: 'usp', universityName: 'USP', course: 'Medicina', year: 4, semester: 1, subjectId: 'ortopedia', subjectName: 'Ortopedia',
+      duration: 45, tags: ['ortopedia', 'fraturas', 'imobilização', 'trauma'], language: 'pt-BR', createdAt: '2024-05-15', updatedAt: '2024-08-15', downloads: 3100, views: 7500, rating: 4.5, verified: true,
+      tier: 'validated', validationStatus: { isValidated: true, validatedBy: ['prof_073', 'prof_074'], validationDate: '2024-08-20', qualityScore: 94, hasConsensus: true },
+      references: [{ id: 'r56', title: 'Rockwood and Green\'s Fractures in Adults', authors: ['Bucholz RW et al.'], source: 'Wolters Kluwer', year: 2019, quality: 'gold' }],
+    },
+    {
+      id: '57', title: 'Gastroenterologia — Hemorragia Digestiva e Hepatopatias', description: 'HDA e HDB: classificação de Forrest, Rockall, manejo endoscópico. Cirrose: Child-Pugh, MELD, varizes, ascite, PBE, encefalopatia hepática.',
+      type: 'livro', universityId: 'unicamp', universityName: 'UNICAMP', course: 'Medicina', year: 4, semester: 2, subjectId: 'gastroenterologia', subjectName: 'Gastroenterologia',
+      duration: 55, tags: ['gastro', 'HDA', 'cirrose', 'hepatologia'], language: 'pt-BR', createdAt: '2024-06-15', updatedAt: '2024-09-15', downloads: 3400, views: 8200, rating: 4.6, verified: true,
+      tier: 'validated', validationStatus: { isValidated: true, validatedBy: ['prof_075', 'prof_076'], validationDate: '2024-09-20', qualityScore: 95, hasConsensus: true },
+      references: [{ id: 'r57', title: 'Sleisenger and Fordtran\'s GI and Liver Disease', authors: ['Feldman M et al.'], source: 'Elsevier', year: 2020, quality: 'gold' }],
+    },
+    {
+      id: '58', title: 'Hematologia — Anemias e Distúrbios da Coagulação', description: 'Classificação das anemias (VCM), ferropriva, megaloblástica, hemolítica, falciforme. Coagulopatias: CIVD, PTT, hemofilia. Interpretação de hemograma.',
+      type: 'livro', universityId: 'usp', universityName: 'USP', course: 'Medicina', year: 3, semester: 2, subjectId: 'hematologia', subjectName: 'Hematologia',
+      duration: 50, tags: ['hematologia', 'anemia', 'coagulação', 'hemograma'], language: 'pt-BR', createdAt: '2024-07-15', updatedAt: '2024-10-15', downloads: 3600, views: 8800, rating: 4.6, verified: true,
+      tier: 'validated', validationStatus: { isValidated: true, validatedBy: ['prof_077', 'prof_078'], validationDate: '2024-10-20', qualityScore: 95, hasConsensus: true },
+      references: [{ id: 'r58', title: 'Wintrobe\'s Clinical Hematology', authors: ['Greer JP et al.'], source: 'Wolters Kluwer', year: 2019, quality: 'gold' }],
     },
   ];
 

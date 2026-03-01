@@ -28,6 +28,8 @@ export const CALCULATOR_CATEGORIES = [
   { id: 'obst', name: 'Obstetrícia', icon: '🤰' },
   { id: 'ped', name: 'Pediatria', icon: '👶' },
   { id: 'infecto', name: 'Infectologia', icon: '🦠' },
+  { id: 'emergencia', name: 'Emergência', icon: '🚑' },
+  { id: 'hemato', name: 'Hematologia', icon: '🩸' },
 ];
 
 export const EXPANDED_CALCULATORS: MedicalCalculator[] = [
@@ -344,3 +346,8 @@ export const EXPANDED_CALCULATORS: MedicalCalculator[] = [
     ],
   },
 ];
+
+import { NEW_CALCULATORS } from './expandedCalculators';
+
+// Merge all calculators: original 13 + 27 new = 40 total
+export const ALL_CALCULATORS: MedicalCalculator[] = [...EXPANDED_CALCULATORS, ...NEW_CALCULATORS];
