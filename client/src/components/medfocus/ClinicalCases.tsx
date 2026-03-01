@@ -11,8 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Streamdown } from 'streamdown';
-import {
 import EducationalDisclaimer from './EducationalDisclaimer';
+import {
   Stethoscope, Brain, FlaskConical, ClipboardList, Pill,
   ChevronRight, Trophy, Loader2, Send, ArrowLeft, Sparkles,
   User, Heart, Activity, Clock, BookOpen, CheckCircle, XCircle,
@@ -21,13 +21,29 @@ import EducationalDisclaimer from './EducationalDisclaimer';
 
 const SPECIALTIES = [
   { id: 'Clínica Médica', icon: '🫀', color: 'from-red-500/20 to-red-600/5', accent: 'text-red-400', border: 'border-red-500/20', books: 'Harrison · Cecil · CMDT' },
-  { id: 'Cirurgia', icon: '🔪', color: 'from-orange-500/20 to-orange-600/5', accent: 'text-orange-400', border: 'border-orange-500/20', books: 'Sabiston · Schwartz' },
+  { id: 'Cirurgia Geral', icon: '🔪', color: 'from-orange-500/20 to-orange-600/5', accent: 'text-orange-400', border: 'border-orange-500/20', books: 'Sabiston · Schwartz' },
   { id: 'Pediatria', icon: '👶', color: 'from-blue-500/20 to-blue-600/5', accent: 'text-blue-400', border: 'border-blue-500/20', books: 'Nelson · SBP · Rudolph' },
   { id: 'Ginecologia e Obstetrícia', icon: '🤰', color: 'from-pink-500/20 to-pink-600/5', accent: 'text-pink-400', border: 'border-pink-500/20', books: 'Williams · Berek · Rezende' },
   { id: 'Saúde Coletiva', icon: '🏥', color: 'from-green-500/20 to-green-600/5', accent: 'text-green-400', border: 'border-green-500/20', books: 'Medronho · Rouquayrol · Park' },
-  { id: 'Medicina de Família', icon: '👨‍⚕️', color: 'from-teal-500/20 to-teal-600/5', accent: 'text-teal-400', border: 'border-teal-500/20', books: 'Duncan · McWhinney' },
-  { id: 'Psiquiatria', icon: '🧠', color: 'from-purple-500/20 to-purple-600/5', accent: 'text-purple-400', border: 'border-purple-500/20', books: 'Kaplan & Sadock · Stahl' },
-  { id: 'Ortopedia', icon: '🦴', color: 'from-amber-500/20 to-amber-600/5', accent: 'text-amber-400', border: 'border-amber-500/20', books: 'Campbell · Rockwood' },
+  { id: 'Medicina de Família', icon: '👨‍⚕️', color: 'from-teal-500/20 to-teal-600/5', accent: 'text-teal-400', border: 'border-teal-500/20', books: 'Duncan · McWhinney · Gusso' },
+  { id: 'Psiquiatria', icon: '🧠', color: 'from-purple-500/20 to-purple-600/5', accent: 'text-purple-400', border: 'border-purple-500/20', books: 'Kaplan & Sadock · Stahl · DSM-5' },
+  { id: 'Ortopedia e Traumatologia', icon: '🦴', color: 'from-amber-500/20 to-amber-600/5', accent: 'text-amber-400', border: 'border-amber-500/20', books: 'Campbell · Rockwood · Barros Filho' },
+  { id: 'Cardiologia', icon: '❤️', color: 'from-rose-500/20 to-rose-600/5', accent: 'text-rose-400', border: 'border-rose-500/20', books: 'Braunwald · SBC Guidelines · ACC/AHA' },
+  { id: 'Neurologia', icon: '🧬', color: 'from-indigo-500/20 to-indigo-600/5', accent: 'text-indigo-400', border: 'border-indigo-500/20', books: 'Adams & Victor · Merritt · Rowland' },
+  { id: 'Pneumologia', icon: '🫁', color: 'from-sky-500/20 to-sky-600/5', accent: 'text-sky-400', border: 'border-sky-500/20', books: 'Murray & Nadel · GOLD · SBPT' },
+  { id: 'Gastroenterologia', icon: '🔬', color: 'from-lime-500/20 to-lime-600/5', accent: 'text-lime-400', border: 'border-lime-500/20', books: 'Sleisenger · Dani · FBG' },
+  { id: 'Nefrologia', icon: '💧', color: 'from-cyan-500/20 to-cyan-600/5', accent: 'text-cyan-400', border: 'border-cyan-500/20', books: 'Brenner · KDIGO · SBN' },
+  { id: 'Endocrinologia', icon: '⚡', color: 'from-yellow-500/20 to-yellow-600/5', accent: 'text-yellow-400', border: 'border-yellow-500/20', books: 'Williams Endocrinology · SBEM · ADA' },
+  { id: 'Infectologia', icon: '🦠', color: 'from-emerald-500/20 to-emerald-600/5', accent: 'text-emerald-400', border: 'border-emerald-500/20', books: 'Mandell · Veronesi · MS Brasil' },
+  { id: 'Dermatologia', icon: '🩹', color: 'from-fuchsia-500/20 to-fuchsia-600/5', accent: 'text-fuchsia-400', border: 'border-fuchsia-500/20', books: 'Fitzpatrick · Azulay · Sampaio' },
+  { id: 'Oftalmologia', icon: '👁️', color: 'from-violet-500/20 to-violet-600/5', accent: 'text-violet-400', border: 'border-violet-500/20', books: 'Kanski · Yanoff · CBO' },
+  { id: 'Otorrinolaringologia', icon: '👂', color: 'from-orange-400/20 to-orange-500/5', accent: 'text-orange-300', border: 'border-orange-400/20', books: 'Cummings · Hungria · ABORL' },
+  { id: 'Urologia', icon: '🩺', color: 'from-blue-400/20 to-blue-500/5', accent: 'text-blue-300', border: 'border-blue-400/20', books: 'Campbell-Walsh · SBU' },
+  { id: 'Hematologia', icon: '🩸', color: 'from-red-400/20 to-red-500/5', accent: 'text-red-300', border: 'border-red-400/20', books: 'Williams Hematology · Hoffbrand · ABHH' },
+  { id: 'Oncologia', icon: '🎗️', color: 'from-pink-400/20 to-pink-500/5', accent: 'text-pink-300', border: 'border-pink-400/20', books: 'DeVita · NCCN · INCA' },
+  { id: 'Reumatologia', icon: '🦿', color: 'from-amber-400/20 to-amber-500/5', accent: 'text-amber-300', border: 'border-amber-400/20', books: 'Kelley · Firestein · SBR' },
+  { id: 'Medicina de Emergência', icon: '🚑', color: 'from-red-600/20 to-red-700/5', accent: 'text-red-500', border: 'border-red-600/20', books: 'Tintinalli · ATLS · ACLS' },
+  { id: 'Geriatria', icon: '🧓', color: 'from-stone-500/20 to-stone-600/5', accent: 'text-stone-400', border: 'border-stone-500/20', books: 'Freitas · Brocklehurst · SBGG' },
 ];
 
 const PHASES = [
@@ -95,7 +111,7 @@ const VitalSignCard = ({ label, value, icon: Icon, color }: { label: string; val
 );
 
 // ─── Reference Badge ────────────────────────────────────────────
-const ReferenceBadge = ({ ref: reference }: { ref: Reference }) => (
+const ReferenceBadge = ({ reference }: { reference: Reference }) => (
   <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs">
     <BookOpen className="w-3 h-3 text-amber-400" />
     <span className="text-amber-300 font-medium">{reference.book}</span>
@@ -166,12 +182,14 @@ const ClinicalCases: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingSpecialty, setLoadingSpecialty] = useState<string | null>(null);
   const [showCompletion, setShowCompletion] = useState(false);
   const [evaluation, setEvaluation] = useState<any>(null);
   const [diagnosis, setDiagnosis] = useState('');
   const [treatmentInput, setTreatmentInput] = useState('');
   const [phaseScores, setPhaseScores] = useState<Record<string, { correct: number; total: number }>>({});
   const [selectedDifficulty, setSelectedDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
+  const [searchSpec, setSearchSpec] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const startCase = trpc.clinicalCase.start.useMutation();
@@ -184,6 +202,7 @@ const ClinicalCases: React.FC = () => {
   }, [messages]);
 
   const handleStartCase = async (specialty: string, difficulty: 'easy' | 'medium' | 'hard') => {
+    setLoadingSpecialty(specialty);
     setIsLoading(true);
     try {
       const result = await startCase.mutateAsync({ specialty, difficulty });
@@ -200,6 +219,7 @@ const ClinicalCases: React.FC = () => {
       toast.error('Erro ao gerar caso clínico');
     }
     setIsLoading(false);
+    setLoadingSpecialty(null);
   };
 
   const handleSend = async () => {
@@ -235,7 +255,12 @@ const ClinicalCases: React.FC = () => {
     }
     setIsLoading(true);
     try {
-      const result = await completeCase.mutateAsync({ caseId: activeCaseId, diagnosis, treatment: treatmentInput });
+      const result = await completeCase.mutateAsync({
+        caseId: activeCaseId,
+        diagnosis,
+        treatment: treatmentInput,
+        phaseScores,
+      });
       setEvaluation(result);
       setShowCompletion(true);
       refetchHistory();
@@ -256,11 +281,17 @@ const ClinicalCases: React.FC = () => {
     IMC: { icon: Zap, color: 'text-yellow-400' },
   };
 
+  // Filter specialties by search
+  const filteredSpecialties = SPECIALTIES.filter(s =>
+    s.id.toLowerCase().includes(searchSpec.toLowerCase()) ||
+    s.books.toLowerCase().includes(searchSpec.toLowerCase())
+  );
+
   // ─── Menu View ────────────────────────────────────────────────
   if (view === 'menu') {
     return (
       <div className="space-y-6">
-      <EducationalDisclaimer variant="banner" moduleName="Casos Clínicos" />
+        <EducationalDisclaimer variant="banner" moduleName="Casos Clínicos" />
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-display font-bold text-foreground flex items-center gap-2">
@@ -268,7 +299,7 @@ const ClinicalCases: React.FC = () => {
               Casos Clínicos Interativos
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
-              Baseados nos melhores livros de medicina do mundo — com perguntas e referências científicas
+              24 especialidades — Baseados nos melhores livros de medicina do mundo
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={() => setView('history')}>
@@ -296,39 +327,65 @@ const ClinicalCases: React.FC = () => {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {SPECIALTIES.map(spec => (
-            <Card key={spec.id} className={`${spec.border} hover:border-teal-500/30 transition-all cursor-pointer group overflow-hidden`}>
-              <CardContent className="p-0">
-                <div className={`bg-gradient-to-r ${spec.color} p-5`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <span className="text-3xl">{spec.icon}</span>
-                      <div>
-                        <h3 className="font-semibold text-foreground">{spec.id}</h3>
-                        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                          <BookOpen className="w-3 h-3" /> {spec.books}
-                        </p>
+        {/* Search */}
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Buscar especialidade..."
+            value={searchSpec}
+            onChange={e => setSearchSpec(e.target.value)}
+            className="w-full px-4 py-2.5 rounded-xl bg-background/50 border border-border/30 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-teal-500/50"
+          />
+          {searchSpec && (
+            <button onClick={() => setSearchSpec('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs">
+              Limpar
+            </button>
+          )}
+        </div>
+
+        <p className="text-xs text-muted-foreground">{filteredSpecialties.length} especialidade(s) encontrada(s)</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredSpecialties.map(spec => {
+            const isThisLoading = loadingSpecialty === spec.id;
+            return (
+              <Card key={spec.id} className={`${spec.border} hover:border-teal-500/30 transition-all cursor-pointer group overflow-hidden`}>
+                <CardContent className="p-0">
+                  <div className={`bg-gradient-to-r ${spec.color} p-5`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl">{spec.icon}</span>
+                        <div>
+                          <h3 className="font-semibold text-foreground text-sm">{spec.id}</h3>
+                          <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            <BookOpen className="w-3 h-3" /> {spec.books}
+                          </p>
+                        </div>
                       </div>
                     </div>
+                    <Button
+                      size="sm"
+                      className="w-full bg-teal-600 hover:bg-teal-700 text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStartCase(spec.id, selectedDifficulty);
+                      }}
+                      disabled={isLoading}
+                    >
+                      {isThisLoading ? (
+                        <><Loader2 className="w-4 h-4 animate-spin mr-1" /> Gerando...</>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 mr-1" />
+                          Iniciar Caso {selectedDifficulty === 'easy' ? 'Fácil' : selectedDifficulty === 'medium' ? 'Médio' : 'Difícil'}
+                        </>
+                      )}
+                    </Button>
                   </div>
-                  <Button
-                    size="sm"
-                    className="w-full bg-teal-600 hover:bg-teal-700 text-white"
-                    onClick={() => handleStartCase(spec.id, selectedDifficulty)}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
-                      <>
-                        <Sparkles className="w-4 h-4 mr-1" />
-                        Iniciar Caso {selectedDifficulty === 'easy' ? 'Fácil' : selectedDifficulty === 'medium' ? 'Médio' : 'Difícil'}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </div>
     );
@@ -528,7 +585,7 @@ const ClinicalCases: React.FC = () => {
       {caseData?.references && caseData.references.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-1">
           {caseData.references.slice(0, 3).map((ref, i) => (
-            <ReferenceBadge key={i} ref={ref} />
+            <ReferenceBadge key={i} reference={ref} />
           ))}
         </div>
       )}

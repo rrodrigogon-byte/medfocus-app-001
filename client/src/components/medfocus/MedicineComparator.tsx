@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { trpc } from '../../lib/trpc';
 import EducationalDisclaimer from './EducationalDisclaimer';
 
@@ -8,9 +8,22 @@ import EducationalDisclaimer from './EducationalDisclaimer';
 // Atualização diária automática via Cloud Function
 // ============================================================
 
-const formatBRL = (v: number | null) => {
-  if (v === null || v === undefined) return '—';
+const formatBRL = (v: number | null | undefined) => {
+  if (v === null || v === undefined || isNaN(v)) return '—';
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+};
+
+/** Extrai a quantidade de unidades da string de apresentação (ex: "X 30" → 30) */
+const extractQty = (apresentacao: string): number => {
+  const match = apresentacao?.match(/X\s*(\d+)\s*$/i);
+  return match ? parseInt(match[1], 10) : 1;
+};
+
+/** Calcula preço por unidade */
+const pricePerUnit = (preco: number | null, apresentacao: string): number | null => {
+  if (!preco) return null;
+  const qty = extractQty(apresentacao);
+  return qty > 0 ? preco / qty : preco;
 };
 
 const TARJAS = ['Todas', 'Venda Livre', 'Tarja Vermelha', 'Tarja Preta', 'Receita Amarela'];
@@ -28,6 +41,9 @@ export default function MedicineComparator() {
   const [page, setPage] = useState(1);
   const [selecionado, setSelecionado] = useState<any | null>(null);
   const [pageSize] = useState(30);
+  const [showAllRef, setShowAllRef] = useState(false);
+  const [showAllGen, setShowAllGen] = useState(false);
+  const [showAllSim, setShowAllSim] = useState(false);
 
   // Debounce search
   const [debounceTimer, setDebounceTimer] = useState<any>(null);
@@ -65,21 +81,84 @@ export default function MedicineComparator() {
   const topSavings = topSavingsQuery.data || [];
 
   // ============================================================
-  // DETAIL VIEW
+  // DETAIL VIEW — Corrigido com preço por unidade e validação
   // ============================================================
   if (selecionado) {
     const m = selecionado;
-    const refPrice = m.referencia?.preco;
-    const cheapestGeneric = m.genericos?.find((g: any) => g.preco !== null);
-    const savings = refPrice && cheapestGeneric?.preco
-      ? ((refPrice - cheapestGeneric.preco) / refPrice * 100).toFixed(1)
+
+    // Collect ALL products with prices for correct statistics
+    const allProducts: { nome: string; lab: string; preco: number; apresentacao: string; tipo: string; precoUnit: number; qty: number }[] = [];
+
+    // Reference products
+    if (m.referencia?.preco) {
+      const qty = extractQty(m.referencia.apresentacao);
+      allProducts.push({
+        nome: m.referencia.nome,
+        lab: m.referencia.laboratorio,
+        preco: m.referencia.preco,
+        apresentacao: m.referencia.apresentacao,
+        tipo: 'Referência',
+        precoUnit: m.referencia.preco / (qty || 1),
+        qty,
+      });
+    }
+    // Generics
+    (m.genericos || []).forEach((g: any) => {
+      if (g.preco) {
+        const qty = extractQty(g.apresentacao);
+        allProducts.push({
+          nome: g.nome,
+          lab: g.laboratorio,
+          preco: g.preco,
+          apresentacao: g.apresentacao,
+          tipo: 'Genérico',
+          precoUnit: g.preco / (qty || 1),
+          qty,
+        });
+      }
+    });
+    // Similars
+    (m.similares || []).forEach((s: any) => {
+      if (s.preco) {
+        const qty = extractQty(s.apresentacao);
+        allProducts.push({
+          nome: s.nome,
+          lab: s.laboratorio,
+          preco: s.preco,
+          apresentacao: s.apresentacao,
+          tipo: 'Similar',
+          precoUnit: s.preco / (qty || 1),
+          qty,
+        });
+      }
+    });
+
+    // Calculate CORRECT stats using price per unit
+    const unitPrices = allProducts.map(p => p.precoUnit).filter(p => p > 0);
+    const minUnitPrice = unitPrices.length > 0 ? Math.min(...unitPrices) : null;
+    const maxUnitPrice = unitPrices.length > 0 ? Math.max(...unitPrices) : null;
+    const refUnitPrice = m.referencia?.preco ? m.referencia.preco / (extractQty(m.referencia.apresentacao) || 1) : null;
+
+    // Correct savings calculation: compare reference unit price vs cheapest generic unit price
+    const genericUnitPrices = allProducts.filter(p => p.tipo === 'Genérico').map(p => p.precoUnit);
+    const cheapestGenericUnit = genericUnitPrices.length > 0 ? Math.min(...genericUnitPrices) : null;
+    const savingsPercent = refUnitPrice && cheapestGenericUnit && refUnitPrice > cheapestGenericUnit
+      ? ((refUnitPrice - cheapestGenericUnit) / refUnitPrice * 100)
       : null;
+    // Cap savings at 99.9% — 100% would mean the generic is free, which is impossible
+    const validSavings = savingsPercent !== null ? Math.min(savingsPercent, 99.9) : null;
+
+    const totalProdutos = (m.genericos?.length || 0) + (m.similares?.length || 0) + 1;
+
+    // Group generics by presentation for better comparison
+    const refApresentacao = m.referencia?.apresentacao || '';
+    const refQty = extractQty(refApresentacao);
 
     return (
       <div style={{ padding: '24px', maxWidth: 900, margin: '0 auto' }}>
-      <EducationalDisclaimer variant="banner" moduleName="Comparador de Medicamentos" />
+        <EducationalDisclaimer variant="banner" moduleName="Comparador de Medicamentos" />
         <button
-          onClick={() => setSelecionado(null)}
+          onClick={() => { setSelecionado(null); setShowAllRef(false); setShowAllGen(false); setShowAllSim(false); }}
           style={{
             background: 'rgba(255,255,255,0.05)',
             border: '1px solid rgba(255,255,255,0.15)',
@@ -91,7 +170,7 @@ export default function MedicineComparator() {
             fontSize: 14,
           }}
         >
-          ← Voltar à lista
+          ← Voltar
         </button>
 
         {/* Header */}
@@ -106,21 +185,73 @@ export default function MedicineComparator() {
             </span>
             <span style={{
               fontSize: 11, padding: '3px 10px', borderRadius: 6,
-              background: m.tarja?.includes('Preta') ? 'rgba(239,68,68,0.15)' :
-                         m.tarja?.includes('Vermelha') ? 'rgba(245,158,11,0.15)' :
+              background: m.tarja?.includes('Preta') || m.tarja?.includes('Especial') ? 'rgba(239,68,68,0.15)' :
+                         m.tarja?.includes('Vermelha') || m.tarja?.includes('Simples') ? 'rgba(245,158,11,0.15)' :
                          'rgba(16,185,129,0.15)',
-              color: m.tarja?.includes('Preta') ? '#ef4444' :
-                     m.tarja?.includes('Vermelha') ? '#f59e0b' : '#10b981'
+              color: m.tarja?.includes('Preta') || m.tarja?.includes('Especial') ? '#ef4444' :
+                     m.tarja?.includes('Vermelha') || m.tarja?.includes('Simples') ? '#f59e0b' : '#10b981'
             }}>
               {m.tarja}
             </span>
-            <span style={{
-              fontSize: 11, padding: '3px 10px', borderRadius: 6,
-              background: 'rgba(168,85,247,0.15)', color: '#a855f7'
-            }}>
-              {m.formaFarmaceutica}
-            </span>
+            {m.formaFarmaceutica && m.formaFarmaceutica !== 'Outro' && (
+              <span style={{
+                fontSize: 11, padding: '3px 10px', borderRadius: 6,
+                background: 'rgba(168,85,247,0.15)', color: '#a855f7'
+              }}>
+                {m.formaFarmaceutica}
+              </span>
+            )}
           </div>
+        </div>
+
+        {/* Summary Stats — CORRECTED */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+          gap: 10, marginBottom: 20
+        }}>
+          <div style={{
+            background: 'rgba(16,185,129,0.08)', borderRadius: 10, padding: '14px 12px', textAlign: 'center',
+            border: '1px solid rgba(16,185,129,0.15)'
+          }}>
+            <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>Menor preço/un.</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#10b981' }}>
+              {minUnitPrice ? formatBRL(minUnitPrice) : '—'}
+            </div>
+          </div>
+          <div style={{
+            background: 'rgba(239,68,68,0.08)', borderRadius: 10, padding: '14px 12px', textAlign: 'center',
+            border: '1px solid rgba(239,68,68,0.15)'
+          }}>
+            <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>Maior preço/un.</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#ef4444' }}>
+              {maxUnitPrice ? formatBRL(maxUnitPrice) : '—'}
+            </div>
+          </div>
+          <div style={{
+            background: 'rgba(59,130,246,0.08)', borderRadius: 10, padding: '14px 12px', textAlign: 'center',
+            border: '1px solid rgba(59,130,246,0.15)'
+          }}>
+            <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>Total de produtos</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#3b82f6' }}>{totalProdutos}</div>
+          </div>
+          <div style={{
+            background: validSavings ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.03)',
+            borderRadius: 10, padding: '14px 12px', textAlign: 'center',
+            border: validSavings ? '1px solid rgba(16,185,129,0.15)' : '1px solid rgba(255,255,255,0.08)'
+          }}>
+            <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>Economia c/ genérico</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: validSavings ? '#10b981' : 'inherit', opacity: validSavings ? 1 : 0.3 }}>
+              {validSavings ? `${validSavings.toFixed(1)}%` : '—'}
+            </div>
+          </div>
+        </div>
+
+        {/* Info about price comparison */}
+        <div style={{
+          background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.15)',
+          borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 11, color: 'rgba(255,255,255,0.6)'
+        }}>
+          Os preços acima são calculados por <strong>unidade</strong> (comprimido/cápsula/ampola) para permitir comparação justa entre apresentações de diferentes quantidades. Preços PMC (Preço Máximo ao Consumidor) com ICMS 18%, conforme tabela CMED/ANVISA.
         </div>
 
         {/* Reference Product */}
@@ -129,52 +260,103 @@ export default function MedicineComparator() {
           border: '1px solid rgba(59,130,246,0.2)',
           borderRadius: 12, padding: 20, marginBottom: 16
         }}>
-          <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
-            Medicamento de Referência
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div style={{ fontSize: 12, opacity: 0.6, textTransform: 'uppercase', letterSpacing: 1 }}>
+              Medicamento de Referência ({m.referencia?.apresentacoes || 1} apresentações)
+            </div>
+            <div style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: 'rgba(59,130,246,0.2)', color: '#3b82f6' }}>
+              Ref.
+            </div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <div style={{ fontSize: 20, fontWeight: 700 }}>{m.referencia.nome}</div>
-              <div style={{ fontSize: 13, opacity: 0.7 }}>{m.referencia.laboratorio}</div>
-              <div style={{ fontSize: 12, opacity: 0.5, marginTop: 4 }}>{m.referencia.apresentacao}</div>
+              <div style={{ fontSize: 20, fontWeight: 700 }}>{m.referencia?.nome}</div>
+              <div style={{ fontSize: 13, opacity: 0.7 }}>{m.referencia?.laboratorio}</div>
+              <div style={{ fontSize: 12, opacity: 0.5, marginTop: 4 }}>{m.referencia?.apresentacao}</div>
               <div style={{ fontSize: 11, opacity: 0.4, marginTop: 2 }}>
-                Tipo: {m.referencia.tipo} | EAN: {m.referencia.ean || '—'} | Reg: {m.referencia.registro || '—'}
+                EAN: {m.referencia?.ean || '—'} | Reg: {m.referencia?.registro || '—'}
               </div>
+              {refUnitPrice && refQty > 1 && (
+                <div style={{ fontSize: 11, color: '#3b82f6', marginTop: 4 }}>
+                  {formatBRL(refUnitPrice)}/unidade ({refQty} un.)
+                </div>
+              )}
             </div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: '#3b82f6' }}>
-              {formatBRL(refPrice)}
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 28, fontWeight: 800, color: '#3b82f6' }}>
+                {formatBRL(m.referencia?.preco)}
+              </div>
+              <div style={{ fontSize: 11, opacity: 0.5 }}>PMC c/ ICMS 18%</div>
+              {m.referencia?.pf && (
+                <div style={{ fontSize: 11, opacity: 0.4 }}>PF: {formatBRL(m.referencia.pf)}</div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Savings banner */}
-        {savings && (
+        {/* Savings banner — CORRECTED */}
+        {validSavings && validSavings > 0 && (
           <div style={{
             background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05))',
             border: '1px solid rgba(16,185,129,0.3)',
             borderRadius: 12, padding: 16, marginBottom: 16, textAlign: 'center'
           }}>
-            <div style={{ fontSize: 36, fontWeight: 900, color: '#10b981' }}>{savings}%</div>
+            <div style={{ fontSize: 36, fontWeight: 900, color: '#10b981' }}>{validSavings.toFixed(1)}%</div>
             <div style={{ fontSize: 14, opacity: 0.8 }}>
-              de economia com o genérico mais barato
-              {refPrice && cheapestGeneric?.preco && (
+              de economia com o genérico mais barato (por unidade)
+              {refUnitPrice && cheapestGenericUnit && (
                 <span style={{ color: '#10b981', fontWeight: 700 }}>
-                  {' '}(economize {formatBRL(refPrice - cheapestGeneric.preco)})
+                  {' '}(economize {formatBRL(refUnitPrice - cheapestGenericUnit)}/un.)
                 </span>
               )}
             </div>
           </div>
         )}
 
-        {/* Generics */}
+        {/* Summary Cards: Referência, Genéricos, Similares */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
+          <div style={{
+            background: 'rgba(59,130,246,0.08)', borderRadius: 10, padding: 14, textAlign: 'center',
+            border: '1px solid rgba(59,130,246,0.15)'
+          }}>
+            <div style={{ fontSize: 12, color: '#3b82f6', fontWeight: 600 }}>Referência</div>
+            <div style={{ fontSize: 22, fontWeight: 800 }}>1</div>
+            <div style={{ fontSize: 11, opacity: 0.5 }}>{formatBRL(m.referencia?.preco)}</div>
+          </div>
+          <div style={{
+            background: 'rgba(16,185,129,0.08)', borderRadius: 10, padding: 14, textAlign: 'center',
+            border: '1px solid rgba(16,185,129,0.15)'
+          }}>
+            <div style={{ fontSize: 12, color: '#10b981', fontWeight: 600 }}>Genéricos</div>
+            <div style={{ fontSize: 22, fontWeight: 800 }}>{m.genericos?.length || 0}</div>
+            <div style={{ fontSize: 11, opacity: 0.5 }}>
+              {m.genericos?.length > 0 ? `A partir de ${formatBRL(Math.min(...(m.genericos || []).filter((g: any) => g.preco).map((g: any) => g.preco)))}` : 'Nenhum'}
+            </div>
+          </div>
+          <div style={{
+            background: 'rgba(168,85,247,0.08)', borderRadius: 10, padding: 14, textAlign: 'center',
+            border: '1px solid rgba(168,85,247,0.15)'
+          }}>
+            <div style={{ fontSize: 12, color: '#a855f7', fontWeight: 600 }}>Similares</div>
+            <div style={{ fontSize: 22, fontWeight: 800 }}>{m.similares?.length || 0}</div>
+            <div style={{ fontSize: 11, opacity: 0.5 }}>
+              {m.similares?.length > 0 ? `A partir de ${formatBRL(Math.min(...(m.similares || []).filter((s: any) => s.preco).map((s: any) => s.preco)))}` : 'Nenhum'}
+            </div>
+          </div>
+        </div>
+
+        {/* Generics List */}
         {m.genericos && m.genericos.length > 0 && (
           <>
             <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: '#10b981' }}>
-              Genéricos ({m.genericos.length})
+              Genéricos ({m.genericos.length} produtos)
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
-              {m.genericos.map((g: any, i: number) => {
-                const econ = refPrice && g.preco ? ((refPrice - g.preco) / refPrice * 100) : 0;
+              {(showAllGen ? m.genericos : m.genericos.slice(0, 5)).map((g: any, i: number) => {
+                const gQty = extractQty(g.apresentacao);
+                const gUnit = g.preco ? g.preco / (gQty || 1) : null;
+                const econ = refUnitPrice && gUnit ? ((refUnitPrice - gUnit) / refUnitPrice * 100) : 0;
+                const validEcon = Math.min(econ, 99.9);
                 return (
                   <div key={i} style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -186,35 +368,60 @@ export default function MedicineComparator() {
                         {g.nome} <span style={{ fontSize: 12, opacity: 0.6 }}>({g.laboratorio})</span>
                       </div>
                       <div style={{ fontSize: 12, opacity: 0.5 }}>{g.apresentacao}</div>
-                      {econ > 0 && (
-                        <div style={{ fontSize: 12, color: '#10b981' }}>
-                          Economia de {econ.toFixed(1)}% vs referência
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
+                        {gUnit && gQty > 1 && (
+                          <span style={{ fontSize: 11, color: '#10b981' }}>
+                            {formatBRL(gUnit)}/un. ({gQty} un.)
+                          </span>
+                        )}
+                        {validEcon > 0 && (
+                          <span style={{ fontSize: 11, color: '#10b981' }}>
+                            {validEcon.toFixed(1)}% economia vs ref.
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: '#10b981' }}>
-                      {formatBRL(g.preco)}
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: '#10b981' }}>
+                        {formatBRL(g.preco)}
+                      </div>
+                      <div style={{ fontSize: 10, opacity: 0.4 }}>PMC</div>
                     </div>
                   </div>
                 );
               })}
+              {m.genericos.length > 5 && (
+                <button
+                  onClick={() => setShowAllGen(!showAllGen)}
+                  style={{
+                    padding: '8px 16px', borderRadius: 8, fontSize: 12,
+                    border: '1px solid rgba(16,185,129,0.2)', background: 'rgba(16,185,129,0.05)',
+                    color: '#10b981', cursor: 'pointer', textAlign: 'center'
+                  }}
+                >
+                  {showAllGen ? '▲ Mostrar menos' : `▼ + ${m.genericos.length - 5} mais apresentações`}
+                </button>
+              )}
             </div>
           </>
         )}
 
-        {/* Similars */}
+        {/* Similars List */}
         {m.similares && m.similares.length > 0 && (
           <>
-            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: '#f59e0b' }}>
-              Similares ({m.similares.length})
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: '#a855f7' }}>
+              Similares ({m.similares.length} produtos)
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
-              {m.similares.map((s: any, i: number) => {
-                const econ = refPrice && s.preco ? ((refPrice - s.preco) / refPrice * 100) : 0;
+              {(showAllSim ? m.similares : m.similares.slice(0, 5)).map((s: any, i: number) => {
+                const sQty = extractQty(s.apresentacao);
+                const sUnit = s.preco ? s.preco / (sQty || 1) : null;
+                const econ = refUnitPrice && sUnit ? ((refUnitPrice - sUnit) / refUnitPrice * 100) : 0;
+                const validEcon = Math.min(econ, 99.9);
                 return (
                   <div key={i} style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.15)',
+                    background: 'rgba(168,85,247,0.05)', border: '1px solid rgba(168,85,247,0.15)',
                     borderRadius: 10, padding: '12px 16px', flexWrap: 'wrap', gap: 8
                   }}>
                     <div>
@@ -222,18 +429,40 @@ export default function MedicineComparator() {
                         {s.nome} <span style={{ fontSize: 12, opacity: 0.6 }}>({s.laboratorio})</span>
                       </div>
                       <div style={{ fontSize: 12, opacity: 0.5 }}>{s.apresentacao}</div>
-                      {econ > 0 && (
-                        <div style={{ fontSize: 12, color: '#f59e0b' }}>
-                          {econ > 0 ? `Economia de ${econ.toFixed(1)}%` : `${Math.abs(econ).toFixed(1)}% mais caro`}
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
+                        {sUnit && sQty > 1 && (
+                          <span style={{ fontSize: 11, color: '#a855f7' }}>
+                            {formatBRL(sUnit)}/un. ({sQty} un.)
+                          </span>
+                        )}
+                        {validEcon > 0 && (
+                          <span style={{ fontSize: 11, color: '#a855f7' }}>
+                            {validEcon.toFixed(1)}% economia vs ref.
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: '#f59e0b' }}>
-                      {formatBRL(s.preco)}
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: '#a855f7' }}>
+                        {formatBRL(s.preco)}
+                      </div>
+                      <div style={{ fontSize: 10, opacity: 0.4 }}>PMC</div>
                     </div>
                   </div>
                 );
               })}
+              {m.similares.length > 5 && (
+                <button
+                  onClick={() => setShowAllSim(!showAllSim)}
+                  style={{
+                    padding: '8px 16px', borderRadius: 8, fontSize: 12,
+                    border: '1px solid rgba(168,85,247,0.2)', background: 'rgba(168,85,247,0.05)',
+                    color: '#a855f7', cursor: 'pointer', textAlign: 'center'
+                  }}
+                >
+                  {showAllSim ? '▲ Mostrar menos' : `▼ + ${m.similares.length - 5} mais apresentações`}
+                </button>
+              )}
             </div>
           </>
         )}
@@ -244,7 +473,7 @@ export default function MedicineComparator() {
           </div>
         )}
 
-        {/* Where to Buy — Inline pharmacy info */}
+        {/* Where to Buy */}
         <div style={{
           background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)',
           borderRadius: 12, padding: 20, marginBottom: 16, marginTop: 16
@@ -274,7 +503,7 @@ export default function MedicineComparator() {
                 </div>
                 {f.tel && (
                   <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 4 }}>
-                    📞 {f.tel}
+                    Tel: {f.tel}
                   </div>
                 )}
                 <a href={f.url} target="_blank" rel="noopener noreferrer" style={{
@@ -286,9 +515,6 @@ export default function MedicineComparator() {
               </div>
             ))}
           </div>
-          <div style={{ fontSize: 11, opacity: 0.5, marginTop: 12 }}>
-            📱 <strong>WhatsApp Farmácia Popular:</strong> (61) 99425-0000 | 📞 <strong>Disque Saúde:</strong> 136
-          </div>
         </div>
 
         {/* Disclaimer */}
@@ -298,7 +524,10 @@ export default function MedicineComparator() {
         }}>
           <strong>Aviso importante:</strong> Preços são PMC (Preço Máximo ao Consumidor) com ICMS 18%,
           conforme tabela oficial CMED/ANVISA. Preços reais podem variar conforme farmácia, região e promoções.
+          A comparação de economia é feita por <strong>preço unitário</strong> (por comprimido/cápsula/ampola)
+          para garantir uma comparação justa entre apresentações de diferentes quantidades.
           Consulte sempre um médico ou farmacêutico antes de substituir medicamentos.
+          Medicamentos genéricos são aprovados pela ANVISA com testes de bioequivalência.
         </div>
       </div>
     );
@@ -366,7 +595,7 @@ export default function MedicineComparator() {
                 transition: 'all 0.2s'
               }}>
                 <div style={{ fontSize: 20, fontWeight: 800, color: '#10b981' }}>
-                  {m.savingsPercent}%
+                  {Math.min(m.savingsPercent, 99.9).toFixed(1)}%
                 </div>
                 <div style={{ fontSize: 12, fontWeight: 600, marginTop: 2 }}>
                   {m.substancia.length > 20 ? m.substancia.substring(0, 20) + '...' : m.substancia}
@@ -486,12 +715,15 @@ export default function MedicineComparator() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {medicines.map((m: any) => {
           const refPrice = m.referencia?.preco;
+          const refQ = extractQty(m.referencia?.apresentacao || '');
+          const refUnit = refPrice ? refPrice / (refQ || 1) : null;
           const cheapestGeneric = m.genericos?.find((g: any) => g.preco !== null);
-          const economia = refPrice && cheapestGeneric?.preco
-            ? ((refPrice - cheapestGeneric.preco) / refPrice * 100)
+          const cheapGenUnit = cheapestGeneric?.preco ? cheapestGeneric.preco / (extractQty(cheapestGeneric.apresentacao) || 1) : null;
+          const economia = refUnit && cheapGenUnit
+            ? Math.min(((refUnit - cheapGenUnit) / refUnit * 100), 99.9)
             : 0;
-          const economiaValor = refPrice && cheapestGeneric?.preco
-            ? refPrice - cheapestGeneric.preco
+          const economiaValor = refUnit && cheapGenUnit
+            ? refUnit - cheapGenUnit
             : 0;
 
           return (
@@ -549,7 +781,7 @@ export default function MedicineComparator() {
                   )}
                 </div>
                 <div style={{ fontSize: 12, opacity: 0.5, marginTop: 3 }}>
-                  {m.classeNome || m.classeFull} — {m.formaFarmaceutica}
+                  {m.classeNome || m.classeFull}
                 </div>
                 <div style={{ display: 'flex', gap: 14, marginTop: 6, fontSize: 12 }}>
                   <span>
@@ -572,9 +804,9 @@ export default function MedicineComparator() {
                   }}>
                     {economia.toFixed(0)}%
                   </div>
-                  <div style={{ fontSize: 10, opacity: 0.5 }}>economia</div>
+                  <div style={{ fontSize: 10, opacity: 0.5 }}>economia/un.</div>
                   <div style={{ fontSize: 11, color: '#10b981', fontWeight: 600, marginTop: 2 }}>
-                    -{formatBRL(economiaValor)}
+                    -{formatBRL(economiaValor)}/un.
                   </div>
                 </div>
               ) : (
@@ -675,7 +907,9 @@ export default function MedicineComparator() {
         <strong>Aviso legal:</strong> Este comparador utiliza dados oficiais da tabela CMED/ANVISA
         (Câmara de Regulação do Mercado de Medicamentos). Os preços são PMC (Preço Máximo ao Consumidor)
         com ICMS 18% e são atualizados diariamente. Preços reais podem variar conforme farmácia, região
-        e promoções. Nunca substitua um medicamento sem orientação do seu médico ou farmacêutico.
+        e promoções. A comparação de economia é calculada por <strong>preço unitário</strong> para
+        garantir comparação justa entre apresentações de diferentes quantidades.
+        Nunca substitua um medicamento sem orientação do seu médico ou farmacêutico.
         Medicamentos genéricos são aprovados pela ANVISA com testes de bioequivalência que garantem
         a mesma eficácia do medicamento de referência.
       </div>

@@ -34,8 +34,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onLogout, 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
-    'Principal': true,
-    'Estudo': true,
+    'Principal': false,
+    'Estudo': false,
     'IA & Inovação': false,
     'Prática Clínica': false,
     'Saúde Pública': false,
@@ -47,7 +47,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onLogout, 
     'ViralGram': false,
     'Diferenciais IA': false,
     'Gestão Clínica': false,
-    'Conta': true,
+    'Conta': false,
   });
 
   const toggleGroup = (label: string) => {
