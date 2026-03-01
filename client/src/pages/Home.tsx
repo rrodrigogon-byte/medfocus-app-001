@@ -103,6 +103,12 @@ import { VGLinkedIn } from '../components/medfocus/VGLinkedIn';
 import { VGInstagram } from '../components/medfocus/VGInstagram';
 import { VGWhatsApp } from '../components/medfocus/VGWhatsApp';
 import { VGComplianceMedico } from '../components/medfocus/VGComplianceMedico';
+import { EvidenceBasedHub } from '../components/medfocus/EvidenceBasedHub';
+import { TranscricaoClinica } from '../components/medfocus/TranscricaoClinica';
+import { EvolucaoExames } from '../components/medfocus/EvolucaoExames';
+import { ProtocolosInteligentes } from '../components/medfocus/ProtocolosInteligentes';
+import { HealthTimeline } from '../components/medfocus/HealthTimeline';
+import { CentralAlertas } from '../components/medfocus/CentralAlertas';
 import { LegalAcceptanceModal } from '../components/medfocus/LegalProtection';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
@@ -370,6 +376,12 @@ export default function Home() {
       case 'vgInstagram': return <VGInstagram />;
       case 'vgWhatsApp': return <VGWhatsApp />;
       case 'vgComplianceMedico': return <VGComplianceMedico />;
+      case 'evidenceBasedHub': return <EvidenceBasedHub />;
+      case 'transcricaoClinica': return <TranscricaoClinica />;
+      case 'evolucaoExames': return <EvolucaoExames />;
+      case 'protocolosInteligentes': return <ProtocolosInteligentes />;
+      case 'healthTimeline': return <HealthTimeline />;
+      case 'centralAlertas': return <CentralAlertas />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{

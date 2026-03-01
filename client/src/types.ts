@@ -178,7 +178,13 @@ export type View =
   | 'vgLinkedIn'
   | 'vgInstagram'
   | 'vgWhatsApp'
-  | 'vgComplianceMedico';
+  | 'vgComplianceMedico'
+  | 'evidenceBasedHub'
+  | 'transcricaoClinica'
+  | 'evolucaoExames'
+  | 'protocolosInteligentes'
+  | 'healthTimeline'
+  | 'centralAlertas';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {
