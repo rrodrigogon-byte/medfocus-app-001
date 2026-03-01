@@ -168,7 +168,12 @@ export type View =
   | 'medfocusiaTISS'
   | 'medfocusiaTelemedicina'
   | 'medfocusiaRelatorios'
-  | 'medfocusiaEstoque';
+  | 'medfocusiaEstoque'
+  | 'prontuarioInteligente'
+  | 'verificadorInteracoes'
+  | 'literaturaAutomatica'
+  | 'triagemPreditiva'
+  | 'viralgramHub';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {
