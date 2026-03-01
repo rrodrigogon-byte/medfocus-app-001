@@ -4,6 +4,7 @@
  * Conformidade: CFM, FHIR R4, LGPD
  */
 import React, { useState } from 'react';
+import EducationalDisclaimer from './EducationalDisclaimer';
 
 // ============================================================
 // CID-10 Database (subset for demo)
@@ -274,6 +275,7 @@ export const MedFocusIAPEP: React.FC = () => {
   if (activeView === 'list') {
     return (
       <div className="space-y-6">
+      <EducationalDisclaimer variant="banner" moduleName="Prontuário Eletrônico (PEP)" />
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white">Prontuário Eletrônico (PEP)</h1>

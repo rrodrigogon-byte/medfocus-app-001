@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import EducationalDisclaimer from './EducationalDisclaimer';
 
 interface Tip { id: string; titulo: string; categoria: string; resumo: string; conteudo: string; fonte: string; icone: string; }
 
@@ -27,6 +28,7 @@ export default function HealthTips() {
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-6 max-w-6xl mx-auto">
+      <EducationalDisclaimer variant="banner" moduleName="Dicas de Saúde" showEmergencyInfo />
       <div className="mb-6"><h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3"><span className="text-3xl">💡</span> Dicas de Saúde</h1><p className="text-sm text-muted-foreground mt-1">Informações confiáveis para cuidar da sua saúde</p></div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {[{v:TIPS.length,l:'Artigos',c:'text-primary'},{v:new Set(TIPS.map(t=>t.categoria)).size,l:'Categorias',c:'text-blue-400'},{v:TIPS.filter(t=>t.categoria==='Prevenção').length,l:'Prevenção',c:'text-green-400'},{v:TIPS.filter(t=>t.categoria==='Nutrição').length,l:'Nutrição',c:'text-orange-400'}].map((s,i)=>(

@@ -1,22 +1,29 @@
 /**
- * MedFocus — Proteção Legal e Termos de Uso
+ * MedFocus — Proteção Legal Completa
  * 
- * Código de Ética Médica (CFM), Termos de Uso, Política de Privacidade (LGPD),
- * e Disclaimer educacional/consultivo.
+ * Termos de Uso, Política de Privacidade (LGPD), Código de Ética Médica (CFM),
+ * Disclaimer Educacional e Modal de Aceite Obrigatório.
+ * 
+ * BLINDAGEM LEGAL: A plataforma MedFocus é exclusivamente um guia estudantil,
+ * biblioteca acadêmica e ferramenta de apoio ao estudo. Não somos médicos e
+ * não praticamos medicina.
+ * 
+ * Última atualização: Março de 2026
  */
 
 import React, { useState } from 'react';
 
-type LegalTab = 'disclaimer' | 'ethics' | 'lgpd' | 'terms';
+type LegalTab = 'disclaimer' | 'terms' | 'lgpd' | 'ethics' | 'ai-policy';
 
 export default function LegalProtection() {
   const [activeTab, setActiveTab] = useState<LegalTab>('disclaimer');
 
   const tabs: { id: LegalTab; label: string; icon: string }[] = [
-    { id: 'disclaimer', label: 'Disclaimer', icon: '⚠️' },
-    { id: 'ethics', label: 'Código de Ética', icon: '⚕️' },
-    { id: 'lgpd', label: 'LGPD / Privacidade', icon: '🔒' },
+    { id: 'disclaimer', label: 'Disclaimer Educacional', icon: '⚠️' },
     { id: 'terms', label: 'Termos de Uso', icon: '📋' },
+    { id: 'lgpd', label: 'LGPD / Privacidade', icon: '🔒' },
+    { id: 'ethics', label: 'Código de Ética', icon: '⚕️' },
+    { id: 'ai-policy', label: 'Política de IA', icon: '🤖' },
   ];
 
   return (
@@ -26,8 +33,12 @@ export default function LegalProtection() {
           <span className="text-3xl">🛡️</span> Proteção Legal & Termos
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Código de Ética Médica, LGPD, Termos de Uso e Disclaimer Educacional
+          Documentação legal completa da plataforma MedFocus — Guia Estudantil e Biblioteca Acadêmica
         </p>
+        <div className="mt-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-4 py-2.5 text-sm text-yellow-300 flex items-center gap-2">
+          <span>⚠️</span>
+          <strong>O MedFocus NÃO é um serviço médico. Somos uma plataforma educacional e biblioteca acadêmica.</strong>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -50,82 +61,474 @@ export default function LegalProtection() {
       {/* Content */}
       <div className="bg-card border border-border rounded-xl p-6 md:p-8 prose prose-invert max-w-none">
         {activeTab === 'disclaimer' && <DisclaimerContent />}
-        {activeTab === 'ethics' && <EthicsCodeContent />}
-        {activeTab === 'lgpd' && <LGPDContent />}
         {activeTab === 'terms' && <TermsContent />}
+        {activeTab === 'lgpd' && <LGPDContent />}
+        {activeTab === 'ethics' && <EthicsCodeContent />}
+        {activeTab === 'ai-policy' && <AIPolicyContent />}
+      </div>
+
+      {/* Version footer */}
+      <div className="mt-4 text-center text-xs text-muted-foreground">
+        <p>Documentação Legal v3.0 — Última atualização: Março de 2026</p>
+        <p>Em conformidade com: LGPD (Lei nº 13.709/2018), Marco Civil da Internet (Lei nº 12.965/2014), CDC (Lei nº 8.078/1990), Código de Ética Médica (Resolução CFM nº 2.217/2018)</p>
       </div>
     </div>
   );
 }
 
 // ============================================================
-// DISCLAIMER EDUCACIONAL
+// DISCLAIMER EDUCACIONAL (REFORÇADO)
 // ============================================================
 function DisclaimerContent() {
   return (
     <div className="space-y-6">
-      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-6">
-        <h2 className="text-xl font-bold text-yellow-400 flex items-center gap-2 mb-4">
-          ⚠️ AVISO IMPORTANTE — DISCLAIMER EDUCACIONAL
+      {/* AVISO PRINCIPAL */}
+      <div className="bg-red-500/15 border-2 border-red-500/40 rounded-xl p-6">
+        <h2 className="text-xl font-bold text-red-400 flex items-center gap-2 mb-4">
+          🚨 AVISO LEGAL FUNDAMENTAL
         </h2>
-        <div className="space-y-4 text-sm text-foreground/90 leading-relaxed">
-          <p className="font-semibold text-base">
-            A plataforma MedFocus é um sistema <strong>exclusivamente consultivo, educacional e colaborativo</strong>.
+        <div className="text-base font-semibold text-foreground leading-relaxed space-y-3">
+          <p>
+            O <strong>MedFocus</strong> é uma <strong>plataforma educacional, guia estudantil e biblioteca acadêmica</strong> 
+            destinada exclusivamente ao apoio ao estudo de medicina e ciências da saúde.
           </p>
-          
-          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-            <h3 className="font-bold text-red-400 mb-2">🚫 NÃO DEVE SER UTILIZADO PARA:</h3>
-            <ul className="space-y-2 list-disc list-inside">
-              <li><strong>Tomada de decisão clínica</strong> — Nenhuma informação desta plataforma substitui o julgamento clínico de um profissional de saúde habilitado.</li>
-              <li><strong>Diagnósticos médicos</strong> — O sistema não realiza, sugere ou confirma diagnósticos. Qualquer funcionalidade de apoio diagnóstico é meramente educacional.</li>
-              <li><strong>Prescrição de medicamentos</strong> — Informações sobre medicamentos são de caráter informativo e educacional. A prescrição é ato exclusivo do médico.</li>
-              <li><strong>Consultas médicas</strong> — A plataforma não substitui consultas presenciais ou por telemedicina com profissionais habilitados.</li>
-              <li><strong>Tratamentos ou condutas terapêuticas</strong> — Protocolos e condutas apresentados são para fins de estudo e não devem ser aplicados diretamente sem supervisão profissional.</li>
-              <li><strong>Emergências médicas</strong> — Em caso de emergência, ligue para o SAMU (192) ou dirija-se ao pronto-socorro mais próximo.</li>
-            </ul>
-          </div>
-
-          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-            <h3 className="font-bold text-green-400 mb-2">✅ FINALIDADES DA PLATAFORMA:</h3>
-            <ul className="space-y-2 list-disc list-inside">
-              <li><strong>Estudo e aprendizado</strong> — Ferramenta de apoio ao estudo de medicina e ciências da saúde.</li>
-              <li><strong>Consulta bibliográfica</strong> — Acesso a referências e conteúdos acadêmicos organizados.</li>
-              <li><strong>Colaboração acadêmica</strong> — Interação entre estudantes e professores em ambiente educacional.</li>
-              <li><strong>Revisão de conteúdos</strong> — Quizzes, flashcards e ferramentas de memorização para concursos e provas.</li>
-              <li><strong>Atlas anatômico educacional</strong> — Modelos 3D para estudo da anatomia humana.</li>
-              <li><strong>Informação sobre medicamentos</strong> — Dados da ANVISA/CMED para consulta e comparação educacional.</li>
-            </ul>
-          </div>
-
-          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-            <h3 className="font-bold text-blue-400 mb-2">📋 RESPONSABILIDADE:</h3>
-            <p>
-              O MedFocus e seus desenvolvedores <strong>não se responsabilizam</strong> por qualquer dano, prejuízo ou consequência 
-              decorrente do uso indevido das informações contidas nesta plataforma para fins que não sejam estritamente 
-              educacionais e consultivos. O usuário assume total responsabilidade pelo uso que faz das informações disponibilizadas.
-            </p>
-            <p className="mt-2">
-              As funcionalidades de Inteligência Artificial (Dr. Focus IA) são ferramentas de apoio ao estudo e 
-              <strong> não constituem opinião médica, diagnóstico ou recomendação de tratamento</strong>. 
-              Respostas geradas por IA podem conter imprecisões e devem sempre ser verificadas com fontes primárias.
-            </p>
-          </div>
-
-          <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
-            <h3 className="font-bold text-purple-400 mb-2">📚 FONTES E REFERÊNCIAS:</h3>
-            <p>
-              Todo o conteúdo da plataforma é baseado em referências bibliográficas reconhecidas pela comunidade médica e científica, 
-              incluindo mas não limitado a: Netter (Atlas de Anatomia), Gray's Anatomy, Guyton (Fisiologia), Harrison (Medicina Interna), 
-              Goodman & Gilman (Farmacologia), dados oficiais da ANVISA/CMED e publicações indexadas no PubMed/MEDLINE.
-            </p>
-          </div>
-
-          <p className="text-xs text-muted-foreground italic mt-4">
-            Última atualização: Fevereiro de 2026. Este disclaimer está em conformidade com as diretrizes do 
-            Conselho Federal de Medicina (CFM) e a Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018).
+          <p className="text-red-300 text-lg">
+            NÓS NÃO SOMOS MÉDICOS. NÃO PRATICAMOS MEDICINA. NÃO REALIZAMOS NENHUM ATO MÉDICO.
           </p>
         </div>
       </div>
+
+      {/* O QUE NÃO SOMOS */}
+      <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6">
+        <h3 className="font-bold text-red-400 mb-4 text-lg">🚫 O QUE O MEDFOCUS NÃO É E NÃO FAZ:</h3>
+        <div className="grid md:grid-cols-2 gap-3 text-sm">
+          {[
+            { title: 'Não somos médicos', desc: 'A plataforma e seus desenvolvedores não são profissionais de saúde e não exercem a medicina.' },
+            { title: 'Não realizamos consultas', desc: 'Nenhuma funcionalidade da plataforma constitui ou substitui uma consulta médica presencial ou por telemedicina.' },
+            { title: 'Não fazemos diagnósticos', desc: 'Nenhuma ferramenta, incluindo IA, realiza, sugere ou confirma diagnósticos médicos. Funcionalidades de apoio são exclusivamente educacionais.' },
+            { title: 'Não prescrevemos', desc: 'Informações sobre medicamentos são de caráter informativo e educacional. A prescrição é ato exclusivo do médico habilitado (Lei nº 5.991/1973).' },
+            { title: 'Não tratamos pacientes', desc: 'Protocolos e condutas apresentados são para fins de estudo acadêmico e não devem ser aplicados sem supervisão profissional.' },
+            { title: 'Não substituímos formação', desc: 'A plataforma não substitui a formação médica formal, residência médica, educação continuada ou qualquer programa de ensino oficial.' },
+            { title: 'Não somos prontuário oficial', desc: 'Módulos de simulação (PEP) são ferramentas de treinamento. Não armazenamos dados reais de pacientes.' },
+            { title: 'Não atendemos emergências', desc: 'Em caso de emergência médica, ligue SAMU (192), Bombeiros (193) ou dirija-se ao pronto-socorro mais próximo.' },
+          ].map((item, i) => (
+            <div key={i} className="bg-background/50 rounded-lg p-3 border border-border/50">
+              <p className="font-bold text-red-300 text-sm mb-1">✗ {item.title}</p>
+              <p className="text-foreground/75 text-xs leading-relaxed">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* O QUE SOMOS */}
+      <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-6">
+        <h3 className="font-bold text-green-400 mb-4 text-lg">✅ O QUE O MEDFOCUS É:</h3>
+        <div className="grid md:grid-cols-2 gap-3 text-sm">
+          {[
+            { title: 'Guia Estudantil', desc: 'Ferramenta de apoio ao estudo de medicina, organização acadêmica e preparação para provas e residência.' },
+            { title: 'Biblioteca Acadêmica', desc: 'Acesso organizado a referências bibliográficas, artigos científicos e conteúdos acadêmicos validados.' },
+            { title: 'Atlas Anatômico Educacional', desc: 'Modelos 3D interativos para estudo da anatomia humana, baseados em referências como Netter e Gray\'s.' },
+            { title: 'Ferramenta de Revisão', desc: 'Quizzes, flashcards, simulados e ferramentas de memorização (SM-2) para concursos e provas.' },
+            { title: 'Ambiente Colaborativo', desc: 'Espaço para interação entre estudantes e professores em contexto estritamente acadêmico.' },
+            { title: 'Consulta Informativa', desc: 'Dados da ANVISA/CMED, CID-10 e tabelas de referência para consulta e comparação educacional.' },
+          ].map((item, i) => (
+            <div key={i} className="bg-background/50 rounded-lg p-3 border border-border/50">
+              <p className="font-bold text-green-300 text-sm mb-1">✓ {item.title}</p>
+              <p className="text-foreground/75 text-xs leading-relaxed">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* RESPONSABILIDADE */}
+      <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-6">
+        <h3 className="font-bold text-blue-400 mb-3">📋 ISENÇÃO DE RESPONSABILIDADE</h3>
+        <div className="space-y-3 text-sm text-foreground/85 leading-relaxed">
+          <p>
+            O MedFocus, seus desenvolvedores, colaboradores e afiliados <strong>não se responsabilizam</strong> por qualquer 
+            dano, prejuízo, lesão ou consequência de qualquer natureza decorrente do uso das informações contidas nesta 
+            plataforma para fins que não sejam estritamente educacionais e de referência acadêmica.
+          </p>
+          <p>
+            O usuário reconhece e aceita que é o <strong>único responsável</strong> pelo uso que faz das informações 
+            disponibilizadas, e que qualquer aplicação prática de conhecimentos adquiridos deve ser feita sob a 
+            supervisão direta de profissionais de saúde habilitados e em conformidade com a legislação vigente.
+          </p>
+          <p>
+            A responsabilidade pela prática médica é <strong>exclusiva do profissional de saúde</strong> que a exerce, 
+            conforme o Código de Ética Médica (Resolução CFM nº 2.217/2018) e a legislação brasileira aplicável.
+          </p>
+        </div>
+      </div>
+
+      {/* EMERGÊNCIA */}
+      <div className="bg-red-500/15 border-2 border-red-500/40 rounded-xl p-6 text-center">
+        <h3 className="font-bold text-red-400 mb-2 text-lg">🚨 EMERGÊNCIA MÉDICA?</h3>
+        <p className="text-foreground/90 text-sm mb-3">
+          Esta plataforma NÃO atende emergências. Se você ou alguém precisa de atendimento médico urgente:
+        </p>
+        <div className="flex flex-wrap justify-center gap-4 text-sm font-bold">
+          <span className="bg-red-500/20 px-4 py-2 rounded-lg">📞 SAMU: 192</span>
+          <span className="bg-red-500/20 px-4 py-2 rounded-lg">🚒 Bombeiros: 193</span>
+          <span className="bg-red-500/20 px-4 py-2 rounded-lg">🏥 CVV: 188</span>
+        </div>
+      </div>
+
+      <p className="text-xs text-muted-foreground italic">
+        Última atualização: Março de 2026. Em conformidade com as diretrizes do CFM, LGPD (Lei nº 13.709/2018), 
+        Marco Civil da Internet (Lei nº 12.965/2014) e Código de Defesa do Consumidor (Lei nº 8.078/1990).
+      </p>
+    </div>
+  );
+}
+
+// ============================================================
+// TERMOS DE USO (COMPLETOS E REFORÇADOS)
+// ============================================================
+function TermsContent() {
+  return (
+    <div className="space-y-6">
+      <h2 className="text-xl font-bold flex items-center gap-2">
+        📋 Termos de Uso e Serviço — Plataforma MedFocus
+      </h2>
+      <p className="text-xs text-muted-foreground">Versão 3.0 — Última atualização: Março de 2026</p>
+
+      <div className="space-y-6 text-sm leading-relaxed">
+        <section>
+          <h3 className="text-lg font-bold text-primary mb-3">1. ACEITAÇÃO DOS TERMOS</h3>
+          <p>
+            Ao acessar, cadastrar-se ou utilizar a plataforma MedFocus, incluindo o site, aplicativos e quaisquer 
+            serviços associados ("Plataforma"), você ("Usuário") declara ter lido, compreendido e concordado 
+            integralmente com os presentes Termos de Uso e Serviço ("Termos"), a Política de Privacidade, 
+            o Disclaimer Educacional e a Política de Uso de IA. A utilização da Plataforma está condicionada 
+            à aceitação expressa de todos estes documentos. Se você não concorda com qualquer disposição, 
+            deve cessar imediatamente o uso da Plataforma.
+          </p>
+        </section>
+
+        <section>
+          <h3 className="text-lg font-bold text-primary mb-3">2. NATUREZA DA PLATAFORMA</h3>
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-3">
+            <p className="font-bold text-yellow-400 mb-2">DEFINIÇÃO FUNDAMENTAL:</p>
+            <p>
+              O MedFocus é, e sempre será, uma <strong>plataforma de natureza exclusivamente educacional, 
+              consultiva e de apoio acadêmico</strong>, destinada a estudantes de medicina, médicos em formação 
+              e profissionais de saúde que buscam aprimoramento contínuo. A Plataforma funciona como um 
+              <strong> guia estudantil, biblioteca acadêmica e ferramenta de revisão</strong>.
+            </p>
+          </div>
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+            <p className="font-bold text-red-400 mb-2">A PLATAFORMA NÃO É:</p>
+            <ul className="space-y-1.5 list-disc list-inside text-foreground/80">
+              <li>Um serviço de saúde, consultório virtual ou clínica</li>
+              <li>Um sistema de prontuário eletrônico oficial para uso clínico real</li>
+              <li>Uma ferramenta de diagnóstico médico</li>
+              <li>Um serviço de prescrição de medicamentos</li>
+              <li>Um substituto para consultas médicas presenciais ou por telemedicina</li>
+              <li>Um serviço de atendimento de emergência</li>
+              <li>Um substituto para a formação médica formal ou residência médica</li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h3 className="text-lg font-bold text-primary mb-3">3. SERVIÇOS OFERECIDOS</h3>
+          <p>A Plataforma oferece os seguintes serviços de natureza educacional:</p>
+          <ul className="list-disc list-inside space-y-1 mt-2 text-foreground/80">
+            <li>Conteúdos educacionais de medicina e ciências da saúde</li>
+            <li>Atlas anatômico 3D interativo para estudo</li>
+            <li>Ferramentas de estudo (quizzes, flashcards, resumos, simulados)</li>
+            <li>Consulta de informações sobre medicamentos (base ANVISA/CMED) para fins educacionais</li>
+            <li>Ferramentas de IA para apoio ao estudo (Dr. Focus IA)</li>
+            <li>Ambiente colaborativo entre alunos e professores</li>
+            <li>Módulos de simulação para treinamento acadêmico (PEP, Financeiro, TISS)</li>
+            <li>Pesquisa bibliográfica e acesso a referências científicas</li>
+          </ul>
+          <p className="mt-2 font-semibold text-yellow-300">
+            Todos os serviços acima são fornecidos exclusivamente para fins educacionais e de referência acadêmica.
+          </p>
+        </section>
+
+        <section>
+          <h3 className="text-lg font-bold text-primary mb-3">4. CADASTRO E CONTA</h3>
+          <ul className="list-disc list-inside space-y-1.5 text-foreground/80">
+            <li>O Usuário deve fornecer informações verdadeiras e atualizadas no cadastro.</li>
+            <li>Cada conta é pessoal e intransferível.</li>
+            <li>O Usuário é responsável pela segurança de suas credenciais de acesso.</li>
+            <li>O uso indevido da conta é de responsabilidade exclusiva do titular.</li>
+            <li>O Usuário deve ter no mínimo 16 anos de idade ou contar com autorização de responsável legal.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3 className="text-lg font-bold text-primary mb-3">5. USO ADEQUADO E OBRIGAÇÕES DO USUÁRIO</h3>
+          <p>O Usuário compromete-se a:</p>
+          <ul className="list-disc list-inside space-y-1.5 mt-2 text-foreground/80">
+            <li>Utilizar a Plataforma <strong>exclusivamente para fins educacionais</strong> e consultivos.</li>
+            <li><strong>NÃO utilizar</strong> informações da Plataforma para diagnósticos, prescrições ou condutas clínicas sem supervisão profissional adequada.</li>
+            <li><strong>NÃO inserir</strong> dados reais de pacientes em nenhum módulo da Plataforma, incluindo módulos de simulação.</li>
+            <li><strong>NÃO reproduzir</strong>, distribuir ou comercializar conteúdos da Plataforma sem autorização expressa.</li>
+            <li><strong>NÃO tentar</strong> acessar áreas restritas ou comprometer a segurança do sistema.</li>
+            <li>Respeitar os direitos de propriedade intelectual.</li>
+            <li><strong>NÃO utilizar</strong> a Plataforma para fins ilegais, antiéticos ou contrários ao Código de Ética Médica.</li>
+            <li><strong>Verificar sempre</strong> a precisão das informações com fontes primárias e literatura científica reconhecida.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3 className="text-lg font-bold text-primary mb-3">6. PROPRIEDADE INTELECTUAL</h3>
+          <p>
+            Todo o conteúdo da Plataforma (textos, imagens, modelos 3D, código-fonte, design, marcas e logotipos) 
+            é protegido por direitos autorais e propriedade intelectual (Lei nº 9.610/1998). O uso é licenciado 
+            ao Usuário de forma não exclusiva, intransferível e revogável, exclusivamente para fins educacionais pessoais.
+          </p>
+        </section>
+
+        <section>
+          <h3 className="text-lg font-bold text-primary mb-3">7. LIMITAÇÃO DE RESPONSABILIDADE</h3>
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+            <p className="font-bold text-red-400 mb-2">CLÁUSULA DE LIMITAÇÃO:</p>
+            <p className="mb-3">O MedFocus, seus desenvolvedores, colaboradores e afiliados:</p>
+            <ul className="list-disc list-inside space-y-1.5 text-foreground/80">
+              <li><strong>NÃO garantem</strong> a ausência de erros ou imprecisões no conteúdo educacional.</li>
+              <li><strong>NÃO se responsabilizam</strong> por decisões clínicas baseadas em informações da Plataforma.</li>
+              <li><strong>NÃO se responsabilizam</strong> por danos diretos, indiretos, incidentais, especiais ou consequenciais decorrentes do uso da Plataforma.</li>
+              <li><strong>NÃO substituem</strong> a formação médica formal, residência médica ou educação continuada.</li>
+              <li><strong>NÃO garantem</strong> disponibilidade ininterrupta do serviço.</li>
+              <li><strong>NÃO se responsabilizam</strong> por quaisquer atos médicos praticados com base em informações da Plataforma.</li>
+              <li><strong>NÃO se responsabilizam</strong> por danos a pacientes decorrentes do uso indevido das informações educacionais.</li>
+            </ul>
+            <p className="mt-3 font-semibold text-yellow-300">
+              A responsabilidade pela prática médica é exclusiva do profissional de saúde que a exerce, 
+              conforme o Código de Ética Médica e a legislação brasileira.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3 className="text-lg font-bold text-primary mb-3">8. INTELIGÊNCIA ARTIFICIAL (Dr. Focus IA)</h3>
+          <p>As funcionalidades de IA da Plataforma:</p>
+          <ul className="list-disc list-inside space-y-1.5 mt-2 text-foreground/80">
+            <li>São ferramentas de <strong>apoio ao estudo</strong>, não constituindo opinião médica.</li>
+            <li>Podem gerar respostas imprecisas, incompletas ou desatualizadas.</li>
+            <li>Devem ser <strong>sempre verificadas</strong> com fontes primárias e literatura médica reconhecida.</li>
+            <li>Não substituem o raciocínio clínico, o julgamento profissional ou a relação médico-paciente.</li>
+            <li>São processadas em servidores seguros com criptografia no Google Cloud Platform.</li>
+            <li>Não armazenam conversas para fins de treinamento de modelos de IA.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3 className="text-lg font-bold text-primary mb-3">9. MÓDULOS DE SIMULAÇÃO (PEP, FINANCEIRO, TISS)</h3>
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+            <p className="mb-2">
+              Os módulos de simulação (Prontuário Eletrônico, Financeiro, TISS) são <strong>ferramentas de 
+              treinamento acadêmico</strong> e NÃO devem ser utilizados como sistemas reais de gestão clínica:
+            </p>
+            <ul className="list-disc list-inside space-y-1.5 text-foreground/80">
+              <li>Dados inseridos são <strong>fictícios e para fins de treinamento</strong>.</li>
+              <li>O módulo PEP NÃO é um prontuário eletrônico oficial conforme Resolução CFM nº 1.821/2007.</li>
+              <li>O módulo Financeiro NÃO substitui software de gestão financeira certificado.</li>
+              <li>O módulo TISS NÃO gera guias válidas para envio a operadoras de saúde.</li>
+              <li>É <strong>expressamente proibido</strong> inserir dados reais de pacientes nestes módulos.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h3 className="text-lg font-bold text-primary mb-3">10. PLANOS E PAGAMENTOS</h3>
+          <ul className="list-disc list-inside space-y-1.5 text-foreground/80">
+            <li>Os planos e preços são informados na Plataforma e podem ser alterados com aviso prévio de 30 dias.</li>
+            <li>O cancelamento pode ser solicitado a qualquer momento, com efeito ao final do período vigente.</li>
+            <li>Reembolsos seguem a política do Código de Defesa do Consumidor (Lei nº 8.078/1990).</li>
+            <li>O direito de arrependimento de 7 dias é garantido conforme o art. 49 do CDC.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3 className="text-lg font-bold text-primary mb-3">11. SUSPENSÃO E ENCERRAMENTO</h3>
+          <p>
+            O MedFocus reserva-se o direito de suspender ou encerrar contas que violem estes Termos, 
+            sem aviso prévio, especialmente em casos de: uso para fins não educacionais, inserção de dados 
+            reais de pacientes, compartilhamento de credenciais, tentativa de uso clínico dos módulos de 
+            simulação, ou atividades que comprometam a segurança da Plataforma.
+          </p>
+        </section>
+
+        <section>
+          <h3 className="text-lg font-bold text-primary mb-3">12. LEGISLAÇÃO APLICÁVEL E FORO</h3>
+          <p>
+            Estes Termos são regidos pela legislação da República Federativa do Brasil. Fica eleito o foro 
+            da comarca do domicílio do Usuário para dirimir quaisquer controvérsias, conforme o art. 101, I 
+            do Código de Defesa do Consumidor (Lei nº 8.078/1990).
+          </p>
+        </section>
+
+        <section>
+          <h3 className="text-lg font-bold text-primary mb-3">13. DISPOSIÇÕES FINAIS</h3>
+          <ul className="list-disc list-inside space-y-1.5 text-foreground/80">
+            <li>O MedFocus pode alterar estes Termos a qualquer momento, notificando os Usuários com antecedência mínima de 15 dias.</li>
+            <li>A tolerância quanto ao descumprimento de qualquer disposição não implica renúncia.</li>
+            <li>Se qualquer cláusula for considerada inválida, as demais permanecem em pleno vigor.</li>
+            <li>Estes Termos constituem o acordo integral entre o Usuário e o MedFocus.</li>
+          </ul>
+        </section>
+      </div>
+
+      <p className="text-xs text-muted-foreground italic mt-4">
+        Versão 3.0 — Março de 2026. Em conformidade com: Código de Defesa do Consumidor (Lei nº 8.078/1990), 
+        Marco Civil da Internet (Lei nº 12.965/2014), LGPD (Lei nº 13.709/2018), Lei de Direitos Autorais 
+        (Lei nº 9.610/1998) e Código de Ética Médica (Resolução CFM nº 2.217/2018).
+      </p>
+    </div>
+  );
+}
+
+// ============================================================
+// LGPD / POLÍTICA DE PRIVACIDADE (COMPLETA)
+// ============================================================
+function LGPDContent() {
+  return (
+    <div className="space-y-6">
+      <h2 className="text-xl font-bold flex items-center gap-2">
+        🔒 Política de Privacidade e Proteção de Dados
+      </h2>
+      <p className="text-xs text-muted-foreground">
+        Em conformidade com a Lei Geral de Proteção de Dados Pessoais (LGPD — Lei nº 13.709/2018)
+      </p>
+
+      <div className="space-y-6 text-sm leading-relaxed">
+        <section>
+          <h3 className="text-lg font-bold text-primary mb-3">1. COMPROMISSO COM A PRIVACIDADE</h3>
+          <p>
+            O MedFocus tem um compromisso inabalável com a privacidade e a proteção dos dados de seus Usuários, 
+            em total conformidade com a Lei Geral de Proteção de Dados Pessoais (LGPD — Lei nº 13.709/2018), 
+            o Marco Civil da Internet (Lei nº 12.965/2014) e demais legislações aplicáveis.
+          </p>
+        </section>
+
+        <section>
+          <h3 className="text-lg font-bold text-primary mb-3">2. CONTROLADOR DOS DADOS</h3>
+          <p>
+            O controlador dos dados pessoais é o MedFocus, plataforma educacional de apoio ao estudo de medicina. 
+            Para questões relacionadas à proteção de dados, entre em contato com nosso Encarregado de Dados (DPO) 
+            através do e-mail: <strong>privacidade@medfocus.com.br</strong>.
+          </p>
+        </section>
+
+        <section>
+          <h3 className="text-lg font-bold text-primary mb-3">3. DADOS QUE COLETAMOS</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border border-border rounded-lg overflow-hidden">
+              <thead className="bg-primary/10">
+                <tr>
+                  <th className="text-left p-3 border-b border-border">Tipo de Dado</th>
+                  <th className="text-left p-3 border-b border-border">Exemplos</th>
+                  <th className="text-left p-3 border-b border-border">Finalidade</th>
+                  <th className="text-left p-3 border-b border-border">Base Legal (LGPD)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-border/50">
+                  <td className="p-3 font-medium">Cadastro</td>
+                  <td className="p-3 text-foreground/70">Nome, e-mail, instituição, ano</td>
+                  <td className="p-3 text-foreground/70">Personalização educacional</td>
+                  <td className="p-3 text-foreground/70">Execução de contrato (Art. 7º, V)</td>
+                </tr>
+                <tr className="border-b border-border/50">
+                  <td className="p-3 font-medium">Uso da Plataforma</td>
+                  <td className="p-3 text-foreground/70">Módulos acessados, progresso, quizzes</td>
+                  <td className="p-3 text-foreground/70">Gamificação e melhoria</td>
+                  <td className="p-3 text-foreground/70">Legítimo interesse (Art. 7º, IX)</td>
+                </tr>
+                <tr className="border-b border-border/50">
+                  <td className="p-3 font-medium">Pagamento</td>
+                  <td className="p-3 text-foreground/70">Processado por Stripe/Mercado Pago</td>
+                  <td className="p-3 text-foreground/70">Cobrança de assinaturas</td>
+                  <td className="p-3 text-foreground/70">Execução de contrato (Art. 7º, V)</td>
+                </tr>
+                <tr>
+                  <td className="p-3 font-medium">Técnicos</td>
+                  <td className="p-3 text-foreground/70">IP, navegador, cookies essenciais</td>
+                  <td className="p-3 text-foreground/70">Segurança e funcionamento</td>
+                  <td className="p-3 text-foreground/70">Legítimo interesse (Art. 7º, IX)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 mt-3">
+            <p className="font-bold text-green-400 mb-1">✅ DADOS QUE NÃO COLETAMOS:</p>
+            <p className="text-foreground/80">
+              Nós <strong>NÃO</strong> coletamos, processamos ou armazenamos dados sensíveis de saúde, 
+              prontuários médicos, dados de pacientes, informações genéticas, dados biométricos ou 
+              qualquer dado de saúde de terceiros. Dados inseridos em módulos de simulação são tratados 
+              como fictícios e podem ser excluídos a qualquer momento.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3 className="text-lg font-bold text-primary mb-3">4. COMPARTILHAMENTO DE DADOS</h3>
+          <p>
+            Nós <strong>NÃO vendemos, alugamos ou compartilhamos</strong> seus dados pessoais com terceiros 
+            para fins de marketing ou publicidade. O compartilhamento ocorre apenas:
+          </p>
+          <ul className="list-disc list-inside space-y-1.5 mt-2 text-foreground/80">
+            <li>Com provedores de infraestrutura essenciais (Google Cloud Platform), contratualmente obrigados a proteger seus dados.</li>
+            <li>Com processadores de pagamento (Stripe, Mercado Pago), certificados PCI-DSS.</li>
+            <li>Por obrigação legal ou ordem judicial.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3 className="text-lg font-bold text-primary mb-3">5. SEUS DIREITOS (Art. 18 da LGPD)</h3>
+          <div className="grid md:grid-cols-2 gap-3">
+            {[
+              { right: 'Confirmação', desc: 'Confirmar a existência de tratamento de seus dados.' },
+              { right: 'Acesso', desc: 'Acessar seus dados pessoais armazenados.' },
+              { right: 'Correção', desc: 'Corrigir dados incompletos, inexatos ou desatualizados.' },
+              { right: 'Anonimização', desc: 'Solicitar anonimização, bloqueio ou eliminação de dados desnecessários.' },
+              { right: 'Portabilidade', desc: 'Solicitar a portabilidade dos dados a outro fornecedor.' },
+              { right: 'Eliminação', desc: 'Solicitar a eliminação dos dados tratados com consentimento.' },
+              { right: 'Informação', desc: 'Ser informado sobre compartilhamento de dados.' },
+              { right: 'Revogação', desc: 'Revogar o consentimento a qualquer momento.' },
+            ].map((item, i) => (
+              <div key={i} className="bg-background/50 rounded-lg p-3 border border-border/50">
+                <p className="font-bold text-primary text-sm">{item.right}</p>
+                <p className="text-foreground/70 text-xs">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-foreground/80">
+            Para exercer seus direitos, entre em contato: <strong>privacidade@medfocus.com.br</strong>. 
+            Responderemos em até 15 dias úteis, conforme a LGPD.
+          </p>
+        </section>
+
+        <section>
+          <h3 className="text-lg font-bold text-primary mb-3">6. SEGURANÇA DOS DADOS</h3>
+          <ul className="list-disc list-inside space-y-1.5 text-foreground/80">
+            <li>Dados armazenados com criptografia AES-256 em servidores do Google Cloud Platform (região Brasil).</li>
+            <li>Comunicações protegidas por TLS 1.3.</li>
+            <li>Acesso restrito por autenticação multifator.</li>
+            <li>Backups regulares com retenção de 30 dias.</li>
+            <li>Monitoramento contínuo de segurança.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3 className="text-lg font-bold text-primary mb-3">7. RETENÇÃO DE DADOS</h3>
+          <p className="text-foreground/80">
+            Seus dados são retidos enquanto sua conta estiver ativa. Após a exclusão da conta, os dados 
+            pessoais são eliminados em até 30 dias, exceto quando a retenção for necessária para cumprimento 
+            de obrigação legal ou regulatória.
+          </p>
+        </section>
+      </div>
+
+      <p className="text-xs text-muted-foreground italic mt-4">
+        Versão 3.0 — Março de 2026. Em conformidade com a LGPD (Lei nº 13.709/2018) e o Marco Civil da Internet (Lei nº 12.965/2014).
+      </p>
     </div>
   );
 }
@@ -144,391 +547,270 @@ function EthicsCodeContent() {
         Modificado pelas Resoluções CFM nº 2.222/2018 e 2.226/2019.
       </p>
 
+      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-4">
+        <p className="text-sm text-foreground/85">
+          <strong>Nota do MedFocus:</strong> O conteúdo abaixo é apresentado para <strong>fins educacionais 
+          e de referência acadêmica</strong>. O MedFocus não é uma entidade médica e não está sujeito ao 
+          Código de Ética Médica como prestador de serviços de saúde. Disponibilizamos este conteúdo como 
+          parte de nossa missão educacional de apoio ao estudo de medicina.
+        </p>
+      </div>
+
       <div className="space-y-6">
         <section>
           <h3 className="text-lg font-bold text-primary mb-3">PREÂMBULO</h3>
-          <div className="space-y-3 text-sm leading-relaxed">
+          <div className="space-y-3 text-sm leading-relaxed text-foreground/80">
             <p>I — O presente Código de Ética Médica contém as normas que devem ser seguidas pelos médicos no exercício de sua profissão, inclusive nas atividades relativas ao ensino, à pesquisa e à administração de serviços de saúde, bem como em quaisquer outras atividades em que seja utilizado o conhecimento advindo do estudo da Medicina.</p>
             <p>II — As organizações de prestação de serviços médicos estão sujeitas às normas deste Código.</p>
             <p>III — Para o exercício da Medicina, impõe-se a inscrição no Conselho Regional do respectivo estado, território ou Distrito Federal.</p>
-            <p>IV — A fim de garantir o acatamento e a cabal execução deste Código, o médico comunicará ao Conselho Regional de Medicina, com discrição e fundamento, fatos de que tenha conhecimento e que caracterizem possível infração do presente Código e das demais normas que regulam o exercício da Medicina.</p>
-            <p>V — A fiscalização do cumprimento das normas estabelecidas neste Código é atribuição dos Conselhos de Medicina, das comissões de ética, das autoridades de saúde e dos médicos em geral.</p>
-            <p>VI — Este Código de Ética Médica é composto de 26 princípios fundamentais do exercício da Medicina, 10 normas diceológicas, 118 normas deontológicas e 4 disposições gerais.</p>
           </div>
         </section>
 
         <section>
-          <h3 className="text-lg font-bold text-primary mb-3">CAPÍTULO I — PRINCÍPIOS FUNDAMENTAIS</h3>
-          <div className="space-y-3 text-sm leading-relaxed">
+          <h3 className="text-lg font-bold text-primary mb-3">CAPÍTULO I — PRINCÍPIOS FUNDAMENTAIS (Seleção)</h3>
+          <div className="space-y-3 text-sm leading-relaxed text-foreground/80">
             <p><strong>I</strong> — A Medicina é uma profissão a serviço da saúde do ser humano e da coletividade e será exercida sem discriminação de nenhuma natureza.</p>
             <p><strong>II</strong> — O alvo de toda a atenção do médico é a saúde do ser humano, em benefício da qual deverá agir com o máximo de zelo e o melhor de sua capacidade profissional.</p>
-            <p><strong>III</strong> — Para exercer a Medicina com honra e dignidade, o médico necessita ter boas condições de trabalho e ser remunerado de forma justa.</p>
-            <p><strong>IV</strong> — Ao médico cabe zelar e trabalhar pelo perfeito desempenho ético da Medicina, bem como pelo prestígio e bom conceito da profissão.</p>
             <p><strong>V</strong> — Compete ao médico aprimorar continuamente seus conhecimentos e usar o melhor do progresso científico em benefício do paciente e da sociedade.</p>
-            <p><strong>VI</strong> — O médico guardará absoluto respeito pelo ser humano e atuará sempre em seu benefício, mesmo depois da morte. Jamais utilizará seus conhecimentos para causar sofrimento físico ou moral, para o extermínio do ser humano ou para permitir e acobertar tentativas contra sua dignidade e integridade.</p>
-            <p><strong>VII</strong> — O médico exercerá sua profissão com autonomia, não sendo obrigado a prestar serviços que contrariem os ditames de sua consciência ou a quem não deseje, excetuadas as situações de ausência de outro médico, em caso de urgência ou emergência, ou quando sua recusa possa trazer danos à saúde do paciente.</p>
-            <p><strong>VIII</strong> — O médico não pode, em nenhuma circunstância ou sob nenhum pretexto, renunciar à sua liberdade profissional, nem permitir quaisquer restrições ou imposições que possam prejudicar a eficiência e a correção de seu trabalho.</p>
-            <p><strong>IX</strong> — A Medicina não pode, em nenhuma circunstância ou forma, ser exercida como comércio.</p>
-            <p><strong>X</strong> — O trabalho do médico não pode ser explorado por terceiros com objetivos de lucro, finalidade política ou religiosa.</p>
+            <p><strong>VI</strong> — O médico guardará absoluto respeito pelo ser humano e atuará sempre em seu benefício.</p>
             <p><strong>XI</strong> — O médico guardará sigilo a respeito das informações de que detenha conhecimento no desempenho de suas funções, com exceção dos casos previstos em lei.</p>
-            <p><strong>XII</strong> — O médico empenhar-se-á pela melhor adequação do trabalho ao ser humano, pela eliminação e pelo controle dos riscos à saúde inerentes às atividades laborais e pela efetiva prevenção de doenças e acidentes de trabalho.</p>
-            <p><strong>XIII</strong> — O médico comunicará às autoridades competentes quaisquer formas de deterioração do ecossistema, prejudiciais à saúde e à vida.</p>
-            <p><strong>XIV</strong> — O médico empenhar-se-á em melhorar os padrões dos serviços médicos e em assumir sua responsabilidade em relação à saúde pública, à educação sanitária e à legislação referente à saúde.</p>
-            <p><strong>XV</strong> — O médico será solidário com os movimentos de defesa da dignidade profissional, seja por remuneração digna e justa, seja por condições de trabalho compatíveis com o exercício ético-profissional da Medicina e seu aprimoramento técnico-científico.</p>
-            <p><strong>XVI</strong> — Nenhuma disposição estatutária ou regimental de hospital ou de instituição, pública ou privada, limitará a escolha, pelo médico, dos meios cientificamente reconhecidos a serem praticados para o estabelecimento do diagnóstico e da execução do tratamento, salvo quando em benefício do paciente.</p>
-            <p><strong>XVII</strong> — As relações do médico com os demais profissionais devem basear-se no respeito mútuo, na liberdade e na independência de cada um, buscando sempre o interesse e o bem-estar do paciente.</p>
-            <p><strong>XVIII</strong> — O médico terá, para com os colegas, respeito, consideração e solidariedade, sem se eximir de denunciar atos que contrariem os postulados éticos.</p>
-            <p><strong>XIX</strong> — O médico se responsabilizará, em caráter pessoal e nunca presumido, pelos seus atos profissionais, resultantes de relação particular de confiança e executados com diligência, competência e prudência.</p>
-            <p><strong>XX</strong> — A natureza personalíssima da atuação profissional do médico não caracteriza relação de consumo.</p>
-            <p><strong>XXI</strong> — No processo de tomada de decisões profissionais, de acordo com seus ditames de consciência e as previsões legais, o médico aceitará as escolhas de seus pacientes relativas aos procedimentos diagnósticos e terapêuticos por eles expressos, desde que adequadas ao caso e cientificamente reconhecidas.</p>
-            <p><strong>XXII</strong> — Nas situações clínicas irreversíveis e terminais, o médico evitará a realização de procedimentos diagnósticos e terapêuticos desnecessários e propiciará aos pacientes sob sua atenção todos os cuidados paliativos apropriados.</p>
-            <p><strong>XXIII</strong> — Quando envolvido na produção de conhecimento científico, o médico agirá com isenção e independência, visando ao maior benefício para os pacientes e a sociedade.</p>
-            <p><strong>XXIV</strong> — Sempre que participar de pesquisas envolvendo seres humanos ou qualquer animal, o médico respeitará as normas éticas nacionais, bem como protegerá a vulnerabilidade dos sujeitos da pesquisa.</p>
-            <p><strong>XXV</strong> — Na aplicação dos conhecimentos criados pelas novas tecnologias, considerando-se suas limitações e a prevalência dos direitos do paciente, o médico zelará para que as pessoas não sejam discriminadas por nenhuma razão vinculada a herança genética, protegendo-as em sua dignidade, identidade e integridade.</p>
-            <p><strong>XXVI</strong> — A Medicina será exercida com a utilização dos meios técnicos e científicos disponíveis que visem aos melhores resultados.</p>
           </div>
         </section>
 
         <section>
-          <h3 className="text-lg font-bold text-primary mb-3">CAPÍTULO III — RESPONSABILIDADE PROFISSIONAL (Artigos selecionados)</h3>
-          <div className="space-y-3 text-sm leading-relaxed">
-            <p><strong>Art. 1º</strong> — É vedado ao médico causar dano ao paciente, por ação ou omissão, caracterizável como imperícia, imprudência ou negligência.</p>
-            <p><strong>Art. 2º</strong> — É vedado ao médico delegar a outros profissionais atos ou atribuições exclusivos da profissão médica.</p>
-            <p><strong>Art. 3º</strong> — É vedado ao médico deixar de assumir responsabilidade sobre procedimento médico que indicou ou do qual participou, mesmo quando vários médicos tenham assistido o paciente.</p>
-            <p><strong>Art. 4º</strong> — É vedado ao médico deixar de assumir a responsabilidade de qualquer ato profissional que tenha praticado ou indicado, ainda que solicitado ou consentido pelo paciente ou por seu representante legal.</p>
-            <p><strong>Art. 5º</strong> — É vedado ao médico assumir responsabilidade por ato médico que não praticou ou do qual não participou.</p>
-          </div>
-        </section>
-
-        <section>
-          <h3 className="text-lg font-bold text-primary mb-3">CAPÍTULO V — RELAÇÃO COM PACIENTES E FAMILIARES (Artigos selecionados)</h3>
-          <div className="space-y-3 text-sm leading-relaxed">
-            <p><strong>Art. 22</strong> — É vedado ao médico deixar de obter consentimento do paciente ou de seu representante legal após esclarecê-lo sobre o procedimento a ser realizado, salvo em caso de risco iminente de morte.</p>
-            <p><strong>Art. 23</strong> — É vedado ao médico tratar o ser humano sem civilidade ou consideração, desrespeitar sua dignidade ou discriminá-lo de qualquer forma ou sob qualquer pretexto.</p>
-            <p><strong>Art. 24</strong> — É vedado ao médico deixar de garantir ao paciente o exercício do direito de decidir livremente sobre sua pessoa ou seu bem-estar, bem como exercer sua autoridade para limitá-lo.</p>
-            <p><strong>Art. 31</strong> — É vedado ao médico desrespeitar o direito do paciente ou de seu representante legal de decidir livremente sobre a execução de práticas diagnósticas ou terapêuticas, salvo em caso de iminente risco de morte.</p>
-            <p><strong>Art. 34</strong> — É vedado ao médico deixar de informar ao paciente o diagnóstico, o prognóstico, os riscos e os objetivos do tratamento, salvo quando a comunicação direta possa lhe provocar dano, devendo, nesse caso, fazer a comunicação a seu representante legal.</p>
-          </div>
-        </section>
-
-        <section>
-          <h3 className="text-lg font-bold text-primary mb-3">CAPÍTULO IX — SIGILO PROFISSIONAL (Artigos selecionados)</h3>
-          <div className="space-y-3 text-sm leading-relaxed">
-            <p><strong>Art. 73</strong> — É vedado ao médico revelar fato de que tenha conhecimento em virtude do exercício de sua profissão, salvo por motivo justo, dever legal ou consentimento, por escrito, do paciente.</p>
-            <p><strong>Art. 74</strong> — É vedado ao médico revelar sigilo profissional relacionado a paciente menor de idade, inclusive a seus pais ou representantes legais, desde que o menor tenha capacidade de discernimento, salvo quando a não revelação possa acarretar dano ao paciente.</p>
-            <p><strong>Art. 75</strong> — É vedado ao médico fazer referência a casos clínicos identificáveis, exibir pacientes ou seus retratos em anúncios profissionais ou na divulgação de assuntos médicos, em meios de comunicação em geral, mesmo com autorização do paciente.</p>
-            <p><strong>Art. 78</strong> — É vedado ao médico deixar de orientar seus auxiliares e alunos a respeitar o sigilo profissional e zelar para que seja por eles mantido.</p>
-          </div>
+          <h3 className="text-lg font-bold text-primary mb-3">RELEVÂNCIA PARA O ESTUDO</h3>
+          <p className="text-sm text-foreground/80">
+            O conhecimento do Código de Ética Médica é fundamental para a formação de todo estudante de medicina. 
+            Ele estabelece os princípios que norteiam a prática médica ética e responsável. O MedFocus disponibiliza 
+            este conteúdo como material de estudo e referência, incentivando os estudantes a consultarem o texto 
+            completo no site oficial do CFM.
+          </p>
+          <a href="https://portal.cfm.org.br/etica-medica/codigo-2019/" target="_blank" rel="noopener noreferrer"
+            className="inline-block mt-2 text-primary hover:underline text-sm">
+            Consultar texto completo no portal do CFM →
+          </a>
         </section>
       </div>
-
-      <p className="text-xs text-muted-foreground italic">
-        Texto completo disponível em: <a href="https://portal.cfm.org.br/etica-medica/codigo-2019/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">portal.cfm.org.br/etica-medica/codigo-2019</a>. 
-        Resolução CFM nº 2.217/2018, publicada no D.O.U. de 01/11/2018.
-      </p>
     </div>
   );
 }
 
 // ============================================================
-// LGPD — POLÍTICA DE PRIVACIDADE
+// POLÍTICA DE USO DE IA
 // ============================================================
-function LGPDContent() {
+function AIPolicyContent() {
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-bold flex items-center gap-2">
-        🔒 Política de Privacidade e Proteção de Dados — LGPD
+        🤖 Política de Uso de Inteligência Artificial
       </h2>
-      <p className="text-sm text-muted-foreground">
-        Em conformidade com a Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018 — LGPD).
+      <p className="text-xs text-muted-foreground">
+        Diretrizes para o uso responsável das funcionalidades de IA do MedFocus
       </p>
 
       <div className="space-y-6 text-sm leading-relaxed">
         <section>
-          <h3 className="text-lg font-bold text-primary mb-3">1. CONTROLADOR DE DADOS</h3>
-          <p>O MedFocus, plataforma educacional de medicina e ciências da saúde, é o controlador dos dados pessoais coletados através desta plataforma, nos termos do art. 5º, VI da LGPD.</p>
+          <h3 className="text-lg font-bold text-primary mb-3">1. NATUREZA DA IA NO MEDFOCUS</h3>
+          <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
+            <p className="text-foreground/85">
+              As funcionalidades de Inteligência Artificial do MedFocus, incluindo o <strong>Dr. Focus IA</strong>, 
+              são <strong>ferramentas de apoio ao estudo e processamento de linguagem natural</strong>. Elas utilizam 
+              modelos de linguagem para auxiliar na compreensão de conceitos médicos, organização de estudos e 
+              geração de resumos educacionais.
+            </p>
+          </div>
         </section>
 
         <section>
-          <h3 className="text-lg font-bold text-primary mb-3">2. DADOS COLETADOS</h3>
-          <p>Coletamos os seguintes dados pessoais, estritamente necessários para a prestação do serviço educacional:</p>
-          <ul className="list-disc list-inside space-y-1 mt-2">
-            <li><strong>Dados de identificação:</strong> Nome completo, e-mail, instituição de ensino.</li>
-            <li><strong>Dados de acesso:</strong> Credenciais de login (autenticação via OpenID/OAuth).</li>
-            <li><strong>Dados de uso:</strong> Progresso nos estudos, respostas em quizzes, tempo de uso, módulos acessados.</li>
-            <li><strong>Dados técnicos:</strong> Endereço IP, tipo de navegador, sistema operacional (para fins de segurança e performance).</li>
-          </ul>
-          <p className="mt-2 font-semibold text-yellow-400">⚠️ NÃO coletamos dados de saúde, prontuários médicos, dados biométricos ou informações sensíveis de pacientes.</p>
-        </section>
-
-        <section>
-          <h3 className="text-lg font-bold text-primary mb-3">3. FINALIDADE DO TRATAMENTO</h3>
-          <p>Os dados são tratados exclusivamente para as seguintes finalidades (art. 7º, LGPD):</p>
-          <ul className="list-disc list-inside space-y-1 mt-2">
-            <li>Prestação do serviço educacional contratado (art. 7º, V — execução de contrato).</li>
-            <li>Personalização da experiência de aprendizado.</li>
-            <li>Geração de relatórios de desempenho acadêmico para o próprio usuário e, quando aplicável, para a instituição de ensino.</li>
-            <li>Comunicações sobre atualizações da plataforma e novos conteúdos.</li>
-            <li>Cumprimento de obrigações legais e regulatórias (art. 7º, II).</li>
-          </ul>
-        </section>
-
-        <section>
-          <h3 className="text-lg font-bold text-primary mb-3">4. BASE LEGAL</h3>
-          <p>O tratamento de dados pessoais é realizado com base nas seguintes hipóteses legais previstas no art. 7º da LGPD:</p>
-          <ul className="list-disc list-inside space-y-1 mt-2">
-            <li><strong>Consentimento</strong> (art. 7º, I): Para dados opcionais e comunicações de marketing.</li>
-            <li><strong>Execução de contrato</strong> (art. 7º, V): Para prestação do serviço educacional.</li>
-            <li><strong>Legítimo interesse</strong> (art. 7º, IX): Para melhoria da plataforma e segurança.</li>
-            <li><strong>Cumprimento de obrigação legal</strong> (art. 7º, II): Para obrigações fiscais e regulatórias.</li>
-          </ul>
-        </section>
-
-        <section>
-          <h3 className="text-lg font-bold text-primary mb-3">5. COMPARTILHAMENTO DE DADOS</h3>
-          <p>Os dados pessoais <strong>NÃO são vendidos, alugados ou compartilhados</strong> com terceiros para fins comerciais. O compartilhamento ocorre apenas:</p>
-          <ul className="list-disc list-inside space-y-1 mt-2">
-            <li>Com provedores de infraestrutura (Google Cloud Platform) para hospedagem segura.</li>
-            <li>Com a instituição de ensino do usuário, quando aplicável e autorizado.</li>
-            <li>Por determinação legal ou judicial.</li>
-          </ul>
-        </section>
-
-        <section>
-          <h3 className="text-lg font-bold text-primary mb-3">6. DIREITOS DO TITULAR (Art. 18, LGPD)</h3>
-          <p>O titular dos dados tem direito a:</p>
-          <ul className="list-disc list-inside space-y-1 mt-2">
-            <li><strong>Confirmação</strong> da existência de tratamento de dados.</li>
-            <li><strong>Acesso</strong> aos dados pessoais tratados.</li>
-            <li><strong>Correção</strong> de dados incompletos, inexatos ou desatualizados.</li>
-            <li><strong>Anonimização, bloqueio ou eliminação</strong> de dados desnecessários ou excessivos.</li>
-            <li><strong>Portabilidade</strong> dos dados a outro fornecedor de serviço.</li>
-            <li><strong>Eliminação</strong> dos dados tratados com consentimento.</li>
-            <li><strong>Informação</strong> sobre compartilhamento de dados.</li>
-            <li><strong>Revogação</strong> do consentimento a qualquer momento.</li>
-          </ul>
-        </section>
-
-        <section>
-          <h3 className="text-lg font-bold text-primary mb-3">7. SEGURANÇA DOS DADOS</h3>
-          <p>Adotamos medidas técnicas e administrativas para proteger os dados pessoais:</p>
-          <ul className="list-disc list-inside space-y-1 mt-2">
-            <li>Criptografia em trânsito (TLS/HTTPS) e em repouso.</li>
-            <li>Autenticação segura via OAuth 2.0 / OpenID Connect.</li>
-            <li>Hospedagem em infraestrutura Google Cloud Platform com certificações ISO 27001, SOC 2.</li>
-            <li>Controle de acesso baseado em funções (RBAC).</li>
-            <li>Logs de auditoria e monitoramento contínuo.</li>
-            <li>Backups regulares com criptografia.</li>
-          </ul>
-        </section>
-
-        <section>
-          <h3 className="text-lg font-bold text-primary mb-3">8. RETENÇÃO DE DADOS</h3>
-          <p>Os dados pessoais são mantidos pelo período necessário para a prestação do serviço educacional e cumprimento de obrigações legais. Após o encerramento da conta, os dados são eliminados em até 90 dias, exceto quando houver obrigação legal de retenção.</p>
-        </section>
-
-        <section>
-          <h3 className="text-lg font-bold text-primary mb-3">9. ENCARREGADO DE DADOS (DPO)</h3>
-          <p>Para exercer seus direitos ou esclarecer dúvidas sobre o tratamento de dados pessoais, entre em contato com nosso Encarregado de Proteção de Dados através do e-mail disponível na seção de contato da plataforma.</p>
-        </section>
-      </div>
-
-      <p className="text-xs text-muted-foreground italic">
-        Esta política está em conformidade com a Lei nº 13.709/2018 (LGPD) e o Marco Civil da Internet (Lei nº 12.965/2014). 
-        Última atualização: Fevereiro de 2026.
-      </p>
-    </div>
-  );
-}
-
-// ============================================================
-// TERMOS DE USO
-// ============================================================
-function TermsContent() {
-  return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-bold flex items-center gap-2">
-        📋 Termos de Uso da Plataforma MedFocus
-      </h2>
-
-      <div className="space-y-6 text-sm leading-relaxed">
-        <section>
-          <h3 className="text-lg font-bold text-primary mb-3">1. ACEITAÇÃO DOS TERMOS</h3>
-          <p>Ao acessar e utilizar a plataforma MedFocus, o usuário declara ter lido, compreendido e concordado integralmente com estes Termos de Uso, com a Política de Privacidade (LGPD) e com o Disclaimer Educacional. Caso não concorde com qualquer disposição, o acesso à plataforma deve ser interrompido imediatamente.</p>
-        </section>
-
-        <section>
-          <h3 className="text-lg font-bold text-primary mb-3">2. NATUREZA DO SERVIÇO</h3>
-          <p>O MedFocus é uma <strong>plataforma educacional e consultiva</strong> destinada a estudantes de medicina, profissionais de saúde e acadêmicos. A plataforma oferece:</p>
-          <ul className="list-disc list-inside space-y-1 mt-2">
-            <li>Conteúdos educacionais de medicina e ciências da saúde.</li>
-            <li>Atlas anatômico 3D interativo para estudo.</li>
-            <li>Ferramentas de estudo (quizzes, flashcards, resumos).</li>
-            <li>Consulta de informações sobre medicamentos (base ANVISA/CMED).</li>
-            <li>Ferramentas de IA para apoio ao estudo (Dr. Focus IA).</li>
-            <li>Ambiente colaborativo entre alunos e professores.</li>
-          </ul>
-          <p className="mt-2 font-semibold">A plataforma NÃO é um serviço de saúde, consultório virtual, sistema de prontuário eletrônico ou ferramenta de diagnóstico.</p>
-        </section>
-
-        <section>
-          <h3 className="text-lg font-bold text-primary mb-3">3. CADASTRO E CONTA</h3>
-          <ul className="list-disc list-inside space-y-1">
-            <li>O usuário deve fornecer informações verdadeiras e atualizadas no cadastro.</li>
-            <li>Cada conta é pessoal e intransferível.</li>
-            <li>O usuário é responsável pela segurança de suas credenciais de acesso.</li>
-            <li>O uso indevido da conta é de responsabilidade exclusiva do titular.</li>
-          </ul>
-        </section>
-
-        <section>
-          <h3 className="text-lg font-bold text-primary mb-3">4. USO ADEQUADO</h3>
-          <p>O usuário compromete-se a:</p>
-          <ul className="list-disc list-inside space-y-1 mt-2">
-            <li>Utilizar a plataforma exclusivamente para fins educacionais e consultivos.</li>
-            <li>Não utilizar informações da plataforma para diagnósticos, prescrições ou condutas clínicas sem supervisão profissional adequada.</li>
-            <li>Não reproduzir, distribuir ou comercializar conteúdos da plataforma sem autorização.</li>
-            <li>Não tentar acessar áreas restritas ou comprometer a segurança do sistema.</li>
-            <li>Respeitar os direitos de propriedade intelectual.</li>
-            <li>Não utilizar a plataforma para fins ilegais ou antiéticos.</li>
-          </ul>
-        </section>
-
-        <section>
-          <h3 className="text-lg font-bold text-primary mb-3">5. PROPRIEDADE INTELECTUAL</h3>
-          <p>Todo o conteúdo da plataforma (textos, imagens, modelos 3D, código-fonte, design, marcas) é protegido por direitos autorais e propriedade intelectual. O uso é licenciado ao usuário de forma não exclusiva, intransferível e revogável, exclusivamente para fins educacionais pessoais.</p>
-        </section>
-
-        <section>
-          <h3 className="text-lg font-bold text-primary mb-3">6. LIMITAÇÃO DE RESPONSABILIDADE</h3>
-          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-            <p>O MedFocus e seus desenvolvedores:</p>
-            <ul className="list-disc list-inside space-y-1 mt-2">
-              <li><strong>NÃO garantem</strong> a ausência de erros ou imprecisões no conteúdo educacional.</li>
-              <li><strong>NÃO se responsabilizam</strong> por decisões clínicas baseadas em informações da plataforma.</li>
-              <li><strong>NÃO se responsabilizam</strong> por danos diretos, indiretos ou consequenciais decorrentes do uso da plataforma.</li>
-              <li><strong>NÃO substituem</strong> a formação médica formal, residência médica ou educação continuada.</li>
-              <li><strong>NÃO garantem</strong> disponibilidade ininterrupta do serviço.</li>
+          <h3 className="text-lg font-bold text-primary mb-3">2. LIMITAÇÕES DA IA</h3>
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 space-y-3">
+            <p className="font-bold text-red-400">A IA do MedFocus:</p>
+            <ul className="list-disc list-inside space-y-1.5 text-foreground/80">
+              <li><strong>NÃO é um médico virtual</strong> — Não possui licença médica, CRM ou qualquer habilitação para exercer a medicina.</li>
+              <li><strong>NÃO fornece diagnósticos</strong> — Qualquer informação gerada é para fins de estudo, não de diagnóstico.</li>
+              <li><strong>NÃO prescreve tratamentos</strong> — Informações sobre medicamentos e condutas são educacionais.</li>
+              <li><strong>NÃO substitui o médico</strong> — A relação médico-paciente, a anamnese e o exame físico são insubstituíveis.</li>
+              <li><strong>PODE conter erros</strong> — Modelos de IA podem gerar informações imprecisas, desatualizadas ou incorretas (alucinações).</li>
+              <li><strong>PODE ter vieses</strong> — Os modelos podem refletir vieses presentes nos dados de treinamento.</li>
             </ul>
           </div>
         </section>
 
         <section>
-          <h3 className="text-lg font-bold text-primary mb-3">7. INTELIGÊNCIA ARTIFICIAL (Dr. Focus IA)</h3>
-          <p>As funcionalidades de IA da plataforma:</p>
-          <ul className="list-disc list-inside space-y-1 mt-2">
-            <li>São ferramentas de <strong>apoio ao estudo</strong>, não constituindo opinião médica.</li>
-            <li>Podem gerar respostas imprecisas ou incompletas.</li>
-            <li>Devem ser sempre verificadas com fontes primárias e literatura médica reconhecida.</li>
-            <li>Não substituem o raciocínio clínico ou o julgamento profissional.</li>
-            <li>São processadas em servidores seguros com criptografia.</li>
+          <h3 className="text-lg font-bold text-primary mb-3">3. USO RESPONSÁVEL</h3>
+          <p>Ao utilizar as funcionalidades de IA, o Usuário deve:</p>
+          <ul className="list-disc list-inside space-y-1.5 mt-2 text-foreground/80">
+            <li><strong>Sempre verificar</strong> as informações geradas com fontes primárias (livros-texto, artigos científicos, guidelines oficiais).</li>
+            <li><strong>Nunca aplicar</strong> diretamente informações da IA em contextos clínicos reais.</li>
+            <li><strong>Não inserir</strong> dados reais de pacientes nas interações com a IA.</li>
+            <li><strong>Manter o senso crítico</strong> e tratar as respostas da IA como ponto de partida para o estudo, não como verdade absoluta.</li>
+            <li><strong>Reportar erros</strong> encontrados para contribuir com a melhoria contínua da plataforma.</li>
           </ul>
         </section>
 
         <section>
-          <h3 className="text-lg font-bold text-primary mb-3">8. PLANOS E PAGAMENTOS</h3>
-          <ul className="list-disc list-inside space-y-1">
-            <li>Os planos e preços são informados na plataforma e podem ser alterados com aviso prévio de 30 dias.</li>
-            <li>O cancelamento pode ser solicitado a qualquer momento, com efeito ao final do período vigente.</li>
-            <li>Reembolsos seguem a política do Código de Defesa do Consumidor (Lei nº 8.078/1990).</li>
+          <h3 className="text-lg font-bold text-primary mb-3">4. PRIVACIDADE NAS INTERAÇÕES COM IA</h3>
+          <ul className="list-disc list-inside space-y-1.5 text-foreground/80">
+            <li>As conversas com a IA são processadas em servidores seguros do Google Cloud Platform.</li>
+            <li>As interações NÃO são utilizadas para treinamento de modelos de IA de terceiros.</li>
+            <li>O histórico de conversas pode ser excluído pelo Usuário a qualquer momento.</li>
+            <li>Dados sensíveis de saúde NÃO devem ser inseridos nas interações com a IA.</li>
           </ul>
         </section>
 
         <section>
-          <h3 className="text-lg font-bold text-primary mb-3">9. SUSPENSÃO E ENCERRAMENTO</h3>
-          <p>O MedFocus reserva-se o direito de suspender ou encerrar contas que violem estes Termos de Uso, sem aviso prévio, especialmente em casos de uso para fins não educacionais, compartilhamento de credenciais ou atividades que comprometam a segurança da plataforma.</p>
-        </section>
-
-        <section>
-          <h3 className="text-lg font-bold text-primary mb-3">10. LEGISLAÇÃO APLICÁVEL</h3>
-          <p>Estes Termos de Uso são regidos pela legislação brasileira. Fica eleito o foro da comarca do domicílio do usuário para dirimir quaisquer controvérsias, conforme o art. 101, I do Código de Defesa do Consumidor.</p>
-        </section>
-
-        <section>
-          <h3 className="text-lg font-bold text-primary mb-3">11. DISPOSIÇÕES FINAIS</h3>
-          <ul className="list-disc list-inside space-y-1">
-            <li>O MedFocus pode alterar estes Termos a qualquer momento, notificando os usuários.</li>
-            <li>A tolerância quanto ao descumprimento de qualquer disposição não implica renúncia.</li>
-            <li>Se qualquer cláusula for considerada inválida, as demais permanecem em vigor.</li>
-          </ul>
+          <h3 className="text-lg font-bold text-primary mb-3">5. TRANSPARÊNCIA</h3>
+          <p className="text-foreground/80">
+            O MedFocus se compromete com a transparência no uso de IA. Todas as funcionalidades que utilizam 
+            Inteligência Artificial são claramente identificadas na interface com o ícone 🤖 ou a badge "IA". 
+            O Usuário sempre saberá quando está interagindo com uma ferramenta de IA.
+          </p>
         </section>
       </div>
 
-      <p className="text-xs text-muted-foreground italic">
-        Última atualização: Fevereiro de 2026. Em conformidade com o Código de Defesa do Consumidor (Lei nº 8.078/1990), 
-        Marco Civil da Internet (Lei nº 12.965/2014) e LGPD (Lei nº 13.709/2018).
+      <p className="text-xs text-muted-foreground italic mt-4">
+        Versão 1.0 — Março de 2026. Esta política segue as recomendações da UNESCO sobre Ética da IA 
+        e as diretrizes do Ministério da Ciência, Tecnologia e Inovação do Brasil.
       </p>
     </div>
   );
 }
 
 // ============================================================
-// ACCEPTANCE MODAL (for first-time users)
+// MODAL DE ACEITE OBRIGATÓRIO (REFORÇADO)
 // ============================================================
 export function LegalAcceptanceModal({ onAccept }: { onAccept: () => void }) {
-  const [accepted, setAccepted] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedDisclaimer, setAcceptedDisclaimer] = useState(false);
+  const [acceptedLGPD, setAcceptedLGPD] = useState(false);
+
+  const allAccepted = acceptedTerms && acceptedDisclaimer && acceptedLGPD;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-card border border-border rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div className="p-6 border-b border-border bg-gradient-to-r from-primary/10 to-transparent">
+        {/* Header */}
+        <div className="p-6 border-b border-border bg-gradient-to-r from-primary/10 to-transparent sticky top-0 bg-card z-10">
           <h2 className="text-xl font-bold flex items-center gap-2">
-            🛡️ Termos de Uso e Disclaimer
+            🛡️ Termos de Uso, Disclaimer e Privacidade
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Por favor, leia e aceite os termos antes de continuar.
+            Por favor, leia e aceite todos os termos antes de continuar.
           </p>
         </div>
 
         <div className="p-6 space-y-4">
-          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
-            <h3 className="font-bold text-yellow-400 text-sm mb-2">⚠️ AVISO IMPORTANTE</h3>
-            <p className="text-sm text-foreground/90 leading-relaxed">
-              O MedFocus é uma plataforma <strong>exclusivamente educacional e consultiva</strong>. 
-              As informações disponibilizadas <strong>não devem ser utilizadas</strong> para tomada de decisão clínica, 
-              diagnósticos médicos, prescrição de medicamentos ou qualquer finalidade que não seja estritamente educacional.
+          {/* AVISO PRINCIPAL */}
+          <div className="bg-red-500/15 border-2 border-red-500/40 rounded-xl p-5">
+            <h3 className="font-bold text-red-400 text-base mb-3 flex items-center gap-2">
+              🚨 AVISO FUNDAMENTAL
+            </h3>
+            <p className="text-sm text-foreground/90 leading-relaxed font-semibold">
+              O MedFocus é uma <strong>plataforma educacional, guia estudantil e biblioteca acadêmica</strong>.
             </p>
-            <p className="text-sm text-foreground/90 leading-relaxed mt-2">
-              As funcionalidades de Inteligência Artificial (Dr. Focus IA) são ferramentas de apoio ao estudo e 
-              <strong> não constituem opinião médica</strong>. Respostas geradas por IA podem conter imprecisões.
+            <p className="text-sm text-red-300 leading-relaxed mt-2 font-bold">
+              NÓS NÃO SOMOS MÉDICOS. NÃO PRATICAMOS MEDICINA. NÃO REALIZAMOS NENHUM ATO MÉDICO.
+            </p>
+            <p className="text-sm text-foreground/80 leading-relaxed mt-2">
+              Nenhuma informação, ferramenta ou funcionalidade desta plataforma deve ser utilizada para 
+              diagnósticos, prescrições, tratamentos ou qualquer finalidade que não seja estritamente 
+              educacional e de referência acadêmica.
             </p>
           </div>
 
+          {/* DISCLAIMER IA */}
+          <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
+            <h3 className="font-bold text-purple-400 text-sm mb-2 flex items-center gap-2">
+              🤖 Sobre a Inteligência Artificial (Dr. Focus IA)
+            </h3>
+            <p className="text-sm text-foreground/80 leading-relaxed">
+              As funcionalidades de IA são ferramentas de apoio ao estudo e <strong>não constituem opinião médica</strong>. 
+              Respostas geradas por IA podem conter imprecisões e devem <strong>sempre</strong> ser verificadas com 
+              fontes primárias e literatura científica reconhecida. A IA não substitui o raciocínio clínico 
+              ou a relação médico-paciente.
+            </p>
+          </div>
+
+          {/* LGPD */}
           <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
-            <h3 className="font-bold text-blue-400 text-sm mb-2">🔒 PROTEÇÃO DE DADOS (LGPD)</h3>
-            <p className="text-sm text-foreground/90 leading-relaxed">
-              Seus dados pessoais são tratados em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018). 
-              Não coletamos dados de saúde ou prontuários. Seus dados são armazenados com criptografia em servidores seguros 
-              no Google Cloud Platform e não são compartilhados com terceiros para fins comerciais.
+            <h3 className="font-bold text-blue-400 text-sm mb-2 flex items-center gap-2">
+              🔒 Proteção de Dados (LGPD)
+            </h3>
+            <p className="text-sm text-foreground/80 leading-relaxed">
+              Seus dados pessoais são tratados em conformidade com a Lei Geral de Proteção de Dados 
+              (Lei nº 13.709/2018). Não coletamos dados de saúde ou prontuários. Seus dados são armazenados 
+              com criptografia em servidores seguros no Google Cloud Platform (região Brasil) e não são 
+              compartilhados com terceiros para fins comerciais.
             </p>
           </div>
 
-          <label className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/30 cursor-pointer transition">
-            <input
-              type="checkbox"
-              checked={accepted}
-              onChange={(e) => setAccepted(e.target.checked)}
-              className="mt-1 w-5 h-5 rounded border-border accent-primary"
-            />
-            <span className="text-sm text-foreground/90">
-              Declaro que li e compreendi os <strong>Termos de Uso</strong>, a <strong>Política de Privacidade (LGPD)</strong> e o 
-              <strong> Disclaimer Educacional</strong> da plataforma MedFocus. Concordo que esta plataforma é exclusivamente 
-              educacional e consultiva, e que não utilizarei as informações para diagnósticos, prescrições ou tomada de decisão clínica.
-            </span>
-          </label>
+          {/* EMERGÊNCIA */}
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-center">
+            <p className="text-xs text-foreground/70">
+              🚨 <strong>Emergência médica?</strong> Ligue <strong>SAMU 192</strong> | Bombeiros <strong>193</strong> | CVV <strong>188</strong>
+            </p>
+          </div>
+
+          {/* CHECKBOXES DE ACEITE */}
+          <div className="space-y-3 pt-2">
+            <label className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/30 cursor-pointer transition border border-border/50">
+              <input
+                type="checkbox"
+                checked={acceptedDisclaimer}
+                onChange={(e) => setAcceptedDisclaimer(e.target.checked)}
+                className="mt-1 w-5 h-5 rounded border-border accent-primary flex-shrink-0"
+              />
+              <span className="text-sm text-foreground/90">
+                Declaro que compreendo que o MedFocus é uma <strong>plataforma exclusivamente educacional, 
+                guia estudantil e biblioteca acadêmica</strong>. Reconheço que a plataforma <strong>não é um 
+                serviço médico</strong>, não realiza diagnósticos, prescrições ou consultas, e que não utilizarei 
+                as informações para fins clínicos sem supervisão profissional adequada.
+              </span>
+            </label>
+
+            <label className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/30 cursor-pointer transition border border-border/50">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-1 w-5 h-5 rounded border-border accent-primary flex-shrink-0"
+              />
+              <span className="text-sm text-foreground/90">
+                Li e concordo com os <strong>Termos de Uso e Serviço</strong>, incluindo a cláusula de 
+                limitação de responsabilidade e as regras de uso adequado da plataforma.
+              </span>
+            </label>
+
+            <label className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/30 cursor-pointer transition border border-border/50">
+              <input
+                type="checkbox"
+                checked={acceptedLGPD}
+                onChange={(e) => setAcceptedLGPD(e.target.checked)}
+                className="mt-1 w-5 h-5 rounded border-border accent-primary flex-shrink-0"
+              />
+              <span className="text-sm text-foreground/90">
+                Li e concordo com a <strong>Política de Privacidade (LGPD)</strong> e autorizo o tratamento 
+                dos meus dados pessoais conforme descrito, ciente dos meus direitos como titular dos dados.
+              </span>
+            </label>
+          </div>
         </div>
 
-        <div className="p-6 border-t border-border flex justify-end gap-3">
+        {/* Footer */}
+        <div className="p-6 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-3 sticky bottom-0 bg-card">
+          <p className="text-xs text-muted-foreground">
+            Ao continuar, você concorda com todos os documentos legais acima.
+          </p>
           <button
             onClick={onAccept}
-            disabled={!accepted}
-            className={`px-6 py-2.5 rounded-xl text-sm font-medium transition-all ${
-              accepted
+            disabled={!allAccepted}
+            className={`px-8 py-3 rounded-xl text-sm font-bold transition-all ${
+              allAccepted
                 ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg'
-                : 'bg-muted text-muted-foreground cursor-not-allowed'
+                : 'bg-muted text-muted-foreground cursor-not-allowed opacity-50'
             }`}
           >
-            Aceitar e Continuar
+            {allAccepted ? '✓ Aceitar e Continuar' : 'Aceite todos os termos acima'}
           </button>
         </div>
       </div>

@@ -4,6 +4,7 @@
  * Exercícios de respiração, meditação e recursos de apoio
  */
 import React, { useState, useEffect, useRef } from 'react';
+import EducationalDisclaimer from './EducationalDisclaimer';
 
 type Tab = 'emergencia' | 'respiracao' | 'caps' | 'recursos' | 'autoavaliacao';
 
@@ -154,6 +155,7 @@ export default function MentalHealthHub() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
+      <EducationalDisclaimer variant="banner" moduleName="Saúde Mental" showEmergencyInfo />
       {/* Header */}
       <div className="text-center">
         <h2 className="text-2xl font-bold text-white flex items-center justify-center gap-2">

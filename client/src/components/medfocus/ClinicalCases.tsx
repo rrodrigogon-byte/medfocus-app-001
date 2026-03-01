@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Streamdown } from 'streamdown';
 import {
+import EducationalDisclaimer from './EducationalDisclaimer';
   Stethoscope, Brain, FlaskConical, ClipboardList, Pill,
   ChevronRight, Trophy, Loader2, Send, ArrowLeft, Sparkles,
   User, Heart, Activity, Clock, BookOpen, CheckCircle, XCircle,
@@ -259,6 +260,7 @@ const ClinicalCases: React.FC = () => {
   if (view === 'menu') {
     return (
       <div className="space-y-6">
+      <EducationalDisclaimer variant="banner" moduleName="Casos Clínicos" />
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-display font-bold text-foreground flex items-center gap-2">

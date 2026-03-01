@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { trpc } from '../../lib/trpc';
 import { toast } from 'sonner';
+import EducationalDisclaimer from './EducationalDisclaimer';
 
 export default function CID10Lookup() {
   const [query, setQuery] = useState('');
@@ -18,6 +19,7 @@ export default function CID10Lookup() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
+      <EducationalDisclaimer variant="compact" moduleName="Consulta CID-10" dismissible={false} />
       <div className="bg-gradient-to-r from-violet-900/50 to-purple-900/50 rounded-2xl p-6 border border-violet-700/30">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 bg-violet-600 rounded-xl flex items-center justify-center text-2xl">📑</div>

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { EXPANDED_FLOWCHARTS } from '../../data/expandedFlowcharts';
+import EducationalDisclaimer from './EducationalDisclaimer';
 
 // ═══════════════════════════════════════════════════════════
 // FLUXOGRAMAS CLÍNICOS VISUAIS — Árvores de decisão interativas
@@ -254,6 +255,7 @@ export default function ClinicalFlowcharts() {
 
     return (
       <div className="max-w-4xl mx-auto space-y-4">
+      <EducationalDisclaimer variant="banner" moduleName="Fluxogramas Clínicos" />
         <div className="flex items-center justify-between">
           <button onClick={() => { setSelectedFlowchart(null); setHistory([]); }}
             className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1">

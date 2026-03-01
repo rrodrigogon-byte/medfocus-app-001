@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { trpc } from '../../lib/trpc';
 import { toast } from 'sonner';
+import EducationalDisclaimer from './EducationalDisclaimer';
 
 export default function PubMedResearch() {
   const [query, setQuery] = useState('');
@@ -34,6 +35,7 @@ export default function PubMedResearch() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
+      <EducationalDisclaimer variant="compact" moduleName="Pesquisa PubMed" showAIWarning dismissible={false} />
       <div className="bg-gradient-to-r from-amber-900/50 to-orange-900/50 rounded-2xl p-6 border border-amber-700/30">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 bg-amber-600 rounded-xl flex items-center justify-center text-2xl">📚</div>

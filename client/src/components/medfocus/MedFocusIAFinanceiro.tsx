@@ -3,6 +3,7 @@
  * Sprint 5: Fluxo de Caixa, DRE, Contas a Receber/Pagar, NFS-e, Pix, Boleto
  */
 import React, { useState } from 'react';
+import EducationalDisclaimer from './EducationalDisclaimer';
 
 // ============================================================
 // Financial Data
@@ -132,6 +133,7 @@ export const MedFocusIAFinanceiro: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <EducationalDisclaimer variant="compact" moduleName="Módulo Financeiro" dismissible={false} />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Módulo Financeiro</h1>

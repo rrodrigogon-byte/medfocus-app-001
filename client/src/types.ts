@@ -165,7 +165,10 @@ export type View =
   | 'medfocusiaPlans'
   | 'medfocusiaPEP'
   | 'medfocusiaFinanceiro'
-  | 'medfocusiaTISS';
+  | 'medfocusiaTISS'
+  | 'medfocusiaTelemedicina'
+  | 'medfocusiaRelatorios'
+  | 'medfocusiaEstoque';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {

@@ -4,6 +4,7 @@
  * Conformidade: ANS TISS 4.0, TUSS
  */
 import React, { useState } from 'react';
+import EducationalDisclaimer from './EducationalDisclaimer';
 
 // ============================================================
 // TISS Data Types
@@ -174,6 +175,7 @@ export const MedFocusIATISS: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <EducationalDisclaimer variant="compact" moduleName="TISS Convênios" dismissible={false} />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">TISS — Convênios e Operadoras</h1>

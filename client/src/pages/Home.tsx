@@ -90,6 +90,9 @@ import { MedFocusIADashboard, MedFocusIAPatients, MedFocusIAAgenda, MedFocusIADo
 import { MedFocusIAPEP } from '../components/medfocus/MedFocusIAPEP';
 import { MedFocusIAFinanceiro } from '../components/medfocus/MedFocusIAFinanceiro';
 import { MedFocusIATISS } from '../components/medfocus/MedFocusIATISS';
+import { MedFocusIATelemedicina } from '../components/medfocus/MedFocusIATelemedicina';
+import { MedFocusIARelatorios } from '../components/medfocus/MedFocusIARelatorios';
+import { MedFocusIAEstoque } from '../components/medfocus/MedFocusIAEstoque';
 import { LegalAcceptanceModal } from '../components/medfocus/LegalProtection';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
@@ -344,6 +347,9 @@ export default function Home() {
       case 'medfocusiaPEP': return <MedFocusIAPEP />;
       case 'medfocusiaFinanceiro': return <MedFocusIAFinanceiro />;
       case 'medfocusiaTISS': return <MedFocusIATISS />;
+      case 'medfocusiaTelemedicina': return <MedFocusIATelemedicina />;
+      case 'medfocusiaRelatorios': return <MedFocusIARelatorios />;
+      case 'medfocusiaEstoque': return <MedFocusIAEstoque />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{

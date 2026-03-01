@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { trpc } from "../../lib/trpc";
+import EducationalDisclaimer from './EducationalDisclaimer';
 
 type Tab = 'classes' | 'search' | 'monograph' | 'prescriptionGuide' | 'compare' | 'ask' | 'classDetail' | 'bulaAnvisa';
 
@@ -158,6 +159,7 @@ export default function PharmaBible() {
 
   return (
     <div className="space-y-6">
+      <EducationalDisclaimer variant="banner" moduleName="Bíblia Farmacológica" />
       {/* Header */}
       <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 rounded-2xl p-6 text-white">
         <div className="flex items-center justify-between">

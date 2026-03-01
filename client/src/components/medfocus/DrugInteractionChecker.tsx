@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { trpc } from '../../lib/trpc';
 import { toast } from 'sonner';
+import EducationalDisclaimer from './EducationalDisclaimer';
 
 export default function DrugInteractionChecker() {
   const [drugs, setDrugs] = useState<string[]>(['', '']);
@@ -30,6 +31,7 @@ export default function DrugInteractionChecker() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
+      <EducationalDisclaimer variant="banner" moduleName="Interações Medicamentosas" />
       <div className="bg-gradient-to-r from-red-900/50 to-orange-900/50 rounded-2xl p-6 border border-red-700/30">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center text-2xl">⚠️</div>

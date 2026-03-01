@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { trpc } from '../../lib/trpc';
+import EducationalDisclaimer from './EducationalDisclaimer';
 
 type Calculator = 'glasgow' | 'sofa' | 'wells' | 'cha2ds2vasc' | 'childPugh' | 'meld' | 'apacheII'
   | 'curb65' | 'heart' | 'perc' | 'news2' | 'qsofa' | 'hasbled' | 'grace' | 'nihss';
@@ -224,6 +225,7 @@ export default function MedicalCalculators() {
       case 'glasgow':
         return (
           <div className="space-y-4">
+      <EducationalDisclaimer variant="banner" moduleName="Calculadoras Médicas" />
             <div>
               <label className="text-sm text-gray-400 mb-2 block">👁️ Abertura Ocular (1-4)</label>
               <div className="grid grid-cols-2 gap-2">

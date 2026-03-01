@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { trpc } from '../../lib/trpc';
 import { toast } from 'sonner';
+import EducationalDisclaimer from './EducationalDisclaimer';
 
 const COMMON_SYMPTOMS = [
   'Febre', 'Cefaleia', 'Dor torácica', 'Dispneia', 'Dor abdominal', 'Náusea', 'Vômito',
@@ -68,6 +69,7 @@ export default function DiagnosisAssistant() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
+      <EducationalDisclaimer variant="banner" moduleName="Assistente de Diagnóstico" showAIWarning showEmergencyInfo />
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-900/50 to-purple-900/50 rounded-2xl p-6 border border-blue-700/30">
         <div className="flex items-center gap-3 mb-2">

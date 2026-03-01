@@ -4,6 +4,7 @@
  * Orienta o paciente sobre nível de atendimento necessário
  */
 import React, { useState } from 'react';
+import EducationalDisclaimer from './EducationalDisclaimer';
 
 interface Symptom {
   id: string;
@@ -263,6 +264,7 @@ export default function SymptomChecker() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
+      <EducationalDisclaimer variant="banner" moduleName="Verificador de Sintomas" showAIWarning showEmergencyInfo />
       {/* Header */}
       <div className="text-center">
         <h2 className="text-2xl font-bold text-white flex items-center justify-center gap-2">

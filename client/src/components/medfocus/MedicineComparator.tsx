@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { trpc } from '../../lib/trpc';
+import EducationalDisclaimer from './EducationalDisclaimer';
 
 // ============================================================
 // COMPARADOR DE MEDICAMENTOS — Dados ANVISA/CMED (2304+ substâncias)
@@ -76,6 +77,7 @@ export default function MedicineComparator() {
 
     return (
       <div style={{ padding: '24px', maxWidth: 900, margin: '0 auto' }}>
+      <EducationalDisclaimer variant="banner" moduleName="Comparador de Medicamentos" />
         <button
           onClick={() => setSelecionado(null)}
           style={{

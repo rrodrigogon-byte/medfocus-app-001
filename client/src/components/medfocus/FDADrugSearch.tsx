@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { trpc } from '../../lib/trpc';
 import { toast } from 'sonner';
+import EducationalDisclaimer from './EducationalDisclaimer';
 
 export default function FDADrugSearch() {
   const [query, setQuery] = useState('');
@@ -23,6 +24,7 @@ export default function FDADrugSearch() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
+      <EducationalDisclaimer variant="compact" moduleName="Busca FDA" dismissible={false} />
       <div className="bg-gradient-to-r from-indigo-900/50 to-blue-900/50 rounded-2xl p-6 border border-indigo-700/30">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-2xl">🏛️</div>
