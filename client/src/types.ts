@@ -196,7 +196,13 @@ export type View =
   | 'biAvancado'
   | 'gestaoDocumentos'
   | 'hubAcademico'
-  | 'interacoesOpenFDA';
+  | 'interacoesOpenFDA'
+  | 'vgCalendarioEditorial'
+  | 'vgAutoConteudo'
+  | 'vgMetricsAnalytics'
+  | 'vgDiagnosticoMarca'
+  | 'vgAgendamento'
+  | 'vgTemplates';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {
