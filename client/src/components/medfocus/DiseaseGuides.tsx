@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { EXPANDED_DISEASE_GUIDES } from '../../data/expandedDiseaseGuides';
+import { EXPANDED_DISEASE_GUIDES_PART2 } from '../../data/expandedDiseaseGuidesPart2';
 
 // ═══════════════════════════════════════════════════════════
 // GUIAS DE DOENÇAS — Condutas Clínicas Completas
@@ -494,8 +496,15 @@ export default function DiseaseGuides() {
   const [selectedGuide, setSelectedGuide] = useState<DiseaseGuide | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'diagnosis' | 'treatment' | 'monitoring'>('overview');
 
+  const ALL_GUIDES = useMemo(() => {
+    const expanded = [...EXPANDED_DISEASE_GUIDES, ...EXPANDED_DISEASE_GUIDES_PART2] as unknown as DiseaseGuide[];
+    const existingIds = new Set(DISEASE_GUIDES.map(d => d.id));
+    const newGuides = expanded.filter(e => !existingIds.has(e.id));
+    return [...DISEASE_GUIDES, ...newGuides];
+  }, []);
+
   const filteredGuides = useMemo(() => {
-    return DISEASE_GUIDES.filter(g => {
+    return ALL_GUIDES.filter(g => {
       const matchSpec = selectedSpecialty === 'Todas' || g.specialty === selectedSpecialty;
       const matchSearch = searchTerm === '' || 
         g.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -503,7 +512,7 @@ export default function DiseaseGuides() {
         g.specialty.toLowerCase().includes(searchTerm.toLowerCase());
       return matchSpec && matchSearch;
     });
-  }, [selectedSpecialty, searchTerm]);
+  }, [selectedSpecialty, searchTerm, ALL_GUIDES]);
 
   const urgencyColor = (u: string) => u === 'emergencia' ? 'bg-red-500' : u === 'urgencia' ? 'bg-yellow-500' : 'bg-green-500';
   const urgencyLabel = (u: string) => u === 'emergencia' ? 'Emergência' : u === 'urgencia' ? 'Urgência' : 'Eletivo';
@@ -655,10 +664,10 @@ export default function DiseaseGuides() {
 
       {/* Specialty filter */}
       <div className="flex flex-wrap gap-2">
-        {SPECIALTIES.filter(s => s === 'Todas' || DISEASE_GUIDES.some(g => g.specialty === s)).map(s => (
+        {SPECIALTIES.filter(s => s === 'Todas' || ALL_GUIDES.some(g => g.specialty === s)).map(s => (
           <button key={s} onClick={() => setSelectedSpecialty(s)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${selectedSpecialty === s ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>
-            {s} {s !== 'Todas' && `(${DISEASE_GUIDES.filter(g => g.specialty === s).length})`}
+            {s} {s !== 'Todas' && `(${ALL_GUIDES.filter(g => g.specialty === s).length})`}
           </button>
         ))}
       </div>
@@ -695,7 +704,7 @@ export default function DiseaseGuides() {
       {/* Stats */}
       <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-700/50 text-center">
         <p className="text-gray-400 text-xs">
-          {DISEASE_GUIDES.length} guias de doenças | {new Set(DISEASE_GUIDES.map(g => g.specialty)).size} especialidades | 
+          {ALL_GUIDES.length} guias de doenças | {new Set(ALL_GUIDES.map(g => g.specialty)).size} especialidades | 
           Todas as condutas baseadas em diretrizes nacionais (SBC, SBD, SBPT, FEBRASGO) e internacionais (ESC, AHA, ADA, IDSA)
         </p>
       </div>

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { EXPANDED_FLOWCHARTS } from '../../data/expandedFlowcharts';
 
 // ═══════════════════════════════════════════════════════════
 // FLUXOGRAMAS CLÍNICOS VISUAIS — Árvores de decisão interativas
@@ -197,7 +198,18 @@ const nodeColors = {
   end: { bg: 'bg-gray-800', border: 'border-gray-600', icon: '🏁' },
 };
 
-const FLOW_CATEGORIES = ['Todos', ...new Set(FLOWCHARTS.map(f => f.category))];
+// Convert expanded flowcharts to component format
+const EXPANDED_AS_FLOWS: Flowchart[] = EXPANDED_FLOWCHARTS.filter(e => !FLOWCHARTS.some(f => f.id === e.id)).map(e => ({
+  id: e.id, name: e.name, category: e.specialty, description: e.description, reference: e.reference,
+  startNodeId: e.nodes[0]?.id || 'start',
+  nodes: e.nodes.map(n => ({
+    id: n.id, type: n.type === 'start' ? 'action' as const : n.type === 'decision' ? 'question' as const : n.type as any,
+    text: n.text, detail: n.detail,
+    options: e.edges.filter(edge => edge.from === n.id).map(edge => ({ label: edge.label || 'Próximo', nextId: edge.to })),
+  })),
+}));
+const ALL_FLOWCHARTS = [...FLOWCHARTS, ...EXPANDED_AS_FLOWS];
+const FLOW_CATEGORIES = ['Todos', ...new Set(ALL_FLOWCHARTS.map(f => f.category))];
 
 export default function ClinicalFlowcharts() {
   const [selectedFlowchart, setSelectedFlowchart] = useState<Flowchart | null>(null);
@@ -206,7 +218,7 @@ export default function ClinicalFlowcharts() {
   const [selectedCategory, setSelectedCategory] = useState('Todos');
 
   const filtered = useMemo(() => {
-    return FLOWCHARTS.filter(f => selectedCategory === 'Todos' || f.category === selectedCategory);
+    return ALL_FLOWCHARTS.filter(f => selectedCategory === 'Todos' || f.category === selectedCategory);
   }, [selectedCategory]);
 
   const startFlowchart = (fc: Flowchart) => {
@@ -329,7 +341,7 @@ export default function ClinicalFlowcharts() {
           <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-2xl">🔀</div>
           <div>
             <h2 className="text-2xl font-bold text-white">Fluxogramas Clínicos</h2>
-            <p className="text-indigo-300 text-sm">{FLOWCHARTS.length} protocolos interativos com árvores de decisão baseadas em evidências</p>
+            <p className="text-indigo-300 text-sm">{ALL_FLOWCHARTS.length} protocolos interativos com árvores de decisão baseadas em evidências</p>
           </div>
         </div>
       </div>

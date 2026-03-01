@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-
+import { EXPANDED_PROCEDURES } from '../../data/expandedProcedures';
 interface Procedure {
   id: string;
   name: string;
@@ -159,7 +159,12 @@ const PROCEDURES: Procedure[] = [
   },
 ];
 
-const CATEGORIES = ['Todos', ...new Set(PROCEDURES.map(p => p.category))];
+// Merge expanded procedures
+const EXPANDED_AS_PROCS: Procedure[] = EXPANDED_PROCEDURES.filter(e => !PROCEDURES.some(p => p.id === e.id)).map(e => ({
+  ...e, category: e.specialty, setting: 'Hospital/Ambulatório',
+}));
+const ALL_PROCEDURES = [...PROCEDURES, ...EXPANDED_AS_PROCS];
+const CATEGORIES = ['Todos', ...new Set(ALL_PROCEDURES.map(p => p.category))];
 const diffColor = (d: string) => d === 'basico' ? 'bg-green-500' : d === 'intermediario' ? 'bg-yellow-500' : 'bg-red-500';
 const diffLabel = (d: string) => d === 'basico' ? 'Básico' : d === 'intermediario' ? 'Intermediário' : 'Avançado';
 
@@ -171,7 +176,7 @@ export default function MedicalProcedures() {
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
 
   const filtered = useMemo(() => {
-    return PROCEDURES.filter(p => {
+    return ALL_PROCEDURES.filter(p => {
       const matchCat = selectedCategory === 'Todos' || p.category === selectedCategory;
       const matchSearch = searchTerm === '' || p.name.toLowerCase().includes(searchTerm.toLowerCase());
       return matchCat && matchSearch;
@@ -303,7 +308,7 @@ export default function MedicalProcedures() {
           <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center text-2xl">🔧</div>
           <div>
             <h2 className="text-2xl font-bold text-white">Procedimentos Médicos</h2>
-            <p className="text-emerald-300 text-sm">{PROCEDURES.length} procedimentos com guia passo a passo, checklist de materiais e dicas práticas</p>
+            <p className="text-emerald-300 text-sm">{ALL_PROCEDURES.length} procedimentos com guia passo a passo, checklist de materiais e dicas práticas</p>
           </div>
         </div>
       </div>

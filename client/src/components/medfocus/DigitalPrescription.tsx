@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
+import { EXPANDED_DRUGS, EXPANDED_PRESCRIPTION_TEMPLATES } from '../../data/expandedDrugDatabase';
 
 // ═══════════════════════════════════════════════════════════
 // PRESCRIÇÃO DIGITAL — Com doses sugeridas e modelos prontos
@@ -131,7 +132,17 @@ const PRESCRIPTION_TEMPLATES = [
   { name: 'DRGE', items: ['omeprazol'] },
 ];
 
-const CATEGORIES = ['Todos', ...new Set(DRUG_DATABASE.map(d => d.category))];
+// Merge expanded drugs (adapt format)
+const EXPANDED_AS_TEMPLATES: DrugTemplate[] = EXPANDED_DRUGS.filter(e => !DRUG_DATABASE.some(d => d.id === e.id)).map(e => ({
+  id: e.id, name: e.name, activeIngredient: e.activeIngredient, category: e.category,
+  presentations: e.presentations.map(p => ({ form: p.split(' ')[1] || 'Comprimido', concentration: p })),
+  usualDose: e.defaultDose, route: e.route, frequency: e.frequency, duration: e.duration,
+  adjustments: e.notes, contraindications: e.contraindications, interactions: e.interactions,
+  renalAdjust: e.renalAdjust, hepaticAdjust: e.hepaticAdjust, pregnancyCategory: 'Consultar bula', reference: 'ANVISA / Diretrizes 2024',
+}));
+const ALL_DRUGS = [...DRUG_DATABASE, ...EXPANDED_AS_TEMPLATES];
+const ALL_TEMPLATES = [...PRESCRIPTION_TEMPLATES, ...EXPANDED_PRESCRIPTION_TEMPLATES];
+const CATEGORIES = ['Todos', ...new Set(ALL_DRUGS.map(d => d.category))];
 
 export default function DigitalPrescription() {
   const [prescriptionItems, setPrescriptionItems] = useState<PrescriptionItem[]>([]);
@@ -144,7 +155,7 @@ export default function DigitalPrescription() {
   const printRef = useRef<HTMLDivElement>(null);
 
   const filteredDrugs = useMemo(() => {
-    return DRUG_DATABASE.filter(d => {
+    return ALL_DRUGS.filter(d => {
       const matchCat = selectedCategory === 'Todos' || d.category === selectedCategory;
       const matchSearch = searchDrug === '' || d.name.toLowerCase().includes(searchDrug.toLowerCase()) || d.activeIngredient.toLowerCase().includes(searchDrug.toLowerCase());
       return matchCat && matchSearch;
@@ -174,7 +185,7 @@ export default function DigitalPrescription() {
 
   const loadTemplate = (template: typeof PRESCRIPTION_TEMPLATES[0]) => {
     const items: PrescriptionItem[] = template.items.map(drugId => {
-      const drug = DRUG_DATABASE.find(d => d.id === drugId);
+      const drug = ALL_DRUGS.find(d => d.id === drugId);
       if (!drug) return null;
       return {
         id: Date.now().toString() + Math.random(),
@@ -307,7 +318,7 @@ export default function DigitalPrescription() {
           <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center text-2xl">📝</div>
           <div>
             <h2 className="text-2xl font-bold text-white">Prescrição Digital</h2>
-            <p className="text-purple-300 text-sm">{DRUG_DATABASE.length} medicamentos com doses sugeridas, ajustes renais/hepáticos e interações</p>
+            <p className="text-purple-300 text-sm">{ALL_DRUGS.length} medicamentos com doses sugeridas, ajustes renais/hepáticos e interações</p>
           </div>
         </div>
       </div>
@@ -348,7 +359,7 @@ export default function DigitalPrescription() {
       <div className="bg-gray-900 rounded-xl p-4 border border-gray-700">
         <h3 className="text-white font-bold mb-3">Modelos Prontos</h3>
         <div className="flex flex-wrap gap-2">
-          {PRESCRIPTION_TEMPLATES.map((t, i) => (
+          {ALL_TEMPLATES.map((t, i) => (
             <button key={i} onClick={() => loadTemplate(t)}
               className="px-3 py-1.5 bg-gray-800 hover:bg-blue-900/50 text-gray-300 hover:text-blue-300 rounded-lg text-xs border border-gray-700 hover:border-blue-600 transition-all">
               {t.name}
