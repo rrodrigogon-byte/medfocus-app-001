@@ -27,6 +27,7 @@ import { quizzesRouter } from "./routes/quizzes.js";
 import { discussionsRouter } from "./routes/discussions.js";
 import { scrapingRouter } from "./routes/scraping.js";
 import { aiRouter } from "./routes/ai.js";
+import medicalApiRoutes from "./routes/medicalApiRoutes.js";
 
 // Import middleware
 import { authenticateToken } from "./middleware/auth.js";
@@ -92,6 +93,10 @@ async function startServer() {
   app.use("/api/discussions", authenticateToken, discussionsRouter);
   app.use("/api/scraping", authenticateToken, scrapingRouter);
   app.use("/api/ai", aiRouter);
+
+  // ─── Medical API Integrations ─────────────────────────────
+  // PubMed, Infermedica, GCP Healthcare, Metriport
+  app.use("/api/medical", medicalApiRoutes);
 
   // ─── CMED Medicine API Endpoints ─────────────────────────────
   // Serve full CMED medicines data for frontend PriceComparison
