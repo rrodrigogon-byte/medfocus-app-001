@@ -128,6 +128,12 @@ import VGMetricsAnalytics from '../components/medfocus/VGMetricsAnalytics';
 import VGDiagnosticoMarca from '../components/medfocus/VGDiagnosticoMarca';
 import VGAgendamento from '../components/medfocus/VGAgendamento';
 import VGTemplates from '../components/medfocus/VGTemplates';
+import IALaudosImagem from '../components/medfocus/IALaudosImagem';
+import ImportacaoBackup from '../components/medfocus/ImportacaoBackup';
+import RelatoriosTISS from '../components/medfocus/RelatoriosTISS';
+import AssinaturaDigital from '../components/medfocus/AssinaturaDigital';
+import PWAOffline from '../components/medfocus/PWAOffline';
+import BancoQuestoesExpanded from '../components/medfocus/BancoQuestoesExpanded';
 import { LegalAcceptanceModal } from '../components/medfocus/LegalProtection';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
@@ -419,6 +425,12 @@ export default function Home() {
       case 'vgDiagnosticoMarca': return <VGDiagnosticoMarca />;
       case 'vgAgendamento': return <VGAgendamento />;
       case 'vgTemplates': return <VGTemplates />;
+      case 'iaLaudosImagem': return <IALaudosImagem />;
+      case 'importacaoBackup': return <ImportacaoBackup />;
+      case 'relatoriosTISS': return <RelatoriosTISS />;
+      case 'assinaturaDigital': return <AssinaturaDigital />;
+      case 'pwaOffline': return <PWAOffline />;
+      case 'bancoQuestoesExpanded': return <BancoQuestoesExpanded />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{

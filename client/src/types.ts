@@ -202,7 +202,13 @@ export type View =
   | 'vgMetricsAnalytics'
   | 'vgDiagnosticoMarca'
   | 'vgAgendamento'
-  | 'vgTemplates';
+  | 'vgTemplates'
+  | 'iaLaudosImagem'
+  | 'importacaoBackup'
+  | 'relatoriosTISS'
+  | 'assinaturaDigital'
+  | 'pwaOffline'
+  | 'bancoQuestoesExpanded';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {
