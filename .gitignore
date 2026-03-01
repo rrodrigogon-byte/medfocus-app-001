@@ -115,3 +115,4 @@ temp/
 .env.production
 
 *.cjs
+client/public/atlas-images/

@@ -72,7 +72,7 @@ export default function Interactive3DAtlas() {
       <div className="text-center space-y-1">
         <h1 className="text-2xl font-bold text-white">Atlas Anatomico Interativo 3D</h1>
         <p className="text-sm text-gray-400">
-          34 orgaos | 98 componentes de dissecacao | 9 sistemas corporais | Nomenclatura anatomica completa
+          57 órgãos | 134 imagens reais | 11 sistemas corporais | Nomenclatura anatomica completa
         </p>
       </div>
 
