@@ -87,6 +87,9 @@ import ClinicalFlowcharts from '../components/medfocus/ClinicalFlowcharts';
 import ANVISAAlerts from '../components/medfocus/ANVISAAlerts';
 import EditorialReview from '../components/medfocus/EditorialReview';
 import { MedFocusIADashboard, MedFocusIAPatients, MedFocusIAAgenda, MedFocusIADoctors, MedFocusIALGPD, MedFocusIAPlans } from '../components/medfocus/MedFocusIASaaS';
+import { MedFocusIAPEP } from '../components/medfocus/MedFocusIAPEP';
+import { MedFocusIAFinanceiro } from '../components/medfocus/MedFocusIAFinanceiro';
+import { MedFocusIATISS } from '../components/medfocus/MedFocusIATISS';
 import { LegalAcceptanceModal } from '../components/medfocus/LegalProtection';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
@@ -338,6 +341,9 @@ export default function Home() {
       case 'medfocusiaDoctors': return <MedFocusIADoctors />;
       case 'medfocusiaLGPD': return <MedFocusIALGPD />;
       case 'medfocusiaPlans': return <MedFocusIAPlans />;
+      case 'medfocusiaPEP': return <MedFocusIAPEP />;
+      case 'medfocusiaFinanceiro': return <MedFocusIAFinanceiro />;
+      case 'medfocusiaTISS': return <MedFocusIATISS />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{
