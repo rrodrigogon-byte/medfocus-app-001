@@ -653,7 +653,7 @@ export default function DiseaseGuides() {
           <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-2xl">📋</div>
           <div>
             <h2 className="text-2xl font-bold text-white">Guias de Doenças</h2>
-            <p className="text-blue-300 text-sm">{DISEASE_GUIDES.length} condutas clínicas completas com referências validadas</p>
+            <p className="text-blue-300 text-sm">{ALL_GUIDES.length} condutas clínicas completas com referências validadas</p>
           </div>
         </div>
       </div>
