@@ -115,6 +115,12 @@ import { ControleAcesso } from '../components/medfocus/ControleAcesso';
 import { PainelAdminMaster } from '../components/medfocus/PainelAdminMaster';
 import { FaturamentoNFSe } from '../components/medfocus/FaturamentoNFSe';
 import { CRMMedico } from '../components/medfocus/CRMMedico';
+import ProntuarioZeroDigitacao from '../components/medfocus/ProntuarioZeroDigitacao';
+import JornadaDigitalPaciente from '../components/medfocus/JornadaDigitalPaciente';
+import BIAvancado from '../components/medfocus/BIAvancado';
+import GestaoDocumentos from '../components/medfocus/GestaoDocumentos';
+import HubAcademico from '../components/medfocus/HubAcademico';
+import InteracoesOpenFDA from '../components/medfocus/InteracoesOpenFDA';
 import { LegalAcceptanceModal } from '../components/medfocus/LegalProtection';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
@@ -394,6 +400,12 @@ export default function Home() {
       case 'painelAdminMaster': return <PainelAdminMaster />;
       case 'faturamentoNFSe': return <FaturamentoNFSe />;
       case 'crmMedico': return <CRMMedico />;
+      case 'prontuarioZeroDigitacao': return <ProntuarioZeroDigitacao />;
+      case 'jornadaDigitalPaciente': return <JornadaDigitalPaciente />;
+      case 'biAvancado': return <BIAvancado />;
+      case 'gestaoDocumentos': return <GestaoDocumentos />;
+      case 'hubAcademico': return <HubAcademico />;
+      case 'interacoesOpenFDA': return <InteracoesOpenFDA />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{

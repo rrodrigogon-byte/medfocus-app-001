@@ -190,7 +190,13 @@ export type View =
   | 'controleAcesso'
   | 'painelAdminMaster'
   | 'faturamentoNFSe'
-  | 'crmMedico';
+  | 'crmMedico'
+  | 'prontuarioZeroDigitacao'
+  | 'jornadaDigitalPaciente'
+  | 'biAvancado'
+  | 'gestaoDocumentos'
+  | 'hubAcademico'
+  | 'interacoesOpenFDA';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {
