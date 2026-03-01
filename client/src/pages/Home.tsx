@@ -109,6 +109,12 @@ import { EvolucaoExames } from '../components/medfocus/EvolucaoExames';
 import { ProtocolosInteligentes } from '../components/medfocus/ProtocolosInteligentes';
 import { HealthTimeline } from '../components/medfocus/HealthTimeline';
 import { CentralAlertas } from '../components/medfocus/CentralAlertas';
+import { AgendaInteligente } from '../components/medfocus/AgendaInteligente';
+import { GestaoConvenios } from '../components/medfocus/GestaoConvenios';
+import { ControleAcesso } from '../components/medfocus/ControleAcesso';
+import { PainelAdminMaster } from '../components/medfocus/PainelAdminMaster';
+import { FaturamentoNFSe } from '../components/medfocus/FaturamentoNFSe';
+import { CRMMedico } from '../components/medfocus/CRMMedico';
 import { LegalAcceptanceModal } from '../components/medfocus/LegalProtection';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
@@ -382,6 +388,12 @@ export default function Home() {
       case 'protocolosInteligentes': return <ProtocolosInteligentes />;
       case 'healthTimeline': return <HealthTimeline />;
       case 'centralAlertas': return <CentralAlertas />;
+      case 'agendaInteligente': return <AgendaInteligente />;
+      case 'gestaoConvenios': return <GestaoConvenios />;
+      case 'controleAcesso': return <ControleAcesso />;
+      case 'painelAdminMaster': return <PainelAdminMaster />;
+      case 'faturamentoNFSe': return <FaturamentoNFSe />;
+      case 'crmMedico': return <CRMMedico />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{

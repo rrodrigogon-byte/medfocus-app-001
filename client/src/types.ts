@@ -184,7 +184,13 @@ export type View =
   | 'evolucaoExames'
   | 'protocolosInteligentes'
   | 'healthTimeline'
-  | 'centralAlertas';
+  | 'centralAlertas'
+  | 'agendaInteligente'
+  | 'gestaoConvenios'
+  | 'controleAcesso'
+  | 'painelAdminMaster'
+  | 'faturamentoNFSe'
+  | 'crmMedico';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {
