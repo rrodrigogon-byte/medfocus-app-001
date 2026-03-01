@@ -173,7 +173,12 @@ export type View =
   | 'verificadorInteracoes'
   | 'literaturaAutomatica'
   | 'triagemPreditiva'
-  | 'viralgramHub';
+  | 'viralgramHub'
+  | 'vgConteudoMedico'
+  | 'vgLinkedIn'
+  | 'vgInstagram'
+  | 'vgWhatsApp'
+  | 'vgComplianceMedico';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {

@@ -98,6 +98,11 @@ import { VerificadorInteracoes } from '../components/medfocus/VerificadorInterac
 import { LiteraturaAutomatica } from '../components/medfocus/LiteraturaAutomatica';
 import { TriagemPreditiva } from '../components/medfocus/TriagemPreditiva';
 import { ViralGramHub } from '../components/medfocus/ViralGramHub';
+import { VGConteudoMedico } from '../components/medfocus/VGConteudoMedico';
+import { VGLinkedIn } from '../components/medfocus/VGLinkedIn';
+import { VGInstagram } from '../components/medfocus/VGInstagram';
+import { VGWhatsApp } from '../components/medfocus/VGWhatsApp';
+import { VGComplianceMedico } from '../components/medfocus/VGComplianceMedico';
 import { LegalAcceptanceModal } from '../components/medfocus/LegalProtection';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
@@ -360,6 +365,11 @@ export default function Home() {
       case 'literaturaAutomatica': return <LiteraturaAutomatica />;
       case 'triagemPreditiva': return <TriagemPreditiva />;
       case 'viralgramHub': return <ViralGramHub />;
+      case 'vgConteudoMedico': return <VGConteudoMedico />;
+      case 'vgLinkedIn': return <VGLinkedIn />;
+      case 'vgInstagram': return <VGInstagram />;
+      case 'vgWhatsApp': return <VGWhatsApp />;
+      case 'vgComplianceMedico': return <VGComplianceMedico />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{

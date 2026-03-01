@@ -19,7 +19,7 @@ interface NavItem {
   id: View;
   label: string;
   icon: string;
-  badge?: 'pro' | 'premium' | 'new' | 'ai' | 'admin' | 'saas';
+  badge?: 'pro' | 'premium' | 'new' | 'ai' | 'admin' | 'saas' | 'vg';
 }
 
 interface NavGroup {
@@ -44,6 +44,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onLogout, 
     'Saúde Pública (Prof.)': false,
     'Legal': false,
     'MedFocusIA SaaS': false,
+    'ViralGram': false,
     'Conta': true,
   });
 
@@ -221,6 +222,11 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onLogout, 
       emoji: '🚀',
       items: [
         { id: 'viralgramHub', label: 'ViralGram Hub', icon: 'M13 10V3L4 14h7v7l9-11h-7z', badge: 'vg' },
+        { id: 'vgConteudoMedico', label: 'Conteúdo Médico', icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z', badge: 'vg' },
+        { id: 'vgLinkedIn', label: 'LinkedIn', icon: 'M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z', badge: 'vg' },
+        { id: 'vgInstagram', label: 'Instagram', icon: 'M4 4h16v16H4V4zm4 8a4 4 0 108 0 4 4 0 00-8 0zm9-5h.01', badge: 'vg' },
+        { id: 'vgWhatsApp', label: 'WhatsApp Business', icon: 'M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z', badge: 'vg' },
+        { id: 'vgComplianceMedico', label: 'Compliance CFM', icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z', badge: 'vg' },
       ]
     },
     {
@@ -267,8 +273,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onLogout, 
       'new': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
       'admin': 'bg-red-500/20 text-red-400 border-red-500/30',
       'saas': 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
+      'vg': 'bg-purple-500/20 text-purple-400 border-purple-500/30',
     };
-    const labels: Record<string, string> = { 'ai': 'IA', 'pro': 'PRO', 'premium': '★', 'new': 'NEW', 'admin': 'ADM', 'saas': 'SaaS' };
+    const labels: Record<string, string> = { 'ai': 'IA', 'pro': 'PRO', 'premium': '★', 'new': 'NEW', 'admin': 'ADM', 'saas': 'SaaS', 'vg': 'VG' };
     return (
       <span className={`ml-auto text-[8px] font-bold px-1.5 py-0.5 rounded-full border ${styles[type] || ''}`}>
         {labels[type] || type}
