@@ -17,6 +17,7 @@ export interface RealQuestion {
 }
 
 import { revalida2022Questions } from './revalida2022Questions';
+import { EXPANDED_QUESTIONS } from './expandedQuestions';
 
 const _EXISTING_QUESTIONS: RealQuestion[] = [
   {
@@ -8009,7 +8010,7 @@ const _EXISTING_QUESTIONS: RealQuestion[] = [
   }
 ];
 
-export const REAL_QUESTIONS: RealQuestion[] = [..._EXISTING_QUESTIONS, ...revalida2022Questions];
+export const REAL_QUESTIONS: RealQuestion[] = [..._EXISTING_QUESTIONS, ...revalida2022Questions, ...EXPANDED_QUESTIONS];
 
 export const QUESTION_AREAS = Array.from(new Set(REAL_QUESTIONS.map(q => q.area)));
 

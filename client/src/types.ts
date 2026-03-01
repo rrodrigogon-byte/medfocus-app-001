@@ -141,7 +141,13 @@ export type View =
   | 'doctorFinder'
   | 'healthTips'
   | 'priceComparison'
-  | 'legalProtection';
+  | 'legalProtection'
+  | 'hospitalFinder'
+  | 'doctorRegistration'
+  | 'filaSUS'
+  | 'localizadorUBS'
+  | 'carteiraVacinacao'
+  | 'direitosSUS';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {

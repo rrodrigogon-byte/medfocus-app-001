@@ -73,6 +73,10 @@ import DoctorRegistration from '../components/medfocus/DoctorRegistration';
 import HealthTips from '../components/medfocus/HealthTips';
 import PriceComparison from '../components/medfocus/PriceComparison';
 import LegalProtection from '../components/medfocus/LegalProtection';
+import FilaSUS from '../components/medfocus/FilaSUS';
+import LocalizadorUBS from '../components/medfocus/LocalizadorUBS';
+import CarteiraVacinacao from '../components/medfocus/CarteiraVacinacao';
+import DireitosSUS from '../components/medfocus/DireitosSUS';
 import { LegalAcceptanceModal } from '../components/medfocus/LegalProtection';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
@@ -305,6 +309,10 @@ export default function Home() {
       case 'healthTips': return <HealthTips />;
       case 'priceComparison': return <PriceComparison />;
       case 'legalProtection': return <LegalProtection />;
+      case 'filaSUS': return <FilaSUS />;
+      case 'localizadorUBS': return <LocalizadorUBS />;
+      case 'carteiraVacinacao': return <CarteiraVacinacao />;
+      case 'direitosSUS': return <DireitosSUS />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{
@@ -405,7 +413,11 @@ export default function Home() {
                currentView === 'adminDashboard' ? 'Painel Admin' :
                currentView === 'disciplines' ? 'Disciplinas Médicas' :
                currentView === 'videoAulas' ? 'Vídeo-Aulas' :
-               currentView === 'atlasAnalytics' ? 'Atlas Analytics' : currentView}
+               currentView === 'atlasAnalytics' ? 'Atlas Analytics' :
+               currentView === 'filaSUS' ? 'Fila do SUS' :
+               currentView === 'localizadorUBS' ? 'Guia UBS/UPA' :
+               currentView === 'carteiraVacinacao' ? 'Carteira de Vacinação' :
+               currentView === 'direitosSUS' ? 'Meus Direitos no SUS' : currentView}
             </h2>
           </div>
           <div className="flex items-center gap-2">
