@@ -208,7 +208,15 @@ export type View =
   | 'relatoriosTISS'
   | 'assinaturaDigital'
   | 'pwaOffline'
-  | 'bancoQuestoesExpanded';
+  | 'bancoQuestoesExpanded'
+  | 'simuladorCirurgias'
+  | 'rndsIntegracao'
+  | 'residenciaMedica'
+  | 'centralEmergencia'
+  | 'pesquisaClinica'
+  | 'painelEpidemiologia'
+  | 'educacaoContinuada'
+  | 'marketplaceMedico';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {
