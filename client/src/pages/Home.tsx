@@ -48,6 +48,7 @@ import SocialFeed from '../components/medfocus/SocialFeed';
 import FlashcardStudy from '../components/medfocus/FlashcardStudy';
 import ExamCalendar from '../components/medfocus/ExamCalendar';
 import XPToast from '../components/medfocus/XPToast';
+import Breadcrumbs from '../components/medfocus/Breadcrumbs';
 import DiagnosisAssistant from '../components/medfocus/DiagnosisAssistant';
 import MedicalCalculators from '../components/medfocus/MedicalCalculators';
 import DrugInteractionChecker from '../components/medfocus/DrugInteractionChecker';
@@ -583,6 +584,7 @@ export default function Home() {
 
         {/* Content */}
         <div className="p-4 md:p-8 max-w-6xl mx-auto">
+          <Breadcrumbs currentView={currentView} onNavigate={setCurrentView} />
           {renderView()}
         </div>
       </main>

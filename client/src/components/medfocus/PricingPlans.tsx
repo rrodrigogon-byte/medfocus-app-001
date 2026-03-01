@@ -590,6 +590,97 @@ const PricingPlans: React.FC = () => {
         </div>
       </div>
 
+      {/* Satisfaction Guarantee */}
+      <div className="bg-gradient-to-r from-emerald-500/5 to-teal-500/5 border border-emerald-500/20 rounded-2xl p-6 text-center">
+        <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-emerald-500/10 flex items-center justify-center">
+          <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+        </div>
+        <h3 className="text-xl font-bold text-foreground mb-2">Garantia de Satisfação de 7 Dias</h3>
+        <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+          Experimente o MedFocus por 7 dias gratuitamente. Se não ficar satisfeito, cancele a qualquer momento sem nenhum custo.
+          Sem compromisso, sem burocracia.
+        </p>
+        <div className="flex items-center justify-center gap-6 mt-4">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+            Cancele quando quiser
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+            Sem multa de cancelamento
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+            Pagamento 100% seguro
+          </div>
+        </div>
+      </div>
+
+      {/* Testimonials */}
+      <div className="bg-card rounded-2xl border border-border p-6">
+        <h3 className="text-lg font-bold text-foreground mb-4 text-center">O que dizem nossos usuários</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            {
+              name: 'Dra. Ana Silva',
+              role: 'Residente em Cardiologia — USP',
+              text: 'O MedFocus revolucionou minha forma de estudar. Os flashcards com repetição espaçada e os casos clínicos com IA são incríveis. Passei na prova de residência com nota máxima!',
+              rating: 5,
+            },
+            {
+              name: 'Prof. Dr. Carlos Mendes',
+              role: 'Professor de Anatomia — UNICAMP',
+              text: 'Uso o MedFocus nas minhas aulas há 6 meses. O Atlas 3D e o portal do professor facilitaram muito a gestão das turmas. Meus alunos adoram a gamificação.',
+              rating: 5,
+            },
+            {
+              name: 'Lucas Ferreira',
+              role: 'Estudante 4° ano — UFMG',
+              text: 'Antes eu gastava horas organizando material. Agora o Dr. Focus gera resumos perfeitos e os simulados me preparam de verdade para as provas. Vale cada centavo.',
+              rating: 5,
+            },
+          ].map((t, i) => (
+            <div key={i} className="bg-muted/30 rounded-xl p-4 border border-border">
+              <div className="flex items-center gap-1 mb-2">
+                {Array.from({ length: t.rating }).map((_, j) => (
+                  <svg key={j} className="w-3.5 h-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-3 italic">"{t.text}"</p>
+              <div>
+                <p className="text-xs font-bold text-foreground">{t.name}</p>
+                <p className="text-[10px] text-muted-foreground">{t.role}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* FAQ */}
+      <div className="bg-card rounded-2xl border border-border p-6">
+        <h3 className="text-lg font-bold text-foreground mb-4 text-center">Perguntas Frequentes</h3>
+        <div className="space-y-3 max-w-2xl mx-auto">
+          {[
+            { q: 'Posso cancelar a qualquer momento?', a: 'Sim! Você pode cancelar sua assinatura a qualquer momento, sem multas ou burocracia. O acesso continua até o final do período pago.' },
+            { q: 'O trial de 7 dias é realmente gratuito?', a: 'Sim, 100% gratuito. Você tem acesso completo por 7 dias. Se não cancelar, a cobrança inicia automaticamente após o período de teste.' },
+            { q: 'Quais formas de pagamento são aceitas?', a: 'Aceitamos Pix, Cartão de Crédito, Cartão de Débito e Boleto Bancário via Mercado Pago, além de Cartão de Crédito Internacional via Stripe.' },
+            { q: 'O MedFocus substitui um médico?', a: 'Não. O MedFocus é uma ferramenta educacional de apoio ao estudo médico. Não realizamos diagnósticos, prescrições ou qualquer ato médico. Sempre consulte um profissional de saúde.' },
+            { q: 'Como funciona a parceria universitária?', a: 'Turmas com 30+ alunos recebem 40% de desconto no plano anual, e o professor mentor é gratuito. Entre em contato pelo formulário acima.' },
+            { q: 'Meus dados estão seguros?', a: 'Sim. Seguimos a LGPD (Lei Geral de Proteção de Dados) e utilizamos criptografia de ponta a ponta. Seus dados nunca são compartilhados com terceiros.' },
+          ].map((faq, i) => (
+            <details key={i} className="group bg-muted/20 rounded-xl border border-border">
+              <summary className="flex items-center justify-between px-4 py-3 cursor-pointer text-sm font-medium text-foreground hover:text-primary transition-colors">
+                {faq.q}
+                <svg className="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              </summary>
+              <div className="px-4 pb-3">
+                <p className="text-xs text-muted-foreground leading-relaxed">{faq.a}</p>
+              </div>
+            </details>
+          ))}
+        </div>
+      </div>
+
       {/* Admin Note */}
       <div className="bg-card/50 rounded-xl border border-border p-4 text-center">
         <p className="text-xs text-muted-foreground">

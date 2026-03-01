@@ -570,7 +570,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ userName }) => {
                 { label: 'Banco de Dados', value: 'Cloud SQL MySQL', color: 'emerald' },
                 { label: 'Stripe', value: 'Gateway de pagamento (ativação pendente — modo teste)', color: 'amber' },
                 { label: 'IA (Dr. Focus)', value: 'Vertex AI — southamerica-east1', color: 'emerald' },
-                { label: 'Storage', value: 'AWS S3 — medfocus-uploads', color: 'emerald' },
+                { label: 'Storage', value: 'Google Cloud Storage — medfocus-uploads', color: 'emerald' },
               ].map((item, i) => (
                 <div key={i} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
                   <div>
