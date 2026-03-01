@@ -216,7 +216,8 @@ export type View =
   | 'pesquisaClinica'
   | 'painelEpidemiologia'
   | 'educacaoContinuada'
-  | 'marketplaceMedico';
+  | 'marketplaceMedico'
+  | 'analyticsDashboard';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {

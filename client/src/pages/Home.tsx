@@ -1,92 +1,13 @@
-/**
- * MedFocus Main Application Page
- * Design: Medical Precision — Teal accent, Outfit display, Plus Jakarta Sans body
- * Auth: Manus OAuth (Gmail) + Guest mode
- */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { User, View } from '../types';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { getLoginUrl } from '@/const';
 import Login from '../components/medfocus/Login';
 import Dashboard from '../components/medfocus/Dashboard';
-import Planner from '../components/medfocus/Planner';
-import Timer from '../components/medfocus/Timer';
-import Assistant from '../components/medfocus/Assistant';
 import Sidebar from '../components/medfocus/Sidebar';
-import AcademicManagement from '../components/medfocus/AcademicManagement';
-import AcademicGuide from '../components/medfocus/AcademicGuide';
-import GlobalResearch from '../components/medfocus/GlobalResearch';
-import StudyMaterialGenerator from '../components/medfocus/StudyMaterialGenerator';
-import WeeklyStudyChecklist from '../components/medfocus/WeeklyStudyChecklist';
-import PreloadedStudy from '../components/medfocus/PreloadedStudy';
-import AcademicLibrary from '../components/medfocus/AcademicLibrary';
-import ValidatedLibrary from '../components/medfocus/ValidatedLibrary';
-import ProgressiveQuizSystem from '../components/medfocus/ProgressiveQuizSystem';
-import ProfessorDashboard from '../components/medfocus/ProfessorDashboard';
-import GamificationPanel from '../components/medfocus/GamificationPanel';
-import NotificationSettingsPanel from '../components/medfocus/NotificationSettings';
-import PricingPlans from '../components/medfocus/PricingPlans';
-import AcademicResourcesPanel from '../components/medfocus/AcademicResourcesPanel';
-import SpacedRepetitionPanel from '../components/medfocus/SpacedRepetitionPanel';
-import ClassroomPanel from '../components/medfocus/ClassroomPanel';
-import TeacherAnalyticsPanel from '../components/medfocus/TeacherAnalyticsPanel';
-import MedicalRoadmap from '../components/medfocus/MedicalRoadmap';
-import SimuladoENAMED from '../components/medfocus/SimuladoENAMED';
-import AnatomyAtlas from '../components/medfocus/AnatomyAtlas';
-import StudyRooms from '../components/medfocus/StudyRooms';
-import AcademicCalendar from '../components/medfocus/AcademicCalendar';
-import ReportExporter from '../components/medfocus/ReportExporter';
-import ProgressDashboard from '../components/medfocus/ProgressDashboard';
-import OfflineStudy from '../components/medfocus/OfflineStudy';
-import WeeklyGoals from '../components/medfocus/WeeklyGoals';
-import Leaderboard from '../components/medfocus/Leaderboard';
-import ClinicalCases from '../components/medfocus/ClinicalCases';
-import QuestionBattle from '../components/medfocus/QuestionBattle';
-import PerformanceHeatmap from '../components/medfocus/PerformanceHeatmap';
-import SmartSummary from '../components/medfocus/SmartSummary';
-import SocialFeed from '../components/medfocus/SocialFeed';
-import FlashcardStudy from '../components/medfocus/FlashcardStudy';
-import ExamCalendar from '../components/medfocus/ExamCalendar';
 import XPToast from '../components/medfocus/XPToast';
 import Breadcrumbs from '../components/medfocus/Breadcrumbs';
-import DiagnosisAssistant from '../components/medfocus/DiagnosisAssistant';
-import MedicalCalculators from '../components/medfocus/MedicalCalculators';
-import DrugInteractionChecker from '../components/medfocus/DrugInteractionChecker';
-import FDADrugSearch from '../components/medfocus/FDADrugSearch';
-import ANVISAConsult from '../components/medfocus/ANVISAConsult';
-import CID10Lookup from '../components/medfocus/CID10Lookup';
-import ClinicalProtocols from '../components/medfocus/ClinicalProtocols';
-import PubMedResearch from '../components/medfocus/PubMedResearch';
-import LectureTranscription from '../components/medfocus/LectureTranscription';
-import MyContent from '../components/medfocus/MyContent';
-import ProfessorPortal from '../components/medfocus/ProfessorPortal';
-import PharmaBible from '../components/medfocus/PharmaBible';
-import AdminDashboard from '../components/medfocus/AdminDashboard';
 import ProPaywall from '../components/medfocus/ProPaywall';
-import MedicalDisciplines from '../components/medfocus/MedicalDisciplines';
-import VideoAulas from '../components/medfocus/VideoAulas';
-import AtlasAnalytics from '../components/medfocus/AtlasAnalytics';
-import MedicineComparator from '../components/medfocus/MedicineComparator';
-import Bulario from '../components/medfocus/Bulario';
-import DoctorFinder from '../components/medfocus/DoctorFinder';
-import HospitalFinder from '../components/medfocus/HospitalFinder';
-import DoctorRegistration from '../components/medfocus/DoctorRegistration';
-import HealthTips from '../components/medfocus/HealthTips';
-import PriceComparison from '../components/medfocus/PriceComparison';
-import LegalProtection from '../components/medfocus/LegalProtection';
-import FilaSUS from '../components/medfocus/FilaSUS';
-import LocalizadorUBS from '../components/medfocus/LocalizadorUBS';
-import CarteiraVacinacao from '../components/medfocus/CarteiraVacinacao';
-import DireitosSUS from '../components/medfocus/DireitosSUS';
-import SymptomChecker from '../components/medfocus/SymptomChecker';
-import DrugInteractionAdvanced from '../components/medfocus/DrugInteractionAdvanced';
-import MentalHealthHub from '../components/medfocus/MentalHealthHub';
-import DiseaseGuides from '../components/medfocus/DiseaseGuides';
-import DigitalPrescription from '../components/medfocus/DigitalPrescription';
-import MedicalProcedures from '../components/medfocus/MedicalProcedures';
-import ClinicalFlowcharts from '../components/medfocus/ClinicalFlowcharts';
-import ANVISAAlerts from '../components/medfocus/ANVISAAlerts';
-import EditorialReview from '../components/medfocus/EditorialReview';
 import { MedFocusIADashboard, MedFocusIAPatients, MedFocusIAAgenda, MedFocusIADoctors, MedFocusIALGPD, MedFocusIAPlans } from '../components/medfocus/MedFocusIASaaS';
 import { MedFocusIAPEP } from '../components/medfocus/MedFocusIAPEP';
 import { MedFocusIAFinanceiro } from '../components/medfocus/MedFocusIAFinanceiro';
@@ -116,36 +37,118 @@ import { ControleAcesso } from '../components/medfocus/ControleAcesso';
 import { PainelAdminMaster } from '../components/medfocus/PainelAdminMaster';
 import { FaturamentoNFSe } from '../components/medfocus/FaturamentoNFSe';
 import { CRMMedico } from '../components/medfocus/CRMMedico';
-import ProntuarioZeroDigitacao from '../components/medfocus/ProntuarioZeroDigitacao';
-import JornadaDigitalPaciente from '../components/medfocus/JornadaDigitalPaciente';
-import BIAvancado from '../components/medfocus/BIAvancado';
-import GestaoDocumentos from '../components/medfocus/GestaoDocumentos';
-import HubAcademico from '../components/medfocus/HubAcademico';
-import InteracoesOpenFDA from '../components/medfocus/InteracoesOpenFDA';
-import VGCalendarioEditorial from '../components/medfocus/VGCalendarioEditorial';
-import VGAutoConteudo from '../components/medfocus/VGAutoConteudo';
-import VGMetricsAnalytics from '../components/medfocus/VGMetricsAnalytics';
-import VGDiagnosticoMarca from '../components/medfocus/VGDiagnosticoMarca';
-import VGAgendamento from '../components/medfocus/VGAgendamento';
-import VGTemplates from '../components/medfocus/VGTemplates';
-import IALaudosImagem from '../components/medfocus/IALaudosImagem';
-import ImportacaoBackup from '../components/medfocus/ImportacaoBackup';
-import RelatoriosTISS from '../components/medfocus/RelatoriosTISS';
-import AssinaturaDigital from '../components/medfocus/AssinaturaDigital';
-import PWAOffline from '../components/medfocus/PWAOffline';
-import BancoQuestoesExpanded from '../components/medfocus/BancoQuestoesExpanded';
-import SimuladorCirurgias from '../components/medfocus/SimuladorCirurgias';
-import RNDSIntegracao from '../components/medfocus/RNDSIntegracao';
-import ResidenciaMedica from '../components/medfocus/ResidenciaMedica';
-import CentralEmergencia from '../components/medfocus/CentralEmergencia';
-import PesquisaClinica from '../components/medfocus/PesquisaClinica';
-import PainelEpidemiologia from '../components/medfocus/PainelEpidemiologia';
-import EducacaoContinuada from '../components/medfocus/EducacaoContinuada';
-import MarketplaceMedico from '../components/medfocus/MarketplaceMedico';
 import { LegalAcceptanceModal } from '../components/medfocus/LegalProtection';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
 import { useGamification } from '../hooks/useGamification';
+
+// ── Lazy-loaded components (code splitting) ──
+const Planner = lazy(() => import('../components/medfocus/Planner'));
+const Timer = lazy(() => import('../components/medfocus/Timer'));
+const Assistant = lazy(() => import('../components/medfocus/Assistant'));
+const AcademicManagement = lazy(() => import('../components/medfocus/AcademicManagement'));
+const AcademicGuide = lazy(() => import('../components/medfocus/AcademicGuide'));
+const GlobalResearch = lazy(() => import('../components/medfocus/GlobalResearch'));
+const StudyMaterialGenerator = lazy(() => import('../components/medfocus/StudyMaterialGenerator'));
+const WeeklyStudyChecklist = lazy(() => import('../components/medfocus/WeeklyStudyChecklist'));
+const PreloadedStudy = lazy(() => import('../components/medfocus/PreloadedStudy'));
+const AcademicLibrary = lazy(() => import('../components/medfocus/AcademicLibrary'));
+const ValidatedLibrary = lazy(() => import('../components/medfocus/ValidatedLibrary'));
+const ProgressiveQuizSystem = lazy(() => import('../components/medfocus/ProgressiveQuizSystem'));
+const ProfessorDashboard = lazy(() => import('../components/medfocus/ProfessorDashboard'));
+const GamificationPanel = lazy(() => import('../components/medfocus/GamificationPanel'));
+const NotificationSettingsPanel = lazy(() => import('../components/medfocus/NotificationSettings'));
+const PricingPlans = lazy(() => import('../components/medfocus/PricingPlans'));
+const AcademicResourcesPanel = lazy(() => import('../components/medfocus/AcademicResourcesPanel'));
+const SpacedRepetitionPanel = lazy(() => import('../components/medfocus/SpacedRepetitionPanel'));
+const ClassroomPanel = lazy(() => import('../components/medfocus/ClassroomPanel'));
+const TeacherAnalyticsPanel = lazy(() => import('../components/medfocus/TeacherAnalyticsPanel'));
+const MedicalRoadmap = lazy(() => import('../components/medfocus/MedicalRoadmap'));
+const SimuladoENAMED = lazy(() => import('../components/medfocus/SimuladoENAMED'));
+const AnatomyAtlas = lazy(() => import('../components/medfocus/AnatomyAtlas'));
+const StudyRooms = lazy(() => import('../components/medfocus/StudyRooms'));
+const AcademicCalendar = lazy(() => import('../components/medfocus/AcademicCalendar'));
+const ReportExporter = lazy(() => import('../components/medfocus/ReportExporter'));
+const ProgressDashboard = lazy(() => import('../components/medfocus/ProgressDashboard'));
+const OfflineStudy = lazy(() => import('../components/medfocus/OfflineStudy'));
+const WeeklyGoals = lazy(() => import('../components/medfocus/WeeklyGoals'));
+const Leaderboard = lazy(() => import('../components/medfocus/Leaderboard'));
+const ClinicalCases = lazy(() => import('../components/medfocus/ClinicalCases'));
+const QuestionBattle = lazy(() => import('../components/medfocus/QuestionBattle'));
+const PerformanceHeatmap = lazy(() => import('../components/medfocus/PerformanceHeatmap'));
+const SmartSummary = lazy(() => import('../components/medfocus/SmartSummary'));
+const SocialFeed = lazy(() => import('../components/medfocus/SocialFeed'));
+const FlashcardStudy = lazy(() => import('../components/medfocus/FlashcardStudy'));
+const ExamCalendar = lazy(() => import('../components/medfocus/ExamCalendar'));
+const DiagnosisAssistant = lazy(() => import('../components/medfocus/DiagnosisAssistant'));
+const MedicalCalculators = lazy(() => import('../components/medfocus/MedicalCalculators'));
+const DrugInteractionChecker = lazy(() => import('../components/medfocus/DrugInteractionChecker'));
+const FDADrugSearch = lazy(() => import('../components/medfocus/FDADrugSearch'));
+const ANVISAConsult = lazy(() => import('../components/medfocus/ANVISAConsult'));
+const CID10Lookup = lazy(() => import('../components/medfocus/CID10Lookup'));
+const ClinicalProtocols = lazy(() => import('../components/medfocus/ClinicalProtocols'));
+const PubMedResearch = lazy(() => import('../components/medfocus/PubMedResearch'));
+const LectureTranscription = lazy(() => import('../components/medfocus/LectureTranscription'));
+const MyContent = lazy(() => import('../components/medfocus/MyContent'));
+const ProfessorPortal = lazy(() => import('../components/medfocus/ProfessorPortal'));
+const PharmaBible = lazy(() => import('../components/medfocus/PharmaBible'));
+const AdminDashboard = lazy(() => import('../components/medfocus/AdminDashboard'));
+const MedicalDisciplines = lazy(() => import('../components/medfocus/MedicalDisciplines'));
+const VideoAulas = lazy(() => import('../components/medfocus/VideoAulas'));
+const AtlasAnalytics = lazy(() => import('../components/medfocus/AtlasAnalytics'));
+const MedicineComparator = lazy(() => import('../components/medfocus/MedicineComparator'));
+const Bulario = lazy(() => import('../components/medfocus/Bulario'));
+const DoctorFinder = lazy(() => import('../components/medfocus/DoctorFinder'));
+const HospitalFinder = lazy(() => import('../components/medfocus/HospitalFinder'));
+const DoctorRegistration = lazy(() => import('../components/medfocus/DoctorRegistration'));
+const HealthTips = lazy(() => import('../components/medfocus/HealthTips'));
+const PriceComparison = lazy(() => import('../components/medfocus/PriceComparison'));
+const LegalProtection = lazy(() => import('../components/medfocus/LegalProtection'));
+const FilaSUS = lazy(() => import('../components/medfocus/FilaSUS'));
+const LocalizadorUBS = lazy(() => import('../components/medfocus/LocalizadorUBS'));
+const CarteiraVacinacao = lazy(() => import('../components/medfocus/CarteiraVacinacao'));
+const DireitosSUS = lazy(() => import('../components/medfocus/DireitosSUS'));
+const SymptomChecker = lazy(() => import('../components/medfocus/SymptomChecker'));
+const DrugInteractionAdvanced = lazy(() => import('../components/medfocus/DrugInteractionAdvanced'));
+const MentalHealthHub = lazy(() => import('../components/medfocus/MentalHealthHub'));
+const DiseaseGuides = lazy(() => import('../components/medfocus/DiseaseGuides'));
+const DigitalPrescription = lazy(() => import('../components/medfocus/DigitalPrescription'));
+const MedicalProcedures = lazy(() => import('../components/medfocus/MedicalProcedures'));
+const ClinicalFlowcharts = lazy(() => import('../components/medfocus/ClinicalFlowcharts'));
+const ANVISAAlerts = lazy(() => import('../components/medfocus/ANVISAAlerts'));
+const EditorialReview = lazy(() => import('../components/medfocus/EditorialReview'));
+const ProntuarioZeroDigitacao = lazy(() => import('../components/medfocus/ProntuarioZeroDigitacao'));
+const JornadaDigitalPaciente = lazy(() => import('../components/medfocus/JornadaDigitalPaciente'));
+const BIAvancado = lazy(() => import('../components/medfocus/BIAvancado'));
+const GestaoDocumentos = lazy(() => import('../components/medfocus/GestaoDocumentos'));
+const HubAcademico = lazy(() => import('../components/medfocus/HubAcademico'));
+const InteracoesOpenFDA = lazy(() => import('../components/medfocus/InteracoesOpenFDA'));
+const VGCalendarioEditorial = lazy(() => import('../components/medfocus/VGCalendarioEditorial'));
+const VGAutoConteudo = lazy(() => import('../components/medfocus/VGAutoConteudo'));
+const VGMetricsAnalytics = lazy(() => import('../components/medfocus/VGMetricsAnalytics'));
+const VGDiagnosticoMarca = lazy(() => import('../components/medfocus/VGDiagnosticoMarca'));
+const VGAgendamento = lazy(() => import('../components/medfocus/VGAgendamento'));
+const VGTemplates = lazy(() => import('../components/medfocus/VGTemplates'));
+const IALaudosImagem = lazy(() => import('../components/medfocus/IALaudosImagem'));
+const ImportacaoBackup = lazy(() => import('../components/medfocus/ImportacaoBackup'));
+const RelatoriosTISS = lazy(() => import('../components/medfocus/RelatoriosTISS'));
+const AssinaturaDigital = lazy(() => import('../components/medfocus/AssinaturaDigital'));
+const PWAOffline = lazy(() => import('../components/medfocus/PWAOffline'));
+const BancoQuestoesExpanded = lazy(() => import('../components/medfocus/BancoQuestoesExpanded'));
+const SimuladorCirurgias = lazy(() => import('../components/medfocus/SimuladorCirurgias'));
+const RNDSIntegracao = lazy(() => import('../components/medfocus/RNDSIntegracao'));
+const ResidenciaMedica = lazy(() => import('../components/medfocus/ResidenciaMedica'));
+const CentralEmergencia = lazy(() => import('../components/medfocus/CentralEmergencia'));
+const PesquisaClinica = lazy(() => import('../components/medfocus/PesquisaClinica'));
+const PainelEpidemiologia = lazy(() => import('../components/medfocus/PainelEpidemiologia'));
+const EducacaoContinuada = lazy(() => import('../components/medfocus/EducacaoContinuada'));
+const MarketplaceMedico = lazy(() => import('../components/medfocus/MarketplaceMedico'));
+const AnalyticsDashboard = lazy(() => import('../components/medfocus/AnalyticsDashboard'));
+/**
+ * MedFocus Main Application Page
+ * Design: Medical Precision — Teal accent, Outfit display, Plus Jakarta Sans body
+ * Auth: Manus OAuth (Gmail) + Guest mode
+ */
 
 // Módulos que requerem plano Pro
 const PRO_MODULES = new Set([
@@ -447,6 +450,7 @@ export default function Home() {
       case 'painelEpidemiologia': return <PainelEpidemiologia />;
       case 'educacaoContinuada': return <EducacaoContinuada />;
       case 'marketplaceMedico': return <MarketplaceMedico />;
+      case 'analyticsDashboard': return <AnalyticsDashboard />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{
@@ -613,7 +617,14 @@ export default function Home() {
         {/* Content */}
         <div className="p-4 md:p-8 max-w-6xl mx-auto">
           <Breadcrumbs currentView={currentView} onNavigate={setCurrentView} />
-          {renderView()}
+          <Suspense fallback={
+            <div className="flex flex-col items-center justify-center py-16">
+              <div className="w-12 h-12 animate-spin rounded-full border-4 border-muted border-t-primary" />
+              <p className="text-sm text-muted-foreground mt-4">Carregando módulo...</p>
+            </div>
+          }>
+            {renderView()}
+          </Suspense>
         </div>
       </main>
     </div>

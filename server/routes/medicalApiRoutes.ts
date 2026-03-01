@@ -865,4 +865,29 @@ router.get("/medical-apis/status", async (_req: Request, res: Response) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// CACHE METRICS & MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+
+import { getCacheMetrics, clearApiCache } from '../services/cachedMedicalApis';
+
+router.get("/cache/metrics", async (_req: Request, res: Response) => {
+  try {
+    const metrics = getCacheMetrics();
+    res.json(metrics);
+  } catch (err) {
+    res.status(500).json({ error: "Erro ao obter métricas do cache" });
+  }
+});
+
+router.post("/cache/clear", async (req: Request, res: Response) => {
+  try {
+    const { namespace } = req.body;
+    const cleared = clearApiCache(namespace);
+    res.json({ success: true, cleared });
+  } catch (err) {
+    res.status(500).json({ error: "Erro ao limpar cache" });
+  }
+});
+
 export default router;

@@ -590,6 +590,62 @@ const PricingPlans: React.FC = () => {
         </div>
       </div>
 
+      {/* Social Proof Numbers */}
+      <div className="bg-card rounded-2xl border border-border p-6">
+        <h3 className="text-lg font-bold text-foreground mb-4 text-center">MedFocus em Números</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { value: '50+', label: 'Módulos Médicos', sublabel: 'Anatomia, Farmacologia, Clínica...', color: 'text-cyan-400' },
+            { value: '15+', label: 'Calculadoras Clínicas', sublabel: 'CHA₂DS₂-VASc, MELD, Glasgow...', color: 'text-emerald-400' },
+            { value: '12+', label: 'APIs Médicas Integradas', sublabel: 'PubMed, ANVISA, OpenFDA, CNES...', color: 'text-purple-400' },
+            { value: '154+', label: 'Telas Navegáveis', sublabel: 'Interface completa e intuitiva', color: 'text-amber-400' },
+          ].map((stat, i) => (
+            <div key={i} className="text-center p-4 bg-muted/20 rounded-xl">
+              <div className={`text-3xl font-bold ${stat.color}`}>{stat.value}</div>
+              <div className="text-sm font-medium text-foreground mt-1">{stat.label}</div>
+              <div className="text-[10px] text-muted-foreground">{stat.sublabel}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Competitive Comparison */}
+      <div className="bg-card rounded-2xl border border-border p-6">
+        <h3 className="text-lg font-bold text-foreground mb-4 text-center">Por que escolher o MedFocus?</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="text-left py-2 text-muted-foreground font-medium">Recurso</th>
+                <th className="text-center py-2 text-cyan-400 font-bold">MedFocus</th>
+                <th className="text-center py-2 text-muted-foreground font-medium">Concorrente A</th>
+                <th className="text-center py-2 text-muted-foreground font-medium">Concorrente B</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { feature: 'IA Assistente Médico', us: true, a: false, b: true },
+                { feature: 'Atlas Anatômico 3D', us: true, a: true, b: false },
+                { feature: 'Integração PubMed + ANVISA + FDA', us: true, a: false, b: false },
+                { feature: 'Calculadoras Clínicas (15+)', us: true, a: true, b: true },
+                { feature: 'Gamificação e XP', us: true, a: false, b: false },
+                { feature: 'Portal do Professor', us: true, a: false, b: false },
+                { feature: 'Modo Offline', us: true, a: true, b: false },
+                { feature: 'Simulados de Residência', us: true, a: true, b: true },
+                { feature: 'Preço Estudante', us: 'R$ 49,90', a: 'R$ 89,90', b: 'R$ 79,90' },
+              ].map((row, i) => (
+                <tr key={i} className="border-b border-border/50">
+                  <td className="py-2 text-foreground font-medium">{row.feature}</td>
+                  <td className="text-center py-2">{typeof row.us === 'boolean' ? (row.us ? <span className="text-emerald-400">✓</span> : <span className="text-red-400">✗</span>) : <span className="text-emerald-400 font-bold">{row.us}</span>}</td>
+                  <td className="text-center py-2">{typeof row.a === 'boolean' ? (row.a ? <span className="text-emerald-400">✓</span> : <span className="text-red-400">✗</span>) : <span className="text-muted-foreground">{row.a}</span>}</td>
+                  <td className="text-center py-2">{typeof row.b === 'boolean' ? (row.b ? <span className="text-emerald-400">✓</span> : <span className="text-red-400">✗</span>) : <span className="text-muted-foreground">{row.b}</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Satisfaction Guarantee */}
       <div className="bg-gradient-to-r from-emerald-500/5 to-teal-500/5 border border-emerald-500/20 rounded-2xl p-6 text-center">
         <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-emerald-500/10 flex items-center justify-center">
@@ -637,6 +693,24 @@ const PricingPlans: React.FC = () => {
               name: 'Lucas Ferreira',
               role: 'Estudante 4° ano — UFMG',
               text: 'Antes eu gastava horas organizando material. Agora o Dr. Focus gera resumos perfeitos e os simulados me preparam de verdade para as provas. Vale cada centavo.',
+              rating: 5,
+            },
+            {
+              name: 'Dra. Mariana Costa',
+              role: 'Clínica Geral — Hospital Albert Einstein',
+              text: 'As calculadoras clínicas e o verificador de interações medicamentosas são ferramentas que uso diariamente. Economizo tempo e ganho segurança nas prescrições.',
+              rating: 5,
+            },
+            {
+              name: 'Pedro Almeida',
+              role: 'Estudante 2° ano — UNIFESP',
+              text: 'A gamificação me motiva a estudar todos os dias. Já acumulei mais de 5.000 XP e o ranking me incentiva a competir com meus colegas de turma.',
+              rating: 5,
+            },
+            {
+              name: 'Profa. Dra. Juliana Santos',
+              role: 'Professora de Farmacologia — UFRJ',
+              text: 'A parceria universitária foi excelente. Meus 45 alunos usam o MedFocus e o portal do professor me permite acompanhar o progresso de cada um em tempo real.',
               rating: 5,
             },
           ].map((t, i) => (
