@@ -116,3 +116,4 @@ temp/
 
 *.cjs
 client/public/atlas-images/
+.github/workflows/
