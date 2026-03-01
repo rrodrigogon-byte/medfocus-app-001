@@ -217,7 +217,15 @@ export type View =
   | 'painelEpidemiologia'
   | 'educacaoContinuada'
   | 'marketplaceMedico'
-  | 'analyticsDashboard';
+  | 'analyticsDashboard'
+  | 'medFocusCopilot'
+  | 'pacienteVirtual'
+  | 'mapaSaudeBrasil'
+  | 'geradorLaudos'
+  | 'timelineClinica'
+  | 'medFocusAcademy'
+  | 'comparadorProtocolos'
+  | 'farmacovigilancia';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {

@@ -144,6 +144,14 @@ const PainelEpidemiologia = lazy(() => import('../components/medfocus/PainelEpid
 const EducacaoContinuada = lazy(() => import('../components/medfocus/EducacaoContinuada'));
 const MarketplaceMedico = lazy(() => import('../components/medfocus/MarketplaceMedico'));
 const AnalyticsDashboard = lazy(() => import('../components/medfocus/AnalyticsDashboard'));
+const MedFocusCopilot = lazy(() => import('../components/medfocus/MedFocusCopilot'));
+const PacienteVirtual = lazy(() => import('../components/medfocus/PacienteVirtual'));
+const MapaSaudeBrasil = lazy(() => import('../components/medfocus/MapaSaudeBrasil'));
+const GeradorLaudos = lazy(() => import('../components/medfocus/GeradorLaudos'));
+const TimelineClinica = lazy(() => import('../components/medfocus/TimelineClinica'));
+const MedFocusAcademy = lazy(() => import('../components/medfocus/MedFocusAcademy'));
+const ComparadorProtocolos = lazy(() => import('../components/medfocus/ComparadorProtocolos'));
+const Farmacovigilancia = lazy(() => import('../components/medfocus/Farmacovigilancia'));
 /**
  * MedFocus Main Application Page
  * Design: Medical Precision — Teal accent, Outfit display, Plus Jakarta Sans body
@@ -451,6 +459,14 @@ export default function Home() {
       case 'educacaoContinuada': return <EducacaoContinuada />;
       case 'marketplaceMedico': return <MarketplaceMedico />;
       case 'analyticsDashboard': return <AnalyticsDashboard />;
+      case 'medFocusCopilot': return <MedFocusCopilot />;
+      case 'pacienteVirtual': return <PacienteVirtual />;
+      case 'mapaSaudeBrasil': return <MapaSaudeBrasil />;
+      case 'geradorLaudos': return <GeradorLaudos />;
+      case 'timelineClinica': return <TimelineClinica />;
+      case 'medFocusAcademy': return <MedFocusAcademy />;
+      case 'comparadorProtocolos': return <ComparadorProtocolos />;
+      case 'farmacovigilancia': return <Farmacovigilancia />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{
