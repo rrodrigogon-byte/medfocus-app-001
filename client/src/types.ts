@@ -150,7 +150,13 @@ export type View =
   | 'direitosSUS'
   | 'symptomChecker'
   | 'drugInteractionAdvanced'
-  | 'mentalHealthHub';
+  | 'mentalHealthHub'
+  | 'diseaseGuides'
+  | 'digitalPrescription'
+  | 'medicalProcedures'
+  | 'clinicalFlowcharts'
+  | 'anvisaAlerts'
+  | 'editorialReview';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {

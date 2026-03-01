@@ -80,6 +80,12 @@ import DireitosSUS from '../components/medfocus/DireitosSUS';
 import SymptomChecker from '../components/medfocus/SymptomChecker';
 import DrugInteractionAdvanced from '../components/medfocus/DrugInteractionAdvanced';
 import MentalHealthHub from '../components/medfocus/MentalHealthHub';
+import DiseaseGuides from '../components/medfocus/DiseaseGuides';
+import DigitalPrescription from '../components/medfocus/DigitalPrescription';
+import MedicalProcedures from '../components/medfocus/MedicalProcedures';
+import ClinicalFlowcharts from '../components/medfocus/ClinicalFlowcharts';
+import ANVISAAlerts from '../components/medfocus/ANVISAAlerts';
+import EditorialReview from '../components/medfocus/EditorialReview';
 import { LegalAcceptanceModal } from '../components/medfocus/LegalProtection';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
@@ -319,6 +325,12 @@ export default function Home() {
       case 'symptomChecker': return <SymptomChecker />;
       case 'drugInteractionAdvanced': return <DrugInteractionAdvanced />;
       case 'mentalHealthHub': return <MentalHealthHub />;
+      case 'diseaseGuides': return <DiseaseGuides />;
+      case 'digitalPrescription': return <DigitalPrescription />;
+      case 'medicalProcedures': return <MedicalProcedures />;
+      case 'clinicalFlowcharts': return <ClinicalFlowcharts />;
+      case 'anvisaAlerts': return <ANVISAAlerts />;
+      case 'editorialReview': return <EditorialReview />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{
@@ -426,7 +438,13 @@ export default function Home() {
                currentView === 'direitosSUS' ? 'Meus Direitos no SUS' :
                currentView === 'symptomChecker' ? 'Verificador de Sintomas' :
                currentView === 'drugInteractionAdvanced' ? 'Interações Medicamentosas' :
-               currentView === 'mentalHealthHub' ? 'Hub de Saúde Mental' : currentView}
+               currentView === 'mentalHealthHub' ? 'Hub de Saúde Mental' :
+               currentView === 'diseaseGuides' ? 'Guias de Doenças' :
+               currentView === 'digitalPrescription' ? 'Prescrição Digital' :
+               currentView === 'medicalProcedures' ? 'Procedimentos Médicos' :
+               currentView === 'clinicalFlowcharts' ? 'Fluxogramas Clínicos' :
+               currentView === 'anvisaAlerts' ? 'Alertas ANVISA' :
+               currentView === 'editorialReview' ? 'Revisão Editorial' : currentView}
             </h2>
           </div>
           <div className="flex items-center gap-2">
