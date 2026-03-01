@@ -86,6 +86,7 @@ import MedicalProcedures from '../components/medfocus/MedicalProcedures';
 import ClinicalFlowcharts from '../components/medfocus/ClinicalFlowcharts';
 import ANVISAAlerts from '../components/medfocus/ANVISAAlerts';
 import EditorialReview from '../components/medfocus/EditorialReview';
+import { MedFocusIADashboard, MedFocusIAPatients, MedFocusIAAgenda, MedFocusIADoctors, MedFocusIALGPD, MedFocusIAPlans } from '../components/medfocus/MedFocusIASaaS';
 import { LegalAcceptanceModal } from '../components/medfocus/LegalProtection';
 import { useTheme } from '../contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
@@ -331,6 +332,12 @@ export default function Home() {
       case 'clinicalFlowcharts': return <ClinicalFlowcharts />;
       case 'anvisaAlerts': return <ANVISAAlerts />;
       case 'editorialReview': return <EditorialReview />;
+      case 'medfocusiaDashboard': return <MedFocusIADashboard />;
+      case 'medfocusiaPatients': return <MedFocusIAPatients />;
+      case 'medfocusiaAgenda': return <MedFocusIAAgenda />;
+      case 'medfocusiaDoctors': return <MedFocusIADoctors />;
+      case 'medfocusiaLGPD': return <MedFocusIALGPD />;
+      case 'medfocusiaPlans': return <MedFocusIAPlans />;
       case 'validated-library': return <ValidatedLibrary userRole={localUser.role === 'admin' ? 'professor' : 'student'} currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} />;
       case 'quiz': return <ProgressiveQuizSystem currentYear={(localUser.currentYear || 1) as 1|2|3|4|5|6} subjectId="clinica-medica" onComplete={gamification.completeQuiz} />;
       case 'professor': return <ProfessorDashboard professor={{
@@ -444,7 +451,13 @@ export default function Home() {
                currentView === 'medicalProcedures' ? 'Procedimentos Médicos' :
                currentView === 'clinicalFlowcharts' ? 'Fluxogramas Clínicos' :
                currentView === 'anvisaAlerts' ? 'Alertas ANVISA' :
-               currentView === 'editorialReview' ? 'Revisão Editorial' : currentView}
+               currentView === 'editorialReview' ? 'Revisão Editorial' :
+               currentView === 'medfocusiaDashboard' ? 'Dashboard Clínica' :
+               currentView === 'medfocusiaPatients' ? 'Gestão de Pacientes' :
+               currentView === 'medfocusiaAgenda' ? 'Agenda Médica' :
+               currentView === 'medfocusiaDoctors' ? 'Corpo Clínico' :
+               currentView === 'medfocusiaLGPD' ? 'LGPD & Compliance' :
+               currentView === 'medfocusiaPlans' ? 'Planos SaaS' : currentView}
             </h2>
           </div>
           <div className="flex items-center gap-2">

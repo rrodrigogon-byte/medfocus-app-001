@@ -19,7 +19,7 @@ interface NavItem {
   id: View;
   label: string;
   icon: string;
-  badge?: 'pro' | 'premium' | 'new' | 'ai' | 'admin';
+  badge?: 'pro' | 'premium' | 'new' | 'ai' | 'admin' | 'saas';
 }
 
 interface NavGroup {
@@ -43,6 +43,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onLogout, 
     'Gestão': false,
     'Saúde Pública (Prof.)': false,
     'Legal': false,
+    'MedFocusIA SaaS': false,
     'Conta': true,
   });
 
@@ -188,6 +189,18 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onLogout, 
       ]
     },
     {
+      label: 'MedFocusIA SaaS',
+      emoji: '🏥',
+      items: [
+        { id: 'medfocusiaDashboard', label: 'Dashboard Clínica', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4', badge: 'saas' },
+        { id: 'medfocusiaPatients', label: 'Pacientes', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z', badge: 'saas' },
+        { id: 'medfocusiaAgenda', label: 'Agenda Médica', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', badge: 'saas' },
+        { id: 'medfocusiaDoctors', label: 'Corpo Clínico', icon: 'M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z', badge: 'saas' },
+        { id: 'medfocusiaLGPD', label: 'LGPD & Compliance', icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z', badge: 'saas' },
+        { id: 'medfocusiaPlans', label: 'Planos SaaS', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z', badge: 'saas' },
+      ]
+    },
+    {
       label: 'Conta',
       emoji: '👤',
       defaultOpen: true,
@@ -230,8 +243,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onLogout, 
       'premium': 'bg-rose-500/20 text-rose-400 border-rose-500/30',
       'new': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
       'admin': 'bg-red-500/20 text-red-400 border-red-500/30',
+      'saas': 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
     };
-    const labels: Record<string, string> = { 'ai': 'IA', 'pro': 'PRO', 'premium': '★', 'new': 'NEW', 'admin': 'ADM' };
+    const labels: Record<string, string> = { 'ai': 'IA', 'pro': 'PRO', 'premium': '★', 'new': 'NEW', 'admin': 'ADM', 'saas': 'SaaS' };
     return (
       <span className={`ml-auto text-[8px] font-bold px-1.5 py-0.5 rounded-full border ${styles[type] || ''}`}>
         {labels[type] || type}

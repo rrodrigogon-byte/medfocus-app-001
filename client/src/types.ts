@@ -156,7 +156,13 @@ export type View =
   | 'medicalProcedures'
   | 'clinicalFlowcharts'
   | 'anvisaAlerts'
-  | 'editorialReview';
+  | 'editorialReview'
+  | 'medfocusiaDashboard'
+  | 'medfocusiaPatients'
+  | 'medfocusiaAgenda'
+  | 'medfocusiaDoctors'
+  | 'medfocusiaLGPD'
+  | 'medfocusiaPlans';
 
 // Fix: Adding missing interfaces for Grades component
 export interface GradeItem {
